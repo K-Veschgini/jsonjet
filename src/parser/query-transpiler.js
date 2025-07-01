@@ -23,7 +23,7 @@ class QueryTranspiler extends BaseCstVisitor {
             
             // Start with the source
             const sourceName = this.visit(ctx.source);
-            jsCode = sourceName;
+            jsCode = '';
             
             // Add pipe operations
             if (ctx.operation) {
@@ -65,6 +65,8 @@ class QueryTranspiler extends BaseCstVisitor {
             return this.visit(ctx.projectClause);
         } else if (ctx.scanClause) {
             return this.visit(ctx.scanClause);
+        } else if (ctx.summarizeClause) {
+            return this.visit(ctx.summarizeClause);
         } else if (ctx.collectClause) {
             return this.visit(ctx.collectClause);
         }
@@ -74,13 +76,13 @@ class QueryTranspiler extends BaseCstVisitor {
     // WHERE clause transpilation
     whereClause(ctx) {
         const condition = this.visit(ctx.expression);
-        return `.pipe(new Operators.Filter(row => ${condition}))`;
+        return `.pipe(new Operators.Filter(item => ${condition}))`;
     }
 
     // PROJECT clause transpilation
     projectClause(ctx) {
         const columns = this.visit(ctx.columnList);
-        return `.pipe(new Operators.Map(row => ({ ${columns} })))`;
+        return `.pipe(new Operators.Map(item => ({ ${columns} })))`;
     }
 
     // Column list for project
@@ -92,7 +94,7 @@ class QueryTranspiler extends BaseCstVisitor {
     // Column reference
     column(ctx) {
         const columnName = ctx.Identifier[0].image;
-        return `${columnName}: row.${columnName}`;
+        return `${columnName}: item.${columnName}`;
     }
 
     // Expression handling
@@ -236,9 +238,9 @@ class QueryTranspiler extends BaseCstVisitor {
             const value = this.visit(ctx.propertyValue);
             return `${key}: ${value}`;
         } else if (ctx.shorthandProperty) {
-            // Shorthand: identifier becomes key: row.identifier
+            // Shorthand: identifier becomes key: item.identifier
             const identifier = ctx.shorthandProperty[0].image;
-            return `${identifier}: row.${identifier}`;
+            return `${identifier}: item.${identifier}`;
         }
         
         return '';
@@ -268,6 +270,10 @@ class QueryTranspiler extends BaseCstVisitor {
             return 'emit';
         } else if (ctx.Collect) {
             return 'collect';
+        } else if (ctx.Count) {
+            return 'count';
+        } else if (ctx.Sum) {
+            return 'sum';
         }
         
         return '';
@@ -315,6 +321,140 @@ class QueryTranspiler extends BaseCstVisitor {
         
         // Generate scan implementation using ScanOperator
         return `.pipe(new Operators.ScanOperator()${steps})`;
+    }
+
+    // SUMMARIZE clause transpilation
+    summarizeClause(ctx) {
+        const aggregationObject = this.visit(ctx.aggregationObject);
+        
+        let groupByCallback = 'null';
+        if (ctx.byExpressionList) {
+            const byExpressions = this.visit(ctx.byExpressionList);
+            groupByCallback = `(item) => ${byExpressions}`;
+        }
+        
+        let windowSpec = 'null';
+        let windowName = "'window'";
+        if (ctx.windowDefinition) {
+            const windowDef = this.visit(ctx.windowDefinition);
+            windowSpec = windowDef.spec;
+            windowName = `'${windowDef.name}'`;
+        }
+        
+        return `.pipe(Operators.createSummarizeOperator(${aggregationObject}, ${groupByCallback}, ${windowSpec}, ${windowName}))`;
+    }
+
+    // Aggregation object transpilation
+    aggregationObject(ctx) {
+        if (ctx.aggregationPropertyList) {
+            const properties = this.visit(ctx.aggregationPropertyList);
+            return `{ ${properties} }`;
+        } else {
+            return '{}';
+        }
+    }
+
+    // Aggregation property list transpilation
+    aggregationPropertyList(ctx) {
+        const properties = ctx.aggregationProperty.map(prop => this.visit(prop));
+        return properties.join(', ');
+    }
+
+    // Aggregation property transpilation
+    aggregationProperty(ctx) {
+        if (ctx.spreadAll) {
+            return '...item';
+        } else if (ctx.propertyKey && ctx.aggregationExpression) {
+            const key = this.visit(ctx.propertyKey);
+            const value = this.visit(ctx.aggregationExpression);
+            return `${key}: ${value}`;
+        } else if (ctx.shorthandProperty) {
+            const identifier = ctx.shorthandProperty[0].image;
+            return `${identifier}: ${identifier}`;
+        }
+        return '';
+    }
+
+    // Aggregation expression transpilation
+    aggregationExpression(ctx) {
+        if (ctx.aggregationFunctionCall) {
+            return this.visit(ctx.aggregationFunctionCall);
+        } else if (ctx.expression) {
+            return this.visit(ctx.expression);
+        }
+        return '';
+    }
+
+    // Aggregation function call transpilation
+    aggregationFunctionCall(ctx) {
+        if (ctx.countFunction) {
+            return this.visit(ctx.countFunction);
+        } else if (ctx.sumFunction) {
+            return this.visit(ctx.sumFunction);
+        }
+        return '';
+    }
+
+    // Count function transpilation
+    countFunction(ctx) {
+        return 'Operators.count()';
+    }
+
+    // Sum function transpilation
+    sumFunction(ctx) {
+        const valueExpression = this.visit(ctx.valueExpression);
+        return `Operators.sum((item) => ${valueExpression})`;
+    }
+
+    // BY expression list transpilation
+    byExpressionList(ctx) {
+        // For now, just take the first expression and make sure it uses item
+        const expression = this.visit(ctx.expression[0]);
+        return expression;
+    }
+
+    // Window definition transpilation
+    windowDefinition(ctx) {
+        const windowName = ctx.windowName[0].image;
+        const windowFunc = this.visit(ctx.windowFunctionCall);
+        return {
+            name: windowName,
+            spec: windowFunc
+        };
+    }
+
+    // Window function call transpilation
+    windowFunctionCall(ctx) {
+        if (ctx.hoppingWindowFunction) {
+            return this.visit(ctx.hoppingWindowFunction);
+        } else if (ctx.tumblingWindowFunction) {
+            return this.visit(ctx.tumblingWindowFunction);
+        } else if (ctx.sessionWindowFunction) {
+            return this.visit(ctx.sessionWindowFunction);
+        }
+        return 'null';
+    }
+
+    // Hopping window function transpilation
+    hoppingWindowFunction(ctx) {
+        const size = this.visit(ctx.size);
+        const hop = this.visit(ctx.hop);
+        const timeField = ctx.timeField ? this.visit(ctx.timeField) : 'null';
+        return `Operators.hopping_window(${size}, ${hop}, ${timeField})`;
+    }
+
+    // Tumbling window function transpilation
+    tumblingWindowFunction(ctx) {
+        const size = this.visit(ctx.size);
+        const timeField = ctx.timeField ? this.visit(ctx.timeField) : 'null';
+        return `Operators.tumbling_window(${size}, ${timeField})`;
+    }
+
+    // Session window function transpilation
+    sessionWindowFunction(ctx) {
+        const timeout = this.visit(ctx.timeout);
+        const timeField = this.visit(ctx.timeField);
+        return `Operators.session_window(${timeout}, ${timeField})`;
     }
 
     // COLLECT clause transpilation - prints results as they come
@@ -425,8 +565,8 @@ class QueryTranspiler extends BaseCstVisitor {
             const variableName = ctx.variableName[0].image;
             return `state.${stepOrVariable}.${variableName}`;
         } else {
-            // This is just variableName - access from row
-            return `row.${stepOrVariable}`;
+            // This is just variableName - access from item (not row for consistency)
+            return `item.${stepOrVariable}`;
         }
     }
 }
@@ -473,8 +613,8 @@ export function createQueryFunction(queryText) {
             const { Stream } = await import('../core/stream.js');
             const Operators = await import('../operators/index.js');
             
-            // Remove the data source part (e.g., "data.pipe" becomes just ".pipe")
-            let pipelineCode = result.javascript.replace(/^[a-zA-Z_][a-zA-Z0-9_]*/, '');
+            // The pipeline code should just be the operations
+            let pipelineCode = result.javascript;
             
             // Create execution context with imports available
             const createPipeline = new Function('Stream', 'Operators', `

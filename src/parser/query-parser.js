@@ -18,6 +18,9 @@ const Where = createToken({ name: "Where", pattern: /where/i });
 const Project = createToken({ name: "Project", pattern: /project/i });
 const Scan = createToken({ name: "Scan", pattern: /scan/i });
 const Step = createToken({ name: "Step", pattern: /step/i });
+const Summarize = createToken({ name: "Summarize", pattern: /summarize/i });
+const By = createToken({ name: "By", pattern: /by/i });
+const Over = createToken({ name: "Over", pattern: /over/i });
 const And = createToken({ name: "And", pattern: /and/i });
 const Or = createToken({ name: "Or", pattern: /or/i });
 
@@ -26,6 +29,15 @@ const Iff = createToken({ name: "Iff", pattern: /iff/i });
 const Emit = createToken({ name: "Emit", pattern: /emit/i });
 const Collect = createToken({ name: "Collect", pattern: /collect/i });
 const Print = createToken({ name: "Print", pattern: /\.print/i });
+
+// Aggregation functions
+const Count = createToken({ name: "Count", pattern: /count/i });
+const Sum = createToken({ name: "Sum", pattern: /sum/i });
+
+// Window functions
+const HoppingWindow = createToken({ name: "HoppingWindow", pattern: /hopping_window/i });
+const TumblingWindow = createToken({ name: "TumblingWindow", pattern: /tumbling_window/i });
+const SessionWindow = createToken({ name: "SessionWindow", pattern: /session_window/i });
 
 // Operators
 const Pipe = createToken({ name: "Pipe", pattern: /\|/ });
@@ -79,8 +91,10 @@ const RightBrace = createToken({ name: "RightBrace", pattern: /\}/ });
 const allTokens = [
     WhiteSpace,
     Comment,
-    // Keywords and functions first
-    Where, Project, Scan, Step, And, Or, Iff, Emit, Collect, Print,
+    // Keywords and functions first (longer patterns first)
+    HoppingWindow, TumblingWindow, SessionWindow,
+    Where, Project, Scan, Step, Summarize, By, Over, And, Or, Iff, Emit, Collect, Print,
+    Count, Sum,
     // Operators (longer patterns first)
     Arrow, Equals, NotEquals, LessEquals, GreaterEquals, LessThan, GreaterThan, Assign, Pipe, Plus, Minus, Multiply, Divide, Spread,
     // Literals
@@ -142,6 +156,7 @@ class QueryParser extends CstParser {
             { ALT: () => this.SUBRULE(this.whereClause) },
             { ALT: () => this.SUBRULE(this.projectClause) },
             { ALT: () => this.SUBRULE(this.scanClause) },
+            { ALT: () => this.SUBRULE(this.summarizeClause) },
             { ALT: () => this.SUBRULE(this.collectClause) }
         ]);
     });
@@ -177,6 +192,147 @@ class QueryParser extends CstParser {
         this.CONSUME(Scan);
         this.CONSUME(LeftParen);
         this.SUBRULE(this.stepList);
+        this.CONSUME(RightParen);
+    });
+
+    // SUMMARIZE clause
+    summarizeClause = this.RULE("summarizeClause", () => {
+        this.CONSUME(Summarize);
+        this.SUBRULE(this.aggregationObject);
+        this.OPTION(() => {
+            this.CONSUME(By);
+            this.SUBRULE(this.byExpressionList);
+        });
+        this.OPTION2(() => {
+            this.CONSUME(Over);
+            this.SUBRULE(this.windowDefinition);
+        });
+    });
+
+    // Aggregation object: {count: count(), total: sum('amount'), ...}
+    aggregationObject = this.RULE("aggregationObject", () => {
+        this.CONSUME(LeftBrace);
+        this.OPTION(() => {
+            this.SUBRULE(this.aggregationPropertyList);
+        });
+        this.CONSUME(RightBrace);
+    });
+
+    // Aggregation property list
+    aggregationPropertyList = this.RULE("aggregationPropertyList", () => {
+        this.SUBRULE(this.aggregationProperty);
+        this.MANY(() => {
+            this.CONSUME(Comma);
+            this.SUBRULE2(this.aggregationProperty);
+        });
+    });
+
+    // Individual aggregation property
+    aggregationProperty = this.RULE("aggregationProperty", () => {
+        this.OR([
+            // Spread syntax: ...*
+            { ALT: () => {
+                this.CONSUME(Spread);
+                this.CONSUME(Multiply, { LABEL: "spreadAll" });
+            }},
+            // Key-value pair: key: aggregationFunction()
+            { ALT: () => {
+                this.SUBRULE(this.propertyKey);
+                this.CONSUME(Colon);
+                this.SUBRULE(this.aggregationExpression);
+            }},
+            // Shorthand: just identifier
+            { ALT: () => {
+                this.CONSUME(Identifier, { LABEL: "shorthandProperty" });
+            }}
+        ]);
+    });
+
+    // Aggregation expression (function call or value)
+    aggregationExpression = this.RULE("aggregationExpression", () => {
+        this.OR([
+            { ALT: () => this.SUBRULE(this.aggregationFunctionCall) },
+            { ALT: () => this.SUBRULE(this.expression) }
+        ]);
+    });
+
+    // Aggregation function calls
+    aggregationFunctionCall = this.RULE("aggregationFunctionCall", () => {
+        this.OR([
+            { ALT: () => this.SUBRULE(this.countFunction) },
+            { ALT: () => this.SUBRULE(this.sumFunction) }
+        ]);
+    });
+
+    // Individual aggregation functions
+    countFunction = this.RULE("countFunction", () => {
+        this.CONSUME(Count);
+        this.CONSUME(LeftParen);
+        this.CONSUME(RightParen);
+    });
+
+    sumFunction = this.RULE("sumFunction", () => {
+        this.CONSUME(Sum);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "valueExpression" });
+        this.CONSUME(RightParen);
+    });
+
+    // BY expression list
+    byExpressionList = this.RULE("byExpressionList", () => {
+        this.SUBRULE(this.expression);
+        this.MANY(() => {
+            this.CONSUME(Comma);
+            this.SUBRULE2(this.expression);
+        });
+    });
+
+    // Window definition: window = hopping_window(...)
+    windowDefinition = this.RULE("windowDefinition", () => {
+        this.CONSUME(Identifier, { LABEL: "windowName" });
+        this.CONSUME(Assign);
+        this.SUBRULE(this.windowFunctionCall);
+    });
+
+    // Window function calls
+    windowFunctionCall = this.RULE("windowFunctionCall", () => {
+        this.OR([
+            { ALT: () => this.SUBRULE(this.hoppingWindowFunction) },
+            { ALT: () => this.SUBRULE(this.tumblingWindowFunction) },
+            { ALT: () => this.SUBRULE(this.sessionWindowFunction) }
+        ]);
+    });
+
+    hoppingWindowFunction = this.RULE("hoppingWindowFunction", () => {
+        this.CONSUME(HoppingWindow);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "size" });
+        this.CONSUME(Comma);
+        this.SUBRULE2(this.expression, { LABEL: "hop" });
+        this.OPTION(() => {
+            this.CONSUME2(Comma);
+            this.SUBRULE3(this.expression, { LABEL: "timeField" });
+        });
+        this.CONSUME(RightParen);
+    });
+
+    tumblingWindowFunction = this.RULE("tumblingWindowFunction", () => {
+        this.CONSUME(TumblingWindow);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "size" });
+        this.OPTION(() => {
+            this.CONSUME(Comma);
+            this.SUBRULE2(this.expression, { LABEL: "timeField" });
+        });
+        this.CONSUME(RightParen);
+    });
+
+    sessionWindowFunction = this.RULE("sessionWindowFunction", () => {
+        this.CONSUME(SessionWindow);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "timeout" });
+        this.CONSUME(Comma);
+        this.SUBRULE2(this.expression, { LABEL: "timeField" });
         this.CONSUME(RightParen);
     });
 
@@ -372,7 +528,9 @@ class QueryParser extends CstParser {
             { ALT: () => this.CONSUME(Or) },
             { ALT: () => this.CONSUME(Iff) },
             { ALT: () => this.CONSUME(Emit) },
-            { ALT: () => this.CONSUME(Collect) }
+            { ALT: () => this.CONSUME(Collect) },
+            { ALT: () => this.CONSUME(Count) },
+            { ALT: () => this.CONSUME(Sum) }
         ]);
     });
 
