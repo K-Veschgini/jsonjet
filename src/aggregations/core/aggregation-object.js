@@ -9,8 +9,8 @@ export const AGGREGATION_FUNCTIONS = {
         instance: new Count(),
         valueExpression: null // Count doesn't need value evaluation
     }),
-    sum: (valueExpr) => ({
-        instance: new Sum(),
+    sum: (valueExpr, options = {}) => ({
+        instance: new Sum(options),
         valueExpression: valueExpr // Value expression function to evaluate
     })
 };
@@ -174,6 +174,6 @@ export function count() {
     return { _aggregationFunction: 'count', _arguments: [] };
 }
 
-export function sum(valueExpression) {
-    return { _aggregationFunction: 'sum', _arguments: [valueExpression] };
+export function sum(valueExpression, options = {}) {
+    return { _aggregationFunction: 'sum', _arguments: [valueExpression, options] };
 } 

@@ -81,8 +81,16 @@ class QueryTranspiler extends BaseCstVisitor {
 
     // PROJECT clause transpilation
     projectClause(ctx) {
-        const columns = this.visit(ctx.columnList);
-        return `.pipe(new Operators.Map(item => ({ ${columns} })))`;
+        if (ctx.objectLiteral) {
+            // Object literal syntax: project {id: id, newField: expression}
+            const objectCode = this.visit(ctx.objectLiteral);
+            return `.pipe(new Operators.Map(item => (${objectCode})))`;
+        } else if (ctx.columnList) {
+            // Simple column list: project id, name, email
+            const columns = this.visit(ctx.columnList);
+            return `.pipe(new Operators.Map(item => ({ ${columns} })))`;
+        }
+        return '';
     }
 
     // Column list for project
@@ -190,10 +198,39 @@ class QueryTranspiler extends BaseCstVisitor {
     }
 
     primaryExpression(ctx) {
+        let result = this.visit(ctx.atomicExpression);
+        
+        // Handle member access chains: obj.prop, arr[index], etc.
+        if (ctx.index || ctx.property) {
+            const accessCount = Math.max(
+                ctx.index ? ctx.index.length : 0,
+                ctx.property ? ctx.property.length : 0
+            );
+            
+            for (let i = 0; i < accessCount; i++) {
+                if (ctx.index && ctx.index[i]) {
+                    // Array/object access: expr[index]
+                    const index = this.visit(ctx.index[i]);
+                    result = `${result}[${index}]`;
+                } else if (ctx.property && ctx.property[i]) {
+                    // Property access: expr.property
+                    const property = ctx.property[i].image;
+                    result = `${result}.${property}`;
+                }
+            }
+        }
+        
+        return result;
+    }
+
+    // Atomic expressions (without member access)
+    atomicExpression(ctx) {
         if (ctx.functionCall) {
             return this.visit(ctx.functionCall);
         } else if (ctx.objectLiteral) {
             return this.visit(ctx.objectLiteral);
+        } else if (ctx.arrayLiteral) {
+            return this.visit(ctx.arrayLiteral);
         } else if (ctx.stepVariable) {
             return this.visit(ctx.stepVariable);
         } else if (ctx.StringLiteral) {
@@ -202,6 +239,8 @@ class QueryTranspiler extends BaseCstVisitor {
             return ctx.NumberLiteral[0].image;
         } else if (ctx.BooleanLiteral) {
             return ctx.BooleanLiteral[0].image.toLowerCase();
+        } else if (ctx.NullLiteral) {
+            return 'null';
         } else if (ctx.expression) {
             // Parenthesized expression
             return `(${this.visit(ctx.expression)})`;
@@ -244,6 +283,22 @@ class QueryTranspiler extends BaseCstVisitor {
         }
         
         return '';
+    }
+
+    // Array literal transpilation
+    arrayLiteral(ctx) {
+        if (ctx.elementList) {
+            const elements = this.visit(ctx.elementList);
+            return `[${elements}]`;
+        } else {
+            return '[]';
+        }
+    }
+
+    // Element list transpilation
+    elementList(ctx) {
+        const elements = ctx.expression.map(expr => this.visit(expr));
+        return elements.join(', ');
     }
 
     // Property key transpilation
@@ -403,7 +458,11 @@ class QueryTranspiler extends BaseCstVisitor {
     // Sum function transpilation
     sumFunction(ctx) {
         const valueExpression = this.visit(ctx.valueExpression);
-        return `Operators.sum((item) => ${valueExpression})`;
+        let options = '{}';
+        if (ctx.options) {
+            options = this.visit(ctx.options);
+        }
+        return `Operators.sum((item) => ${valueExpression}, ${options})`;
     }
 
     // BY expression list transpilation

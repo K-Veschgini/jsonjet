@@ -4,7 +4,7 @@ import { count, sum } from '../src/aggregations/core/aggregation-object.js';
 import { hopping_window } from '../src/core/window-functions.js';
 
 console.log('=== Summarize Syntax Demo ===\n');
-console.log('Syntax: summarize {key: count(), total: sum("field") } by groupByCallback over window = hopping_window(...)\n');
+console.log('Syntax: summarize {key: count(), total: sum(field, {options}) } by groupByCallback over window = hopping_window(...)\n');
 
 // Sample data
 const data = [
@@ -18,12 +18,12 @@ const data = [
 
 async function demoBasicSyntax() {
     console.log('1. Basic syntax with count() and sum():');
-    console.log('   summarize { employee_count: count(), total_salary: sum("salary") }');
+    console.log('   summarize { employee_count: count(), total_salary: sum(salary) }');
     
     const stream = new Stream();
     const summarizeOp = createSummarizeOperator({
         employee_count: count(),
-        total_salary: sum('salary')
+        total_salary: sum(item => item.salary)
     });
 
     stream.pipe(summarizeOp).collect(result => 
@@ -36,13 +36,13 @@ async function demoBasicSyntax() {
 
 async function demoGroupBy() {
     console.log('\n2. With "by" callback (group by):');
-    console.log('   summarize { employee_count: count(), total_salary: sum("salary") } by (item => item.department)');
+    console.log('   summarize { employee_count: count(), total_salary: sum(salary) } by (item => item.department)');
     
     const stream = new Stream();
     const summarizeOp = createSummarizeOperator(
         {
             employee_count: count(),
-            total_salary: sum('salary')
+            total_salary: sum(item => item.salary)
         },
         (item) => item.department  // groupBy callback
     );
@@ -57,13 +57,13 @@ async function demoGroupBy() {
 
 async function demoComplexGroupBy() {
     console.log('\n3. With complex groupBy function (expression on fields):');
-    console.log('   summarize { employee_count: count(), total_salary: sum("salary") } by (item => item.salary > 100000 ? "high" : "low")');
+    console.log('   summarize { employee_count: count(), total_salary: sum(salary) } by (item => item.salary > 100000 ? "high" : "low")');
     
     const stream = new Stream();
     const summarizeOp = createSummarizeOperator(
         {
             employee_count: count(),
-            total_salary: sum('salary')
+            total_salary: sum(item => item.salary)
         },
         (item) => item.salary > 100000 ? 'high' : 'low'  // Complex expression
     );
@@ -78,13 +78,13 @@ async function demoComplexGroupBy() {
 
 async function demoWindow() {
     console.log('\n4. With window and window reference:');
-    console.log('   summarize { count: count(), total_salary: sum("salary"), window_id: window } by department over window = hopping_window(3, 2)');
+    console.log('   summarize { count: count(), total_salary: sum(salary), window_id: window } by department over window = hopping_window(3, 2)');
     
     const stream = new Stream();
     const summarizeOp = createSummarizeOperator(
         {
             count: count(),
-            total_salary: sum('salary'),
+            total_salary: sum(item => item.salary),
             window_id: 'window'  // Reference to the window variable
         },
         (item) => item.department,  // groupBy callback
@@ -102,13 +102,13 @@ async function demoWindow() {
 
 async function demoMultiFieldGrouping() {
     console.log('\n5. Multiple field grouping with object result:');
-    console.log('   summarize { count: count(), total_salary: sum("salary") } by (item => ({dept: item.department, qtr: item.quarter}))');
+    console.log('   summarize { count: count(), total_salary: sum(salary) } by (item => ({dept: item.department, qtr: item.quarter}))');
     
     const stream = new Stream();
     const summarizeOp = createSummarizeOperator(
         {
             count: count(),
-            total_salary: sum('salary')
+            total_salary: sum(item => item.salary)
         },
         (item) => ({ dept: item.department, qtr: item.quarter })  // Object-based grouping with deep equality
     );

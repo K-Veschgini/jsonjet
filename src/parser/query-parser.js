@@ -70,6 +70,11 @@ const BooleanLiteral = createToken({
     pattern: /true|false/i
 });
 
+const NullLiteral = createToken({
+    name: "NullLiteral",
+    pattern: /null\b/i
+});
+
 // Identifiers (must come after keywords)
 const Identifier = createToken({
     name: "Identifier",
@@ -86,6 +91,8 @@ const LeftParen = createToken({ name: "LeftParen", pattern: /\(/ });
 const RightParen = createToken({ name: "RightParen", pattern: /\)/ });
 const LeftBrace = createToken({ name: "LeftBrace", pattern: /\{/ });
 const RightBrace = createToken({ name: "RightBrace", pattern: /\}/ });
+const LeftBracket = createToken({ name: "LeftBracket", pattern: /\[/ });
+const RightBracket = createToken({ name: "RightBracket", pattern: /\]/ });
 
 // Token array - order matters!
 const allTokens = [
@@ -98,11 +105,11 @@ const allTokens = [
     // Operators (longer patterns first)
     Arrow, Equals, NotEquals, LessEquals, GreaterEquals, LessThan, GreaterThan, Assign, Pipe, Plus, Minus, Multiply, Divide, Spread,
     // Literals
-    StringLiteral, NumberLiteral, BooleanLiteral,
+    StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
     // Identifiers last (after keywords)
     Identifier,
     // Punctuation
-    Comma, Semicolon, Colon, Dot, LeftParen, RightParen, LeftBrace, RightBrace
+    Comma, Semicolon, Colon, Dot, LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket
 ];
 
 // Create lexer
@@ -170,7 +177,12 @@ class QueryParser extends CstParser {
     // PROJECT clause
     projectClause = this.RULE("projectClause", () => {
         this.CONSUME(Project);
-        this.SUBRULE(this.columnList);
+        this.OR([
+            // Object literal syntax: project {id: id, newField: expression}
+            { ALT: () => this.SUBRULE(this.objectLiteral) },
+            // Simple column list: project id, name, email
+            { ALT: () => this.SUBRULE(this.columnList) }
+        ]);
     });
 
     // Column list for project
@@ -275,6 +287,10 @@ class QueryParser extends CstParser {
         this.CONSUME(Sum);
         this.CONSUME(LeftParen);
         this.SUBRULE(this.expression, { LABEL: "valueExpression" });
+        this.OPTION(() => {
+            this.CONSUME(Comma);
+            this.SUBRULE(this.objectLiteral, { LABEL: "options" });
+        });
         this.CONSUME(RightParen);
     });
 
@@ -460,13 +476,35 @@ class QueryParser extends CstParser {
     });
 
     primaryExpression = this.RULE("primaryExpression", () => {
+        this.SUBRULE(this.atomicExpression);
+        this.MANY(() => {
+            this.OR([
+                // Array access: expr[index]
+                { ALT: () => {
+                    this.CONSUME(LeftBracket);
+                    this.SUBRULE(this.expression, { LABEL: "index" });
+                    this.CONSUME(RightBracket);
+                }},
+                // Property access: expr.property
+                { ALT: () => {
+                    this.CONSUME(Dot);
+                    this.CONSUME(Identifier, { LABEL: "property" });
+                }}
+            ]);
+        });
+    });
+
+    // Atomic expressions (without member access)
+    atomicExpression = this.RULE("atomicExpression", () => {
         this.OR([
             { ALT: () => this.SUBRULE(this.functionCall) },
             { ALT: () => this.SUBRULE(this.objectLiteral) },
+            { ALT: () => this.SUBRULE(this.arrayLiteral) },
             { ALT: () => this.SUBRULE(this.stepVariable) },
             { ALT: () => this.CONSUME(StringLiteral) },
             { ALT: () => this.CONSUME(NumberLiteral) },
             { ALT: () => this.CONSUME(BooleanLiteral) },
+            { ALT: () => this.CONSUME(NullLiteral) },
             { ALT: () => {
                 this.CONSUME(LeftParen);
                 this.SUBRULE(this.expression);
@@ -482,6 +520,24 @@ class QueryParser extends CstParser {
             this.SUBRULE(this.propertyList);
         });
         this.CONSUME(RightBrace);
+    });
+
+    // Array literal: [value1, value2, ...]
+    arrayLiteral = this.RULE("arrayLiteral", () => {
+        this.CONSUME(LeftBracket);
+        this.OPTION(() => {
+            this.SUBRULE(this.elementList);
+        });
+        this.CONSUME(RightBracket);
+    });
+
+    // Element list for array literals
+    elementList = this.RULE("elementList", () => {
+        this.SUBRULE(this.expression);
+        this.MANY(() => {
+            this.CONSUME(Comma);
+            this.SUBRULE2(this.expression);
+        });
     });
 
     // Property list for object literals
