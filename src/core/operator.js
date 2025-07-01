@@ -8,6 +8,11 @@ export class Operator {
         throw new Error('Must implement process method');
     }
     
+    async flush() {
+        // Default implementation - override if operator needs flush handling
+        // Called when stream ends to allow final processing
+    }
+    
     push(doc) {
         // Process async but don't await - fire and forget
         this.process(doc).then(() => {

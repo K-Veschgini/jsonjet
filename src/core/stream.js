@@ -40,18 +40,37 @@ export class Stream {
     }
     
     async finish() {
-        // If no pending operations, resolve immediately
-        if (this.pendingCount === 0) {
-            return Promise.resolve();
-        }
-        
-        // Create promise that resolves when all operations complete
+        // Create promise for completion before starting flush
         if (!this.finishPromise) {
             this.finishPromise = new Promise(resolve => {
                 this.finishResolve = resolve;
             });
         }
         
+        // First, flush all operators in the pipeline
+        await this.flushAll();
+        
+        // If no pending operations after flush, resolve immediately
+        if (this.pendingCount === 0) {
+            if (this.finishResolve) {
+                this.finishResolve();
+                this.finishResolve = null;
+            }
+            return Promise.resolve();
+        }
+        
+        // Wait for all pending operations to complete
         return this.finishPromise;
+    }
+    
+    async flushAll() {
+        // Walk through the pipeline and flush each operator
+        let current = this.head;
+        while (current) {
+            if (current.flush) {
+                await current.flush();
+            }
+            current = current.downstream;
+        }
     }
 } 
