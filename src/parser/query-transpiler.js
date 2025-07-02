@@ -14,8 +14,11 @@ class QueryTranspiler extends BaseCstVisitor {
 
     // Main query transpilation
     query(ctx) {
-        if (ctx.command) {
-            // Handle commands (.print, .help, etc.)
+        if (ctx.dotCommand) {
+            // Handle dot commands (.create, .insert, etc.)
+            return this.visit(ctx.dotCommand);
+        } else if (ctx.command) {
+            // Handle print commands (.print expression)
             return this.visit(ctx.command);
         } else {
             // Handle regular query pipeline
@@ -37,7 +40,40 @@ class QueryTranspiler extends BaseCstVisitor {
         }
     }
 
-    // Command transpilation
+    // Dot command transpilation
+    dotCommand(ctx) {
+        const commandName = ctx.commandName[0].image;
+        const args = ctx.commandArgument ? ctx.commandArgument.map(arg => this.visit(arg)) : [];
+        
+        // Build the command string for the command parser
+        let commandText = `.${commandName}`;
+        if (args.length > 0) {
+            commandText += ' ' + args.join(' ');
+        }
+        
+        return {
+            type: 'dotCommand',
+            commandText: commandText
+        };
+    }
+
+    // Command argument transpilation
+    commandArgument(ctx) {
+        if (ctx.Identifier) {
+            return ctx.Identifier[0].image;
+        } else if (ctx.StringLiteral) {
+            return ctx.StringLiteral[0].image;
+        } else if (ctx.objectLiteral) {
+            return this.visit(ctx.objectLiteral);
+        } else if (ctx.arrayLiteral) {
+            return this.visit(ctx.arrayLiteral);
+        } else if (ctx.NumberLiteral) {
+            return ctx.NumberLiteral[0].image;
+        }
+        return '';
+    }
+
+    // Print command transpilation
     command(ctx) {
         if (ctx.printCommand) {
             return this.visit(ctx.printCommand);

@@ -122,10 +122,12 @@ class QueryParser extends CstParser {
         this.performSelfAnalysis();
     }
 
-    // Main query rule
+    // Main query rule - now supports semicolon termination
     query = this.RULE("query", () => {
         this.OR([
-            // Commands (.print, .help, etc.)
+            // Dot commands (.create, .insert, etc.)
+            { ALT: () => this.SUBRULE(this.dotCommand) },
+            // Print commands (.print expression)
             { ALT: () => this.SUBRULE(this.command) },
             // Regular query pipeline
             { ALT: () => {
@@ -134,11 +136,39 @@ class QueryParser extends CstParser {
                     this.CONSUME(Pipe);
                     this.SUBRULE(this.operation);
                 });
+                // Optional semicolon termination for queries
+                this.OPTION(() => {
+                    this.CONSUME(Semicolon);
+                });
             }}
         ]);
     });
 
-    // Commands (.print, .help, etc.)
+    // Dot commands (.create, .insert, etc.)
+    dotCommand = this.RULE("dotCommand", () => {
+        this.CONSUME(Dot);
+        this.CONSUME(Identifier, { LABEL: "commandName" });
+        this.MANY(() => {
+            this.SUBRULE(this.commandArgument);
+        });
+        // Optional semicolon termination for commands
+        this.OPTION(() => {
+            this.CONSUME(Semicolon);
+        });
+    });
+
+    // Command arguments (identifiers, strings, JSON objects)
+    commandArgument = this.RULE("commandArgument", () => {
+        this.OR([
+            { ALT: () => this.CONSUME(Identifier) },
+            { ALT: () => this.CONSUME(StringLiteral) },
+            { ALT: () => this.SUBRULE(this.objectLiteral) },
+            { ALT: () => this.SUBRULE(this.arrayLiteral) },
+            { ALT: () => this.CONSUME(NumberLiteral) }
+        ]);
+    });
+
+    // Print commands (.print expression)
     command = this.RULE("command", () => {
         this.OR([
             { ALT: () => this.SUBRULE(this.printCommand) }
