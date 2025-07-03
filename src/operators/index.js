@@ -1,4 +1,5 @@
 export { Filter } from './filter.js';
+export { InsertInto } from './insert-into.js';
 export { Map } from './map.js';
 export { ScanOperator } from './scan.js';
 export { Sorter } from './sorter.js';

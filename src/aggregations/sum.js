@@ -1,4 +1,4 @@
-import { Aggregation } from '../core/aggregation.js';
+import { Aggregation } from './core/aggregation.js';
 
 export class Sum extends Aggregation {
     constructor(keyPath = null) {

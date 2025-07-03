@@ -103,6 +103,8 @@ class QueryTranspiler extends BaseCstVisitor {
             return this.visit(ctx.scanClause);
         } else if (ctx.summarizeClause) {
             return this.visit(ctx.summarizeClause);
+        } else if (ctx.insertIntoClause) {
+            return this.visit(ctx.insertIntoClause);
         } else if (ctx.collectClause) {
             return this.visit(ctx.collectClause);
         }
@@ -337,34 +339,47 @@ class QueryTranspiler extends BaseCstVisitor {
         return elements.join(', ');
     }
 
-    // Property key transpilation
+    // Property key transpilation - handles both quoted and unquoted keys
     propertyKey(ctx) {
+        let keyName = '';
+        
         if (ctx.Identifier) {
-            return ctx.Identifier[0].image;
+            keyName = ctx.Identifier[0].image;
         } else if (ctx.StringLiteral) {
+            // Already quoted, return as-is
             return ctx.StringLiteral[0].image;
         } else if (ctx.Where) {
-            return 'where';
+            keyName = 'where';
         } else if (ctx.Project) {
-            return 'project';
+            keyName = 'project';
         } else if (ctx.Scan) {
-            return 'scan';
+            keyName = 'scan';
         } else if (ctx.Step) {
-            return 'step';
+            keyName = 'step';
+        } else if (ctx.InsertInto) {
+            keyName = 'insert_into';
         } else if (ctx.And) {
-            return 'and';
+            keyName = 'and';
         } else if (ctx.Or) {
-            return 'or';
+            keyName = 'or';
         } else if (ctx.Iff) {
-            return 'iff';
+            keyName = 'iff';
         } else if (ctx.Emit) {
-            return 'emit';
+            keyName = 'emit';
         } else if (ctx.Collect) {
-            return 'collect';
+            keyName = 'collect';
         } else if (ctx.Count) {
-            return 'count';
+            keyName = 'count';
         } else if (ctx.Sum) {
-            return 'sum';
+            keyName = 'sum';
+        }
+        
+        // For unquoted identifiers, check if they're valid JS identifiers
+        // If so, use them unquoted, otherwise quote them
+        if (keyName && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(keyName)) {
+            return keyName; // Valid JS identifier, can use unquoted
+        } else if (keyName) {
+            return `"${keyName}"`; // Not valid JS identifier, must quote
         }
         
         return '';
@@ -550,6 +565,12 @@ class QueryTranspiler extends BaseCstVisitor {
         const timeout = this.visit(ctx.timeout);
         const timeField = this.visit(ctx.timeField);
         return `Operators.session_window(${timeout}, ${timeField})`;
+    }
+
+    // INSERT_INTO clause transpilation
+    insertIntoClause(ctx) {
+        const targetStream = ctx.targetStream[0].image;
+        return `.pipe(new Operators.InsertInto('${targetStream}'))`;
     }
 
     // COLLECT clause transpilation - prints results as they come

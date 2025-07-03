@@ -14,10 +14,10 @@ export class QueryEngine {
     }
 
     /**
-     * Parse and execute a statement (command or query)
+     * Parse and execute a statement (command or flow)
      * Returns { type: 'command'|'query', queryId?, result?, error? }
      */
-    async executeStatement(statementText, resultCallback) {
+    async executeStatement(statementText) {
         const trimmed = statementText.trim();
         
         if (!trimmed) {
@@ -25,14 +25,26 @@ export class QueryEngine {
         }
 
         try {
-            // Check if it's a dot command
+            // Check if it's a regular command
             if (CommandParser.isCommand(trimmed)) {
                 const command = CommandParser.extractCommand(trimmed);
-                return await CommandParser.executeCommand(command);
+                const result = await CommandParser.executeCommand(command);
+                
+                // Handle special case where command is actually a flow
+                if (result.type === 'flow' && result.flowCommand) {
+                    return await this.executeFlow(trimmed);
+                }
+                
+                return result;
             }
 
-            // Otherwise, it's a query - execute as continuous stream query
-            return await this.executeQuery(trimmed, resultCallback);
+            // Check if it's a flow definition
+            if (CommandParser.isFlow(trimmed)) {
+                return await this.executeFlow(trimmed);
+            }
+
+            // Otherwise, it's a simple query - execute as continuous stream query
+            return await this.executeQuery(trimmed);
         } catch (error) {
             return {
                 type: 'error',
@@ -43,10 +55,64 @@ export class QueryEngine {
     }
 
     /**
+     * Execute a flow definition (create flow ... from ... | ...)
+     */
+    async executeFlow(flowText) {
+        try {
+            
+            // Parse the flow command
+            const flowInfo = CommandParser.parseFlowCommand(flowText);
+            
+            const { flowName, ttlSeconds, queryPart } = flowInfo;
+            
+            // Execute the query part
+            const result = await this.executeQuery(queryPart);
+            
+            if (result.success) {
+                // Store flow info with TTL if specified
+                const queryInfo = this.activeQueries.get(result.queryId);
+                if (queryInfo) {
+                    queryInfo.flowName = flowName;
+                    queryInfo.ttlSeconds = ttlSeconds;
+                    queryInfo.type = 'flow';
+                    
+                    // Set up TTL deletion if specified
+                    if (ttlSeconds) {
+                        queryInfo.ttlTimeout = setTimeout(() => {
+                            console.log(`⏰ Flow '${flowName}' TTL expired, deleting...`);
+                            this.stopQuery(result.queryId);
+                        }, ttlSeconds * 1000);
+                    }
+                }
+                
+                return {
+                    type: 'flow',
+                    queryId: result.queryId,
+                    flowName,
+                    ttlSeconds,
+                    sourceName: result.sourceName,
+                    message: `Flow '${flowName}' created${ttlSeconds ? ` with TTL ${ttlSeconds}s` : ''}`,
+                    success: true
+                };
+            }
+            
+            return result;
+        } catch (error) {
+            return {
+                type: 'flow',
+                success: false,
+                error: error.message,
+                message: `Flow creation failed: ${error.message}`
+            };
+        }
+    }
+
+    /**
      * Execute a continuous query that subscribes to a stream
      */
-    async executeQuery(queryText, resultCallback) {
+    async executeQuery(queryText) {
         try {
+            
             // Parse and transpile the query
             const result = transpileQuery(queryText);
             
@@ -59,15 +125,15 @@ export class QueryEngine {
             const sourceName = this.extractSourceName(queryText);
             
             if (!streamManager.hasStream(sourceName)) {
-                throw new Error(`Stream '${sourceName}' does not exist. Create it first with: .create stream ${sourceName}`);
+                throw new Error(`Stream '${sourceName}' does not exist. Create it first with: create stream ${sourceName}`);
             }
 
             // Create a new query pipeline
             const queryId = this.nextQueryId++;
-            const pipeline = this.createQueryPipeline(result.javascript, resultCallback);
+            const pipeline = this.createQueryPipeline(result.javascript);
             
             // Subscribe to the stream
-            const subscriptionId = streamManager.subscribeToStream(sourceName, pipeline, resultCallback);
+            const subscriptionId = streamManager.subscribeFlowToStream(sourceName, pipeline, null);
             
             // Store query info
             const queryInfo = {
@@ -76,9 +142,9 @@ export class QueryEngine {
                 sourceName,
                 queryText,
                 pipeline,
-                resultCallback,
                 startTime: new Date(),
-                isActive: true
+                isActive: true,
+                type: 'query'
             };
             
             this.activeQueries.set(queryId, queryInfo);
@@ -101,7 +167,7 @@ export class QueryEngine {
     }
 
     /**
-     * Stop a running query
+     * Stop a running query or flow
      */
     stopQuery(queryId) {
         const queryInfo = this.activeQueries.get(queryId);
@@ -119,21 +185,29 @@ export class QueryEngine {
             };
         }
 
+        // Clear TTL timeout if it exists
+        if (queryInfo.ttlTimeout) {
+            clearTimeout(queryInfo.ttlTimeout);
+        }
+
         // Unsubscribe from stream
-        streamManager.unsubscribeFromStream(queryInfo.sourceName, queryInfo.subscriptionId);
+        streamManager.unsubscribeFlowFromStream(queryInfo.sourceName, queryInfo.subscriptionId);
         
         // Mark as inactive
         queryInfo.isActive = false;
         queryInfo.endTime = new Date();
         
+        const itemType = queryInfo.type === 'flow' ? 'Flow' : 'Query';
+        const itemName = queryInfo.flowName || queryId;
+        
         return {
             success: true,
-            message: `Query ${queryId} stopped`
+            message: `${itemType} ${itemName} stopped`
         };
     }
 
     /**
-     * Get info about active queries
+     * Get info about active queries and flows
      */
     getActiveQueries() {
         const active = [];
@@ -141,14 +215,54 @@ export class QueryEngine {
             if (info.isActive) {
                 active.push({
                     queryId: info.queryId,
+                    type: info.type || 'query',
+                    flowName: info.flowName,
                     sourceName: info.sourceName,
                     queryText: info.queryText,
                     startTime: info.startTime,
-                    duration: new Date() - info.startTime
+                    duration: new Date() - info.startTime,
+                    ttlSeconds: info.ttlSeconds
                 });
             }
         }
         return active;
+    }
+
+    /**
+     * Get info about active flows only
+     */
+    getActiveFlows() {
+        const flows = [];
+        for (const [queryId, info] of this.activeQueries) {
+            if (info.isActive && info.type === 'flow') {
+                flows.push({
+                    queryId: info.queryId,
+                    flowName: info.flowName,
+                    sourceName: info.sourceName,
+                    queryText: info.queryText,
+                    startTime: info.startTime,
+                    duration: new Date() - info.startTime,
+                    ttlSeconds: info.ttlSeconds
+                });
+            }
+        }
+        return flows;
+    }
+
+    /**
+     * Stop a flow by name
+     */
+    stopFlowByName(flowName) {
+        for (const [queryId, info] of this.activeQueries) {
+            if (info.isActive && info.type === 'flow' && info.flowName === flowName) {
+                return this.stopQuery(queryId);
+            }
+        }
+        
+        return {
+            success: false,
+            message: `Flow '${flowName}' not found`
+        };
     }
 
     /**
@@ -178,8 +292,9 @@ export class QueryEngine {
     /**
      * Create a query pipeline from transpiled JavaScript
      */
-    createQueryPipeline(jsCode, resultCallback) {
+    createQueryPipeline(jsCode) {
         try {
+            
             // Create a new stream and build the pipeline
             const stream = new Stream();
             
@@ -191,6 +306,10 @@ export class QueryEngine {
             `);
             
             const pipeline = createPipeline(Stream, Operators);
+            
+            // No result callback needed - flows use insert_into to write results
+            
+            
             return pipeline;
         } catch (error) {
             throw new Error(`Failed to create pipeline: ${error.message}`);

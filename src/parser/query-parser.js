@@ -19,6 +19,7 @@ const Project = createToken({ name: "Project", pattern: /project/i });
 const Scan = createToken({ name: "Scan", pattern: /scan/i });
 const Step = createToken({ name: "Step", pattern: /step/i });
 const Summarize = createToken({ name: "Summarize", pattern: /summarize/i });
+const InsertInto = createToken({ name: "InsertInto", pattern: /insert_into/i });
 const By = createToken({ name: "By", pattern: /by/i });
 const Over = createToken({ name: "Over", pattern: /over/i });
 const And = createToken({ name: "And", pattern: /and/i });
@@ -100,7 +101,7 @@ const allTokens = [
     Comment,
     // Keywords and functions first (longer patterns first)
     HoppingWindow, TumblingWindow, SessionWindow,
-    Where, Project, Scan, Step, Summarize, By, Over, And, Or, Iff, Emit, Collect, Print,
+    Where, Project, Scan, Step, Summarize, InsertInto, By, Over, And, Or, Iff, Emit, Collect, Print,
     Count, Sum,
     // Operators (longer patterns first)
     Arrow, Equals, NotEquals, LessEquals, GreaterEquals, LessThan, GreaterThan, Assign, Pipe, Plus, Minus, Multiply, Divide, Spread,
@@ -194,6 +195,7 @@ class QueryParser extends CstParser {
             { ALT: () => this.SUBRULE(this.projectClause) },
             { ALT: () => this.SUBRULE(this.scanClause) },
             { ALT: () => this.SUBRULE(this.summarizeClause) },
+            { ALT: () => this.SUBRULE(this.insertIntoClause) },
             { ALT: () => this.SUBRULE(this.collectClause) }
         ]);
     });
@@ -379,6 +381,14 @@ class QueryParser extends CstParser {
         this.SUBRULE(this.expression, { LABEL: "timeout" });
         this.CONSUME(Comma);
         this.SUBRULE2(this.expression, { LABEL: "timeField" });
+        this.CONSUME(RightParen);
+    });
+
+    // INSERT_INTO clause
+    insertIntoClause = this.RULE("insertIntoClause", () => {
+        this.CONSUME(InsertInto);
+        this.CONSUME(LeftParen);
+        this.CONSUME(Identifier, { LABEL: "targetStream" });
         this.CONSUME(RightParen);
     });
 
@@ -610,6 +620,7 @@ class QueryParser extends CstParser {
             { ALT: () => this.CONSUME(Project) },
             { ALT: () => this.CONSUME(Scan) },
             { ALT: () => this.CONSUME(Step) },
+            { ALT: () => this.CONSUME(InsertInto) },
             { ALT: () => this.CONSUME(And) },
             { ALT: () => this.CONSUME(Or) },
             { ALT: () => this.CONSUME(Iff) },

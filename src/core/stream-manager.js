@@ -1,17 +1,20 @@
 import { Stream } from './stream.js';
 
 /**
- * StreamManager - Manages named streams like MongoDB collections
- * Streams persist until explicitly deleted and can have multiple subscribers
+ * StreamManager - Manages named streams as pure data pipes
+ * Streams do NOT store data - they only route data to active subscribers
+ * This is proper stream processing, not a database
  */
 export class StreamManager {
     constructor() {
         this.streams = new Map(); // name -> StreamContainer
-        this.nextQueryId = 1;
+        this.nextSubscriptionId = 1;
+        this.userSubscriptions = new Map(); // subscriptionId -> { streamName, callback }
+        this.globalSubscribers = new Map(); // subscriptionId -> callback - for all-streams subscriptions
     }
 
     /**
-     * Create a new named stream
+     * Create a new named stream (just a pipe, no storage)
      */
     createStream(name) {
         if (this.streams.has(name)) {
@@ -21,8 +24,9 @@ export class StreamManager {
         const streamContainer = {
             name,
             stream: new Stream(),
-            subscribers: new Map(), // queryId -> { pipeline, callback }
-            data: [] // Store data for new subscribers
+            flowSubscribers: new Map(), // queryId -> { pipeline, callback } - for flows
+            userSubscribers: new Map()  // subscriptionId -> callback - for direct user subscriptions
+            // NO DATA STORAGE - streams are just pipes!
         };
 
         this.streams.set(name, streamContainer);
@@ -38,8 +42,8 @@ export class StreamManager {
             throw new Error(`Stream '${name}' does not exist`);
         }
 
-        // Stop all active queries on this stream
-        for (const [queryId, { pipeline }] of container.subscribers) {
+        // Stop all active flows on this stream
+        for (const [queryId, { pipeline }] of container.flowSubscribers) {
             try {
                 pipeline.finish(); // Gracefully finish the pipeline
             } catch (error) {
@@ -47,7 +51,16 @@ export class StreamManager {
             }
         }
 
-        container.subscribers.clear();
+        // Clear all subscriptions
+        container.flowSubscribers.clear();
+        container.userSubscribers.clear();
+        
+        // Remove user subscriptions pointing to this stream
+        for (const [subId, sub] of this.userSubscriptions) {
+            if (sub.streamName === name) {
+                this.userSubscriptions.delete(subId);
+            }
+        }
         this.streams.delete(name);
     }
 
@@ -74,7 +87,8 @@ export class StreamManager {
 
     /**
      * Insert data into a stream
-     * Data flows immediately to all active subscribers
+     * Data flows immediately to all active subscribers and then disappears
+     * If no subscribers are listening, data is lost (correct streaming behavior)
      */
     async insertIntoStream(name, data) {
         const container = this.streams.get(name);
@@ -85,31 +99,55 @@ export class StreamManager {
         // Handle bulk insert (array) or single insert
         const items = Array.isArray(data) ? data : [data];
         
-        // Store data for potential new subscribers
-        container.data.push(...items);
-
-        // If no active subscribers, data is just stored
-        if (container.subscribers.size === 0) {
+        const totalSubscribers = container.flowSubscribers.size + container.userSubscribers.size + this.globalSubscribers.size;
+        
+        // If no active subscribers, data is lost (proper streaming behavior)
+        if (totalSubscribers === 0) {
+            console.log(`📤 Data inserted into stream '${name}' but no subscribers listening - data lost`);
             return;
         }
 
         // Push data to all active subscribers immediately
         for (const item of items) {
-            for (const [queryId, { pipeline }] of container.subscribers) {
+            // Push to flow subscribers (pipelines)
+            for (const [queryId, { pipeline }] of container.flowSubscribers) {
                 try {
                     pipeline.push(item);
                 } catch (error) {
-                    console.error(`Error pushing to query ${queryId}:`, error);
+                    console.error(`Error pushing to flow ${queryId}:`, error);
                     // Remove failed subscriber
-                    container.subscribers.delete(queryId);
+                    container.flowSubscribers.delete(queryId);
+                }
+            }
+            
+            // Push to user subscribers (direct callbacks)
+            for (const [subId, callback] of container.userSubscribers) {
+                try {
+                    callback({ data: item, streamName: name });
+                } catch (error) {
+                    console.error(`Error calling user subscription ${subId}:`, error);
+                    // Remove failed subscriber
+                    container.userSubscribers.delete(subId);
+                    this.userSubscriptions.delete(subId);
+                }
+            }
+            
+            // Push to global subscribers (all streams)
+            for (const [subId, callback] of this.globalSubscribers) {
+                try {
+                    callback({ data: item, streamName: name });
+                } catch (error) {
+                    console.error(`Error calling global subscription ${subId}:`, error);
+                    // Remove failed subscriber
+                    this.globalSubscribers.delete(subId);
                 }
             }
         }
     }
 
     /**
-     * Flush (clear) all data from a stream
-     * Active queries continue but with no historical data
+     * Flush operation doesn't make sense for pure streams
+     * Streams don't store data, so there's nothing to flush
      */
     flushStream(name) {
         const container = this.streams.get(name);
@@ -117,65 +155,128 @@ export class StreamManager {
             throw new Error(`Stream '${name}' does not exist`);
         }
 
-        container.data = [];
-        // Note: We don't interrupt active queries, they just won't see historical data
+        // In a pure streaming system, flush is a no-op
+        // There's no stored data to clear
+        console.log(`📝 Stream '${name}' flushed (no-op in pure streaming system)`);
     }
 
     /**
-     * Subscribe a query pipeline to a stream
+     * Subscribe a flow pipeline to a stream (internal use by query engine)
      * Returns a query ID that can be used to unsubscribe
      */
-    subscribeToStream(name, pipeline, callback) {
+    subscribeFlowToStream(name, pipeline, callback) {
         const container = this.streams.get(name);
         if (!container) {
             throw new Error(`Stream '${name}' does not exist`);
         }
 
-        const queryId = this.nextQueryId++;
+        const queryId = this.nextSubscriptionId++;
         
-        // Set up the pipeline callback to forward results
-        pipeline.collect(callback);
-
-        // Store subscriber info
-        container.subscribers.set(queryId, { pipeline, callback });
-
-        // Immediately send any existing data to the new subscriber
-        if (container.data.length > 0) {
-            for (const item of container.data) {
-                try {
-                    pipeline.push(item);
-                } catch (error) {
-                    console.error(`Error pushing historical data to query ${queryId}:`, error);
-                    container.subscribers.delete(queryId);
-                    throw error;
-                }
-            }
-        }
+        // Store flow subscriber info
+        container.flowSubscribers.set(queryId, { pipeline, callback });
 
         return queryId;
     }
 
     /**
-     * Unsubscribe a query from a stream
+     * Subscribe a user callback to a stream (public API)
+     * Returns a subscription ID that can be used to unsubscribe
+     * NOTE: Subscribers only see NEW data flowing through after subscription
      */
-    unsubscribeFromStream(name, queryId) {
+    subscribeToStream(streamName, callback) {
+        const container = this.streams.get(streamName);
+        if (!container) {
+            throw new Error(`Stream '${streamName}' does not exist`);
+        }
+
+        const subscriptionId = this.nextSubscriptionId++;
+        
+        // Store user subscription info
+        container.userSubscribers.set(subscriptionId, callback);
+        this.userSubscriptions.set(subscriptionId, { streamName, callback });
+
+        return subscriptionId;
+    }
+
+    /**
+     * Subscribe to all streams (receives data from any stream)
+     * Returns a subscription ID that can be used to unsubscribe
+     */
+    subscribeToAllStreams(callback) {
+        const subscriptionId = this.nextSubscriptionId++;
+        this.globalSubscribers.set(subscriptionId, callback);
+        return subscriptionId;
+    }
+
+    /**
+     * Unsubscribe a flow from a stream (internal use by query engine)
+     */
+    unsubscribeFlowFromStream(name, queryId) {
         const container = this.streams.get(name);
         if (!container) {
             return false;
         }
 
-        const subscriber = container.subscribers.get(queryId);
+        const subscriber = container.flowSubscribers.get(queryId);
         if (subscriber) {
             try {
                 subscriber.pipeline.finish();
             } catch (error) {
                 console.warn(`Error finishing pipeline ${queryId}:`, error);
             }
-            container.subscribers.delete(queryId);
+            container.flowSubscribers.delete(queryId);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Unsubscribe a user from a stream (public API)
+     */
+    unsubscribeFromStream(subscriptionId) {
+        const subscription = this.userSubscriptions.get(subscriptionId);
+        if (!subscription) {
+            return false;
+        }
+
+        const { streamName } = subscription;
+        const container = this.streams.get(streamName);
+        if (container) {
+            container.userSubscribers.delete(subscriptionId);
+        }
+        
+        this.userSubscriptions.delete(subscriptionId);
+        return true;
+    }
+
+    /**
+     * Unsubscribe from all streams (global subscription)
+     */
+    unsubscribeFromAllStreams(subscriptionId) {
+        return this.globalSubscribers.delete(subscriptionId);
+    }
+
+    /**
+     * Get all subscriptions for a user or stream
+     */
+    getSubscriptions(streamName = null) {
+        if (streamName) {
+            // Get subscriptions for a specific stream
+            const result = [];
+            for (const [subId, sub] of this.userSubscriptions) {
+                if (sub.streamName === streamName) {
+                    result.push({ subscriptionId: subId, streamName: sub.streamName });
+                }
+            }
+            return result;
+        } else {
+            // Get all subscriptions
+            return Array.from(this.userSubscriptions.entries()).map(([subId, sub]) => ({
+                subscriptionId: subId,
+                streamName: sub.streamName
+            }));
+        }
     }
 
     /**
@@ -189,9 +290,12 @@ export class StreamManager {
 
         return {
             name: container.name,
-            dataCount: container.data.length,
-            subscriberCount: container.subscribers.size,
-            subscribers: Array.from(container.subscribers.keys())
+            flowSubscriberCount: container.flowSubscribers.size,
+            userSubscriberCount: container.userSubscribers.size,
+            totalSubscriberCount: container.flowSubscribers.size + container.userSubscribers.size,
+            flowSubscribers: Array.from(container.flowSubscribers.keys()),
+            userSubscribers: Array.from(container.userSubscribers.keys()),
+            type: 'pure-stream' // No data storage
         };
     }
 
@@ -203,9 +307,12 @@ export class StreamManager {
         for (const [name, container] of this.streams) {
             info[name] = {
                 name: container.name,
-                dataCount: container.data.length,
-                subscriberCount: container.subscribers.size,
-                subscribers: Array.from(container.subscribers.keys())
+                flowSubscriberCount: container.flowSubscribers.size,
+                userSubscriberCount: container.userSubscribers.size,
+                totalSubscriberCount: container.flowSubscribers.size + container.userSubscribers.size,
+                flowSubscribers: Array.from(container.flowSubscribers.keys()),
+                userSubscribers: Array.from(container.userSubscribers.keys()),
+                type: 'pure-stream'
             };
         }
         return info;
