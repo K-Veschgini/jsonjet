@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MantineProvider, AppShell, Title, Container, Select, ScrollArea, Paper, Text, Button, Group, Checkbox, Stack } from '@mantine/core';
+import { MantineProvider, AppShell, Title, Container, Select, ScrollArea, Paper, Text, Button, Group, Checkbox, Stack, Tabs, Badge } from '@mantine/core';
 import Editor from '@monaco-editor/react';
 import '@andypf/json-viewer';
 import '@mantine/core/styles.css';
@@ -35,6 +35,13 @@ interface StreamMessage {
   data: any;
 }
 
+interface LogMessage {
+  id: string;
+  timestamp: Date;
+  level: 'info' | 'success' | 'error' | 'warning';
+  message: string;
+}
+
 function App() {
   const [statements, setStatements] = useState<Statement[]>([]);
   const editorRef = useRef<any>(null);
@@ -46,6 +53,11 @@ function App() {
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [streamFilters, setStreamFilters] = useState<Record<string, { enabled: boolean; count: number }>>({});
   const globalSubscriptionRef = useRef<number | null>(null);
+  
+  // Logs state
+  const [logs, setLogs] = useState<LogMessage[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('streams');
+  const [unreadErrors, setUnreadErrors] = useState<number>(0);
   
   // Demo state
   const [selectedDemo, setSelectedDemo] = useState<string>('flow-processing');
@@ -139,6 +151,46 @@ delete flow temp_monitor;
         enabled: !prev[streamName]?.enabled
       }
     }));
+  };
+
+  // Add log message
+  const addLog = (level: LogMessage['level'], message: string) => {
+    const newLog: LogMessage = {
+      id: Date.now().toString() + Math.random().toString(36),
+      timestamp: new Date(),
+      level,
+      message
+    };
+    
+    setLogs(prev => [newLog, ...prev].slice(0, 1000)); // Keep last 1000 logs
+    
+    // Track unread errors
+    if (level === 'error' && activeTab !== 'logs') {
+      setUnreadErrors(prev => prev + 1);
+    }
+    
+    // Also log to console
+    switch (level) {
+      case 'error':
+        console.error(message);
+        break;
+      case 'warning':
+        console.warn(message);
+        break;
+      case 'success':
+        console.log(`✅ ${message}`);
+        break;
+      default:
+        console.log(message);
+    }
+  };
+
+  // Handle tab change
+  const handleTabChange = (value: string | null) => {
+    setActiveTab(value || 'streams');
+    if (value === 'logs') {
+      setUnreadErrors(0); // Clear error badge when viewing logs
+    }
   };
 
   // Parse statements from editor content
@@ -446,7 +498,7 @@ delete flow temp_monitor;
 
   // Handle play button click
   const handlePlayClick = async (statement: Statement, index: number) => {
-    console.log('▶️ Executing:', statement.text);
+    addLog('info', `▶️ Executing: ${statement.text}`);
     
     try {
       if (statement.isCommand) {
@@ -454,9 +506,9 @@ delete flow temp_monitor;
         const result = await CommandParser.executeCommand(statement.text);
         
         if (result.success) {
-          console.log('✅ Command success:', result.message);
+          addLog('success', `Command success: ${result.message}`);
           if (result.result) {
-            console.log('📄 Result:', result.result);
+            addLog('info', `📄 Result: ${JSON.stringify(result.result)}`);
           }
           
           // Handle stream creation
@@ -476,48 +528,48 @@ delete flow temp_monitor;
             });
           }
         } else {
-          console.error('❌ Command failed:', result.message);
+          addLog('error', `Command failed: ${result.message}`);
         }
         
       } else if (statement.isQuery) {
         // Execute flow - results will be written to streams via insert_into
-        console.log('🔄 Starting flow...');
+        addLog('info', '🔄 Starting flow...');
         
         const result = await queryEngine.executeStatement(statement.text);
         
         if (result.success) {
-          console.log('✅ Flow started:', result.message);
+          addLog('success', `Flow started: ${result.message}`);
           if (result.flowName) {
-            console.log('🆔 Flow Name:', result.flowName);
+            addLog('info', `🆔 Flow Name: ${result.flowName}`);
           }
         } else {
-          console.error('❌ Flow failed:', result.message);
+          addLog('error', `Flow failed: ${result.message}`);
         }
       }
     } catch (error: any) {
-      console.error('💥 Execution error:', error.message);
+      addLog('error', `Execution error: ${error.message}`);
     }
   };
 
   // Handle run all button click
   const handleRunAll = async () => {
-    console.log('🚀 Running all statements...');
+    addLog('info', '🚀 Running all statements...');
     
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
-      console.log(`▶️ [${i + 1}/${statements.length}] Executing:`, statement.text);
+      addLog('info', `▶️ [${i + 1}/${statements.length}] Executing: ${statement.text}`);
       
       try {
         await handlePlayClick(statement, i);
         // Small delay between executions to see the flow
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error: any) {
-        console.error(`💥 Error in statement ${i + 1}:`, error.message);
+        addLog('error', `💥 Error in statement ${i + 1}: ${error.message}`);
         // Continue with next statement even if one fails
       }
     }
     
-    console.log('✅ Finished running all statements');
+    addLog('success', 'Finished running all statements');
   };
 
   // JSON viewer component
@@ -528,7 +580,7 @@ delete flow temp_monitor;
           data={JSON.stringify(data)}
           expand-icon-type="square"
           show-data-types="false"
-          theme="solarized-dark"
+          theme="good-lighter"
           style={{ fontSize: '14px', fontFamily: '"Roboto Mono", Monaco, Consolas, monospace' }}
         ></andypf-json-viewer>
       </div>
@@ -540,27 +592,33 @@ delete flow temp_monitor;
 
   return (
     <MantineProvider>
-      <AppShell
-        header={{ height: 60 }}
-        style={{ height: '100vh' }}
-      >
-        <AppShell.Header>
-          <Container size="xl" h="100%" style={{ display: 'flex', alignItems: 'center' }}>
-            <Title order={3} c="blue">
-              🗃️ JSDB Query Demo
-            </Title>
-          </Container>
-        </AppShell.Header>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ 
+          height: '60px', 
+          borderBottom: '1px solid #e0e0e0', 
+          display: 'flex', 
+          alignItems: 'center',
+          padding: '0 24px',
+          backgroundColor: 'white',
+          flexShrink: 0
+        }}>
+          <Title order={3} c="blue">
+            🗃️ JSDB Query Demo
+          </Title>
+        </div>
         
-        <AppShell.Main style={{ padding: 0 }}>
-          <div style={{ height: '100vh', paddingTop: '60px', display: 'flex' }}>
+        {/* Main Content */}
+        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
             {/* Left Panel - Code Editor */}
-            <div style={{ width: '50%', height: '100%', borderRight: '1px solid #e0e0e0' }}>
+            <div style={{ width: '50%', height: '100%', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {/* Demo Controls */}
               <div style={{ 
                 padding: '12px 16px', 
                 borderBottom: '1px solid #e0e0e0', 
-                backgroundColor: '#f8f9fa' 
+                backgroundColor: '#f8f9fa',
+                minHeight: '48px',
+                flexShrink: 0
               }}>
                 <Group justify="space-between" align="center">
                   <Button 
@@ -586,7 +644,7 @@ delete flow temp_monitor;
               <div 
                 className="editor-container"
                 style={{ 
-                  height: 'calc(100% - 60px)', 
+                  flex: 1, 
                   position: 'relative'
                 }}
               >
@@ -639,54 +697,126 @@ delete flow temp_monitor;
               </div>
             </div>
             
-            {/* Right Panel - JSON Viewer */}
-            <div style={{ width: '50%', height: '100%' }}>
-              <div style={{ height: '100%', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ marginBottom: '16px' }}>
-                  <Text size="lg" fw={600} mb="xs">Streams</Text>
-                  {availableStreams.length > 0 ? (
-                    <Stack gap="xs">
-                      {availableStreams.map(streamName => (
-                        <Checkbox
-                          key={streamName}
-                          checked={streamFilters[streamName]?.enabled ?? true}
-                          onChange={() => handleStreamToggle(streamName)}
-                          label={`${streamName}: ${streamFilters[streamName]?.count ?? 0} documents`}
-                          size="sm"
-                        />
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Text c="dimmed" size="sm">No streams created yet</Text>
-                  )}
-                </div>
-                
-                <ScrollArea style={{ flex: 1 }} type="always" scrollbarSize={8} offsetScrollbars>
-                  {filteredMessages.length === 0 ? (
-                    <Text c="dimmed" ta="center" mt="xl">
-                      No messages yet. Execute some commands to see data flowing through streams.
-                    </Text>
-                  ) : (
-                    filteredMessages.map((message) => (
-                      <Paper key={message.id} p="sm" mb="xs" withBorder>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <Text size="sm" fw={600} c="blue">
-                            {message.streamName}
+            {/* Right Panel - Tabs */}
+            <div style={{ width: '50%', height: '100%', overflow: 'hidden' }}>
+              {/* Tab Headers */}
+              <div style={{ 
+                height: '48px', 
+                borderBottom: '1px solid #e0e0e0', 
+                display: 'flex', 
+                alignItems: 'center',
+                padding: '0 16px'
+              }}>
+                <Button 
+                  variant={activeTab === 'streams' ? 'filled' : 'subtle'} 
+                  size="sm" 
+                  onClick={() => handleTabChange('streams')}
+                  style={{ marginRight: '8px' }}
+                >
+                  Streams
+                </Button>
+                <Button 
+                  variant={activeTab === 'logs' ? 'filled' : 'subtle'} 
+                  size="sm" 
+                  onClick={() => handleTabChange('logs')}
+                  rightSection={unreadErrors > 0 ? (
+                    <Badge size="xs" circle color="red">
+                      {unreadErrors}
+                    </Badge>
+                  ) : undefined}
+                >
+                  Logs
+                </Button>
+              </div>
+
+              {/* Tab Content */}
+              <div style={{ height: 'calc(100% - 48px)', overflow: 'hidden' }}>
+                {activeTab === 'streams' && (
+                  <div style={{ height: '100%', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ marginBottom: '16px', flexShrink: 0 }}>
+                      <Text size="lg" fw={600} mb="xs">Stream Filters</Text>
+                      {availableStreams.length > 0 ? (
+                        <Stack gap="xs">
+                          {availableStreams.map(streamName => (
+                            <Checkbox
+                              key={streamName}
+                              checked={streamFilters[streamName]?.enabled ?? true}
+                              onChange={() => handleStreamToggle(streamName)}
+                              label={`${streamName}: ${streamFilters[streamName]?.count ?? 0} documents`}
+                              size="sm"
+                            />
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Text c="dimmed" size="sm">No streams created yet</Text>
+                      )}
+                    </div>
+                    
+                    <div style={{ flex: 1, overflow: 'auto', paddingRight: '8px' }}>
+                      {filteredMessages.length === 0 ? (
+                        <Text c="dimmed" ta="center" mt="xl">
+                          No messages yet. Execute some commands to see data flowing through streams.
+                        </Text>
+                      ) : (
+                        filteredMessages.map((message) => (
+                          <Paper key={message.id} p="sm" mb="xs" withBorder>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <Text size="sm" fw={600} c="blue">
+                                {message.streamName}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                {message.timestamp.toLocaleTimeString()}
+                              </Text>
+                            </div>
+                            <JsonDisplay data={message.data} />
+                          </Paper>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'logs' && (
+                  <div style={{ height: '100%', padding: '16px', overflow: 'auto', paddingRight: '24px' }}>
+                    {logs.length === 0 ? (
+                      <Text c="dimmed" ta="center" mt="xl">
+                        No logs yet. Execute some commands to see logs.
+                      </Text>
+                    ) : (
+                      logs.map((log) => (
+                        <Paper key={log.id} p="sm" mb="xs" withBorder>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <Badge 
+                              size="sm" 
+                              color={
+                                log.level === 'error' ? 'red' : 
+                                log.level === 'warning' ? 'yellow' : 
+                                log.level === 'success' ? 'green' : 'blue'
+                              }
+                            >
+                              {log.level.toUpperCase()}
+                            </Badge>
+                            <Text size="xs" c="dimmed">
+                              {log.timestamp.toLocaleTimeString()}
+                            </Text>
+                          </div>
+                          <Text size="sm" style={{ 
+                            fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',
+                            wordWrap: 'break-word',
+                            whiteSpace: 'pre-wrap',
+                            overflowWrap: 'anywhere'
+                          }}>
+                            {log.message}
                           </Text>
-                          <Text size="xs" c="dimmed">
-                            {message.timestamp.toLocaleTimeString()}
-                          </Text>
-                        </div>
-                        <JsonDisplay data={message.data} />
-                      </Paper>
-                    ))
-                  )}
-                </ScrollArea>
+                        </Paper>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        </AppShell.Main>
-      </AppShell>
+        </div>
+      </div>
     </MantineProvider>
   );
 }
