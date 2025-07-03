@@ -62,6 +62,10 @@ function App() {
   // Demo state
   const [selectedDemo, setSelectedDemo] = useState<string>('flow-processing');
   
+  // Configuration
+  const MAX_MESSAGES_PER_STREAM = 100;
+  const MAX_LOGS = 100;
+  
   // Demo options
   const demoOptions = [
     { value: 'flow-processing', label: 'Flow Processing Demo' }
@@ -116,7 +120,7 @@ delete flow temp_monitor;
         data
       };
       
-      setMessages(prev => [newMessage, ...prev].slice(0, 1000)); // Keep last 1000 messages
+      setMessages(prev => [newMessage, ...prev].slice(0, MAX_MESSAGES_PER_STREAM)); // Keep latest messages per stream
       
       // Update stream filters - add new streams as enabled by default and increment count
       setStreamFilters(prev => ({
@@ -137,10 +141,29 @@ delete flow temp_monitor;
     };
   }, []);
 
-  // Filter messages based on enabled streams
-  const filteredMessages = messages.filter(msg => 
-    streamFilters[msg.streamName]?.enabled ?? true
-  );
+  // Filter messages based on enabled streams and limit per stream
+  const filteredMessages = (() => {
+    const messagesByStream: Record<string, StreamMessage[]> = {};
+    
+    // Group messages by stream
+    messages.forEach(msg => {
+      if (streamFilters[msg.streamName]?.enabled ?? true) {
+        if (!messagesByStream[msg.streamName]) {
+          messagesByStream[msg.streamName] = [];
+        }
+        messagesByStream[msg.streamName].push(msg);
+      }
+    });
+    
+    // Limit each stream to MAX_MESSAGES_PER_STREAM and combine
+    const limitedMessages: StreamMessage[] = [];
+    Object.values(messagesByStream).forEach(streamMessages => {
+      limitedMessages.push(...streamMessages.slice(0, MAX_MESSAGES_PER_STREAM));
+    });
+    
+    // Sort by timestamp (newest first)
+    return limitedMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  })();
 
   // Handle stream filter toggle
   const handleStreamToggle = (streamName: string) => {
@@ -162,7 +185,7 @@ delete flow temp_monitor;
       message
     };
     
-    setLogs(prev => [newLog, ...prev].slice(0, 1000)); // Keep last 1000 logs
+    setLogs(prev => [newLog, ...prev].slice(0, MAX_LOGS)); // Keep latest logs
     
     // Track unread errors
     if (level === 'error' && activeTab !== 'logs') {
@@ -753,6 +776,16 @@ delete flow temp_monitor;
                     </div>
                     
                     <div style={{ flex: 1, overflow: 'auto', paddingRight: '8px' }}>
+                      <div style={{ 
+                        padding: '8px 12px', 
+                        backgroundColor: '#f8f9fa', 
+                        borderRadius: '4px', 
+                        marginBottom: '12px',
+                        fontSize: '12px',
+                        color: '#666'
+                      }}>
+                        Top {MAX_MESSAGES_PER_STREAM} recent messages per stream
+                      </div>
                       {filteredMessages.length === 0 ? (
                         <Text c="dimmed" ta="center" mt="xl">
                           No messages yet. Execute some commands to see data flowing through streams.
@@ -778,6 +811,16 @@ delete flow temp_monitor;
 
                 {activeTab === 'logs' && (
                   <div style={{ height: '100%', padding: '16px', overflow: 'auto', paddingRight: '24px' }}>
+                    <div style={{ 
+                      padding: '8px 12px', 
+                      backgroundColor: '#f8f9fa', 
+                      borderRadius: '4px', 
+                      marginBottom: '12px',
+                      fontSize: '12px',
+                      color: '#666'
+                    }}>
+                      Top {MAX_LOGS} recent log entries
+                    </div>
                     {logs.length === 0 ? (
                       <Text c="dimmed" ta="center" mt="xl">
                         No logs yet. Execute some commands to see logs.
