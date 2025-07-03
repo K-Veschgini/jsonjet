@@ -63,7 +63,31 @@ export class QueryEngine {
             // Parse the flow command
             const flowInfo = CommandParser.parseFlowCommand(flowText);
             
-            const { flowName, ttlSeconds, queryPart } = flowInfo;
+            const { flowName, ttlSeconds, queryPart, modifier } = flowInfo;
+            
+            // Handle flow existence checking based on modifier
+            const exists = this.flowExists(flowName);
+            
+            if (exists) {
+                if (modifier === 'or_replace') {
+                    // Delete existing flow first
+                    const deleteResult = this.stopFlowByName(flowName);
+                    if (!deleteResult.success) {
+                        throw new Error(`Failed to delete existing flow '${flowName}': ${deleteResult.message}`);
+                    }
+                } else if (modifier === 'if_not_exists') {
+                    // Flow exists, return success without action
+                    return {
+                        type: 'flow',
+                        success: true,
+                        flowName,
+                        message: `Flow '${flowName}' already exists (no action taken)`
+                    };
+                } else {
+                    // Regular create - should fail
+                    throw new Error(`Flow '${flowName}' already exists. Use 'create or replace flow ${flowName}' to replace it or 'create if not exists flow ${flowName}' to ignore if exists.`);
+                }
+            }
             
             // Execute the query part
             const result = await this.executeQuery(queryPart);
@@ -85,13 +109,14 @@ export class QueryEngine {
                     }
                 }
                 
+                const action = modifier === 'or_replace' ? 'replaced' : 'created';
                 return {
                     type: 'flow',
                     queryId: result.queryId,
                     flowName,
                     ttlSeconds,
                     sourceName: result.sourceName,
-                    message: `Flow '${flowName}' created${ttlSeconds ? ` with TTL ${ttlSeconds}s` : ''}`,
+                    message: `Flow '${flowName}' ${action}${ttlSeconds ? ` with TTL ${ttlSeconds}s` : ''}`,
                     success: true
                 };
             }
@@ -126,6 +151,14 @@ export class QueryEngine {
             
             if (!streamManager.hasStream(sourceName)) {
                 throw new Error(`Stream '${sourceName}' does not exist. Create it first with: create stream ${sourceName}`);
+            }
+
+            // Validate insert_into target streams exist
+            const targetStreams = this.extractInsertIntoTargets(result.javascript);
+            for (const targetStream of targetStreams) {
+                if (!streamManager.hasStream(targetStream)) {
+                    throw new Error(`Target stream '${targetStream}' does not exist. Create it first with: create stream ${targetStream}`);
+                }
             }
 
             // Create a new query pipeline
@@ -287,6 +320,39 @@ export class QueryEngine {
             throw new Error('Could not determine source name from query');
         }
         return match[1];
+    }
+
+    /**
+     * Extract insert_into target stream names from transpiled JavaScript
+     * Looks for patterns like "new Operators.InsertInto('streamName')"
+     */
+    extractInsertIntoTargets(jsCode) {
+        const targets = [];
+        
+        // Match patterns like: new Operators.InsertInto('streamName')
+        const insertIntoPattern = /new\s+Operators\.InsertInto\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g;
+        
+        let match;
+        while ((match = insertIntoPattern.exec(jsCode)) !== null) {
+            const streamName = match[1];
+            if (!targets.includes(streamName)) {
+                targets.push(streamName);
+            }
+        }
+        
+        return targets;
+    }
+
+    /**
+     * Check if a flow with the given name already exists
+     */
+    flowExists(flowName) {
+        for (const [queryId, info] of this.activeQueries) {
+            if (info.isActive && info.type === 'flow' && info.flowName === flowName) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

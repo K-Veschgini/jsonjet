@@ -62,29 +62,74 @@ export class CommandParser {
     }
 
     /**
-     * Handle create stream <name> or create flow <name> [ttl(<duration>)] from <stream> | ...
+     * Handle create [or replace | if not exists] stream <name> or create flow <name> [ttl(<duration>)] from <stream> | ...
      */
     static async handleCreateCommand(args) {
         if (args.length === 0) {
-            throw new Error('Usage: create stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
+            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
         }
 
-        const subcommand = args[0].toLowerCase();
+        // Parse optional modifiers: "or replace" or "if not exists"
+        let modifier = null;
+        let remainingArgs = [...args];
+        
+        if (args.length >= 3 && args[0].toLowerCase() === 'or' && args[1].toLowerCase() === 'replace') {
+            modifier = 'or_replace';
+            remainingArgs = args.slice(2);
+        } else if (args.length >= 4 && args[0].toLowerCase() === 'if' && args[1].toLowerCase() === 'not' && args[2].toLowerCase() === 'exists') {
+            modifier = 'if_not_exists';
+            remainingArgs = args.slice(3);
+        }
+
+        const subcommand = remainingArgs[0]?.toLowerCase();
         
         if (subcommand === 'stream') {
-            if (args.length !== 2) {
-                throw new Error('Usage: create stream <name>');
+            if (remainingArgs.length !== 2) {
+                throw new Error('Usage: create [or replace | if not exists] stream <name>');
             }
             
-            const streamName = args[1];
-            streamManager.createStream(streamName);
+            const streamName = remainingArgs[1];
             
-            return {
-                type: 'command',
-                success: true,
-                result: { streamName },
-                message: `Stream '${streamName}' created successfully`
-            };
+            try {
+                // Check if stream exists
+                const exists = streamManager.hasStream(streamName);
+                
+                if (exists) {
+                    if (modifier === 'or_replace') {
+                        // Delete existing stream and create new one
+                        streamManager.deleteStream(streamName);
+                        streamManager.createStream(streamName);
+                        return {
+                            type: 'command',
+                            success: true,
+                            result: { streamName },
+                            message: `Stream '${streamName}' replaced successfully`
+                        };
+                    } else if (modifier === 'if_not_exists') {
+                        // Do nothing, return success
+                        return {
+                            type: 'command',
+                            success: true,
+                            result: { streamName },
+                            message: `Stream '${streamName}' already exists (no action taken)`
+                        };
+                    } else {
+                        // Regular create - should fail
+                        throw new Error(`Stream '${streamName}' already exists. Use 'create or replace stream ${streamName}' to replace it or 'create if not exists stream ${streamName}' to ignore if exists.`);
+                    }
+                } else {
+                    // Stream doesn't exist, create it
+                    streamManager.createStream(streamName);
+                    return {
+                        type: 'command',
+                        success: true,
+                        result: { streamName },
+                        message: `Stream '${streamName}' created successfully`
+                    };
+                }
+            } catch (error) {
+                throw error; // Re-throw any errors from stream manager
+            }
         } else if (subcommand === 'flow') {
             // This is a flow creation, which is actually a query
             // Return a special type to indicate it should be handled as a query
@@ -95,7 +140,7 @@ export class CommandParser {
                 message: 'Flow creation should be handled as a query'
             };
         } else {
-            throw new Error('Usage: create stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
+            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
         }
     }
 
@@ -427,7 +472,7 @@ export class CommandParser {
      */
     static isFlow(line) {
         const trimmed = line.trim();
-        return /^create\s+flow\b/.test(trimmed);
+        return /^create\s+(?:or\s+replace\s+|if\s+not\s+exists\s+)?flow\b/.test(trimmed);
     }
 
     /**
@@ -443,16 +488,28 @@ export class CommandParser {
 
     /**
      * Parse TTL from a flow command
-     * Returns { ttlSeconds: number | null, flowName: string, queryPart: string }
+     * Returns { ttlSeconds: number | null, flowName: string, queryPart: string, modifier: string | null }
      */
     static parseFlowCommand(flowCommand) {
         const trimmed = flowCommand.trim();
         
-        // Match: create flow <name> [ttl(<duration>)] from <stream> | ...
-        const match = trimmed.match(/^create\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);
+        // Match: create [or replace | if not exists] flow <name> [ttl(<duration>)] from <stream> | ...
+        let match = trimmed.match(/^create\s+or\s+replace\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);
+        let modifier = null;
+        
+        if (match) {
+            modifier = 'or_replace';
+        } else {
+            match = trimmed.match(/^create\s+if\s+not\s+exists\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);
+            if (match) {
+                modifier = 'if_not_exists';
+            } else {
+                match = trimmed.match(/^create\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);
+            }
+        }
         
         if (!match) {
-            throw new Error('Invalid flow syntax. Use: create flow <name> [ttl(<duration>)] from <stream> | ...');
+            throw new Error('Invalid flow syntax. Use: create [or replace | if not exists] flow <name> [ttl(<duration>)] from <stream> | ...');
         }
         
         const [, flowName, ttlStr, queryPart] = match;
@@ -469,7 +526,8 @@ export class CommandParser {
         return {
             flowName,
             ttlSeconds,
-            queryPart
+            queryPart,
+            modifier
         };
     }
 

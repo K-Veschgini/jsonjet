@@ -57,7 +57,15 @@ function App() {
   // Logs state
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [activeTab, setActiveTab] = useState<string>('streams');
-  const [unreadErrors, setUnreadErrors] = useState<number>(0);
+  const activeTabRef = useRef<string>('streams');
+  const [unreadCounts, setUnreadCounts] = useState<{
+    error: number;
+    warning: number;
+    success: number;
+    info: number;
+  }>({ error: 0, warning: 0, success: 0, info: 0 });
+  const [unreadStreamMessages, setUnreadStreamMessages] = useState<number>(0);
+  const [fadingOut, setFadingOut] = useState<{streams: boolean, logs: boolean}>({streams: false, logs: false});
   
   // Demo state
   const [selectedDemo, setSelectedDemo] = useState<string>('flow-processing');
@@ -121,6 +129,11 @@ delete flow temp_monitor;
       };
       
       setMessages(prev => [newMessage, ...prev].slice(0, MAX_MESSAGES_PER_STREAM)); // Keep latest messages per stream
+      
+      // Track unread stream messages
+      if (activeTabRef.current !== 'streams') {
+        setUnreadStreamMessages(prev => prev + 1);
+      }
       
       // Update stream filters - add new streams as enabled by default and increment count
       setStreamFilters(prev => ({
@@ -187,9 +200,12 @@ delete flow temp_monitor;
     
     setLogs(prev => [newLog, ...prev].slice(0, MAX_LOGS)); // Keep latest logs
     
-    // Track unread errors
-    if (level === 'error' && activeTab !== 'logs') {
-      setUnreadErrors(prev => prev + 1);
+    // Track unread logs by type
+    if (activeTab !== 'logs') {
+      setUnreadCounts(prev => ({
+        ...prev,
+        [level]: prev[level] + 1
+      }));
     }
     
     // Also log to console
@@ -210,9 +226,23 @@ delete flow temp_monitor;
 
   // Handle tab change
   const handleTabChange = (value: string | null) => {
-    setActiveTab(value || 'streams');
-    if (value === 'logs') {
-      setUnreadErrors(0); // Clear error badge when viewing logs
+    const newTab = value || 'streams';
+    setActiveTab(newTab);
+    activeTabRef.current = newTab; // Update ref for subscription callback
+    
+    // Start fade out animation
+    if (newTab === 'logs') {
+      setFadingOut(prev => ({...prev, logs: true}));
+      setTimeout(() => {
+        setUnreadCounts({ error: 0, warning: 0, success: 0, info: 0 }); // Clear all unread counts when viewing logs
+        setFadingOut(prev => ({...prev, logs: false}));
+      }, 300); // Wait for fade out animation
+    } else if (newTab === 'streams') {
+      setFadingOut(prev => ({...prev, streams: true}));
+      setTimeout(() => {
+        setUnreadStreamMessages(0); // Clear unread stream messages when viewing streams
+        setFadingOut(prev => ({...prev, streams: false}));
+      }, 300); // Wait for fade out animation
     }
   };
 
@@ -521,18 +551,13 @@ delete flow temp_monitor;
 
   // Handle play button click
   const handlePlayClick = async (statement: Statement, index: number) => {
-    addLog('info', `▶️ Executing: ${statement.text}`);
-    
     try {
       if (statement.isCommand) {
         // Execute command
         const result = await CommandParser.executeCommand(statement.text);
         
         if (result.success) {
-          addLog('success', `Command success: ${result.message}`);
-          if (result.result) {
-            addLog('info', `📄 Result: ${JSON.stringify(result.result)}`);
-          }
+          addLog('success', result.message);
           
           // Handle stream creation
           if (result.result?.streamName && statement.text.includes('create stream')) {
@@ -551,60 +576,54 @@ delete flow temp_monitor;
             });
           }
         } else {
-          addLog('error', `Command failed: ${result.message}`);
+          addLog('error', `${result.message}`);
         }
         
       } else if (statement.isQuery) {
         // Execute flow - results will be written to streams via insert_into
-        addLog('info', '🔄 Starting flow...');
-        
         const result = await queryEngine.executeStatement(statement.text);
         
         if (result.success) {
-          addLog('success', `Flow started: ${result.message}`);
-          if (result.flowName) {
-            addLog('info', `🆔 Flow Name: ${result.flowName}`);
-          }
+          addLog('success', result.message);
         } else {
-          addLog('error', `Flow failed: ${result.message}`);
+          addLog('error', result.message);
         }
       }
     } catch (error: any) {
-      addLog('error', `Execution error: ${error.message}`);
+      addLog('error', error.message);
     }
   };
 
   // Handle run all button click
   const handleRunAll = async () => {
-    addLog('info', '🚀 Running all statements...');
+    addLog('info', `🚀 Running ${statements.length} statements...`);
     
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
-      addLog('info', `▶️ [${i + 1}/${statements.length}] Executing: ${statement.text}`);
       
       try {
         await handlePlayClick(statement, i);
         // Small delay between executions to see the flow
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error: any) {
-        addLog('error', `💥 Error in statement ${i + 1}: ${error.message}`);
+        addLog('error', `Error in statement ${i + 1}: ${error.message}`);
         // Continue with next statement even if one fails
       }
     }
     
-    addLog('success', 'Finished running all statements');
+    addLog('success', `✅ Completed ${statements.length} statements`);
   };
 
   // JSON viewer component
   const JsonDisplay = ({ data }: { data: any }) => {
     return (
-      <div style={{ fontSize: '14px', fontFamily: '"Roboto Mono", Monaco, Consolas, monospace' }}>
+      <div style={{ fontSize: '12px', fontFamily: '"Roboto Mono", Monaco, Consolas, monospace' }}>
         <andypf-json-viewer 
           data={JSON.stringify(data)}
           expand-icon-type="square"
           show-data-types="false"
           theme="good-lighter"
-          style={{ fontSize: '14px', fontFamily: '"Roboto Mono", Monaco, Consolas, monospace' }}
+          style={{ fontSize: '12px', fontFamily: '"Roboto Mono", Monaco, Consolas, monospace' }}
         ></andypf-json-viewer>
       </div>
     );
@@ -619,7 +638,7 @@ delete flow temp_monitor;
         {/* Header */}
         <div style={{ 
           height: '60px', 
-          borderBottom: '1px solid #e0e0e0', 
+          borderBottom: '1px solid #e0e0e0',
           display: 'flex', 
           alignItems: 'center',
           padding: '0 24px',
@@ -634,14 +653,15 @@ delete flow temp_monitor;
         {/* Main Content */}
         <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
             {/* Left Panel - Code Editor */}
-            <div style={{ width: '50%', height: '100%', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ flex: 1, height: '100%', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {/* Demo Controls */}
               <div style={{ 
-                padding: '12px 16px', 
-                borderBottom: '1px solid #e0e0e0', 
+                height: '48px',
+                padding: '0 16px', 
                 backgroundColor: '#f8f9fa',
-                minHeight: '48px',
-                flexShrink: 0
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center'
               }}>
                 <Group justify="space-between" align="center">
                   <Button 
@@ -721,45 +741,102 @@ delete flow temp_monitor;
             </div>
             
             {/* Right Panel - Tabs */}
-            <div style={{ width: '50%', height: '100%', overflow: 'hidden' }}>
-              {/* Tab Headers */}
-              <div style={{ 
-                height: '48px', 
-                borderBottom: '1px solid #e0e0e0', 
-                display: 'flex', 
-                alignItems: 'center',
-                padding: '0 16px'
-              }}>
-                <Button 
-                  variant={activeTab === 'streams' ? 'filled' : 'subtle'} 
-                  size="sm" 
-                  onClick={() => handleTabChange('streams')}
-                  style={{ marginRight: '8px' }}
-                >
-                  Streams
-                </Button>
-                <Button 
-                  variant={activeTab === 'logs' ? 'filled' : 'subtle'} 
-                  size="sm" 
-                  onClick={() => handleTabChange('logs')}
-                  rightSection={unreadErrors > 0 ? (
-                    <Badge size="xs" circle color="red">
-                      {unreadErrors}
-                    </Badge>
-                  ) : undefined}
-                >
-                  Logs
-                </Button>
-              </div>
+            <div style={{ flex: 1, height: '100%', overflow: 'hidden' }}>
+              <Tabs value={activeTab} onChange={handleTabChange} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Tabs.List grow style={{ height: '48px', padding: '0 16px', flexShrink: 0 }}>
+                  <Tabs.Tab 
+                    value="streams"
+                    style={{ minWidth: '120px' }}
+                    rightSection={
+                      unreadStreamMessages > 0 ? (
+                        <Badge 
+                          size="xs" 
+                          color="blue"
+                          style={{ 
+                            transition: 'opacity 0.3s ease, transform 0.3s ease',
+                            opacity: fadingOut.streams ? 0 : 1,
+                            transform: fadingOut.streams ? 'scale(0.8)' : 'scale(1)'
+                          }}
+                        >
+                          {unreadStreamMessages}
+                        </Badge>
+                      ) : undefined
+                    }
+                  >
+                    Streams
+                  </Tabs.Tab>
+                  <Tabs.Tab 
+                    value="logs"
+                    style={{ minWidth: '120px' }}
+                    rightSection={
+                      (unreadCounts.error > 0 || unreadCounts.warning > 0 || unreadCounts.success > 0 || unreadCounts.info > 0) ? (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {unreadCounts.error > 0 && (
+                            <Badge 
+                              size="xs" 
+                              color="red"
+                              style={{ 
+                                transition: 'opacity 0.3s ease, transform 0.3s ease',
+                                opacity: fadingOut.logs ? 0 : 1,
+                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
+                              }}
+                            >
+                              {unreadCounts.error}
+                            </Badge>
+                          )}
+                          {unreadCounts.warning > 0 && (
+                            <Badge 
+                              size="xs" 
+                              color="yellow"
+                              style={{ 
+                                transition: 'opacity 0.3s ease, transform 0.3s ease',
+                                opacity: fadingOut.logs ? 0 : 1,
+                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
+                              }}
+                            >
+                              {unreadCounts.warning}
+                            </Badge>
+                          )}
+                          {unreadCounts.success > 0 && (
+                            <Badge 
+                              size="xs" 
+                              color="green"
+                              style={{ 
+                                transition: 'opacity 0.3s ease, transform 0.3s ease',
+                                opacity: fadingOut.logs ? 0 : 1,
+                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
+                              }}
+                            >
+                              {unreadCounts.success}
+                            </Badge>
+                          )}
+                          {unreadCounts.info > 0 && (
+                            <Badge 
+                              size="xs" 
+                              color="blue"
+                              style={{ 
+                                transition: 'opacity 0.3s ease, transform 0.3s ease',
+                                opacity: fadingOut.logs ? 0 : 1,
+                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
+                              }}
+                            >
+                              {unreadCounts.info}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : undefined
+                    }
+                  >
+                    Logs
+                  </Tabs.Tab>
+                </Tabs.List>
 
-              {/* Tab Content */}
-              <div style={{ height: 'calc(100% - 48px)', overflow: 'hidden' }}>
-                {activeTab === 'streams' && (
-                  <div style={{ height: '100%', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ marginBottom: '16px', flexShrink: 0 }}>
+                <Tabs.Panel value="streams" style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ padding: '16px', paddingBottom: '0', flexShrink: 0 }}>
                       <Text size="lg" fw={600} mb="xs">Stream Filters</Text>
                       {availableStreams.length > 0 ? (
-                        <Stack gap="xs">
+                        <Stack gap="xs" mb="md">
                           {availableStreams.map(streamName => (
                             <Checkbox
                               key={streamName}
@@ -771,21 +848,21 @@ delete flow temp_monitor;
                           ))}
                         </Stack>
                       ) : (
-                        <Text c="dimmed" size="sm">No streams created yet</Text>
+                        <Text c="dimmed" size="sm" mb="md">No streams created yet</Text>
                       )}
                     </div>
                     
-                    <div style={{ flex: 1, overflow: 'auto', paddingRight: '8px' }}>
-                      <div style={{ 
-                        padding: '8px 12px', 
-                        backgroundColor: '#f8f9fa', 
-                        borderRadius: '4px', 
-                        marginBottom: '12px',
-                        fontSize: '12px',
-                        color: '#666'
-                      }}>
-                        Top {MAX_MESSAGES_PER_STREAM} recent messages per stream
-                      </div>
+                    <div style={{ 
+                      padding: '8px 16px', 
+                      backgroundColor: '#f8f9fa', 
+                      fontSize: '12px',
+                      color: '#666',
+                      flexShrink: 0
+                    }}>
+                      Top {MAX_MESSAGES_PER_STREAM} recent messages per stream
+                    </div>
+                    
+                    <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px' }}>
                       {filteredMessages.length === 0 ? (
                         <Text c="dimmed" ta="center" mt="xl">
                           No messages yet. Execute some commands to see data flowing through streams.
@@ -807,56 +884,58 @@ delete flow temp_monitor;
                       )}
                     </div>
                   </div>
-                )}
+                </Tabs.Panel>
 
-                {activeTab === 'logs' && (
-                  <div style={{ height: '100%', padding: '16px', overflow: 'auto', paddingRight: '24px' }}>
+                <Tabs.Panel value="logs" style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ 
-                      padding: '8px 12px', 
+                      padding: '8px 16px', 
                       backgroundColor: '#f8f9fa', 
-                      borderRadius: '4px', 
-                      marginBottom: '12px',
                       fontSize: '12px',
-                      color: '#666'
+                      color: '#666',
+                      flexShrink: 0
                     }}>
                       Top {MAX_LOGS} recent log entries
                     </div>
-                    {logs.length === 0 ? (
-                      <Text c="dimmed" ta="center" mt="xl">
-                        No logs yet. Execute some commands to see logs.
-                      </Text>
-                    ) : (
-                      logs.map((log) => (
-                        <Paper key={log.id} p="sm" mb="xs" withBorder>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                            <Badge 
-                              size="sm" 
-                              color={
-                                log.level === 'error' ? 'red' : 
-                                log.level === 'warning' ? 'yellow' : 
-                                log.level === 'success' ? 'green' : 'blue'
-                              }
-                            >
-                              {log.level.toUpperCase()}
-                            </Badge>
-                            <Text size="xs" c="dimmed">
-                              {log.timestamp.toLocaleTimeString()}
+                    
+                    <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px' }}>
+                      {logs.length === 0 ? (
+                        <Text c="dimmed" ta="center" mt="xl">
+                          No logs yet. Execute some commands to see logs.
+                        </Text>
+                      ) : (
+                        logs.map((log) => (
+                          <Paper key={log.id} p="sm" mb="xs" withBorder>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <Badge 
+                                size="sm" 
+                                color={
+                                  log.level === 'error' ? 'red' : 
+                                  log.level === 'warning' ? 'yellow' : 
+                                  log.level === 'success' ? 'green' : 'blue'
+                                }
+                              >
+                                {log.level.toUpperCase()}
+                              </Badge>
+                              <Text size="xs" c="dimmed">
+                                {log.timestamp.toLocaleTimeString()}
+                              </Text>
+                            </div>
+                            <Text size="sm" style={{ 
+                              fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',
+                              wordWrap: 'break-word',
+                              whiteSpace: 'pre-wrap',
+                              overflowWrap: 'anywhere'
+                            }}>
+                              {log.message}
                             </Text>
-                          </div>
-                          <Text size="sm" style={{ 
-                            fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',
-                            wordWrap: 'break-word',
-                            whiteSpace: 'pre-wrap',
-                            overflowWrap: 'anywhere'
-                          }}>
-                            {log.message}
-                          </Text>
-                        </Paper>
-                      ))
-                    )}
+                          </Paper>
+                        ))
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                </Tabs.Panel>
+              </Tabs>
             </div>
         </div>
       </div>
