@@ -9,8 +9,11 @@
     "build": "bun run build.js",
     "build:single": "bun build main.js --outfile=release/jsdb.js --target=node",
     "build:bundle": "bun build main.js --outdir=release --target=node --splitting --minify",
-    "test": "bun run test-release.js",
-    "release": "bun run clean && bun run build && bun run test",
+    "test": "bun test tests/",
+    "test:summarize": "bun test tests/summarize.test.js",
+    "test:watch": "bun test tests/ --watch",
+    "test-release": "bun run test-release.js",
+    "release": "bun run clean && bun run build && bun run test-release",
     "clean": "rm -rf release"
   },
   "keywords": ["streaming", "data-processing", "operators", "scan", "filter", "pipeline"],

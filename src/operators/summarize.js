@@ -118,17 +118,22 @@ export class SummarizeOperator extends Operator {
             context[this.windowName] = this.currentWindow;
         }
         
-        // Generate group key
-        const groupKey = this.generateGroupKey(doc, context);
+        // Generate group key and value
+        const groupValue = this.groupByCallback ? this.groupByCallback(doc, context) : '__default__';
+        const groupKey = this.serializeGroupKey(groupValue);
         
         // Get or create aggregation object for this group
         if (!this.groups.has(groupKey)) {
             // Create aggregation object with context that captures the current window state
             const frozenContext = { ...context };
-            this.groups.set(groupKey, new AggregationObject(this.aggregationSpec, frozenContext));
+            this.groups.set(groupKey, { 
+                aggregation: new AggregationObject(this.aggregationSpec, frozenContext),
+                groupValue: groupValue
+            });
         }
         
-        const aggregationObj = this.groups.get(groupKey);
+        const groupData = this.groups.get(groupKey);
+        const aggregationObj = groupData.aggregation;
         
         // Process the item
         aggregationObj.push(doc);
@@ -138,8 +143,15 @@ export class SummarizeOperator extends Operator {
      * Emit results for current window
      */
     async emitWindowResults() {
-        for (const [groupKey, aggregationObj] of this.groups.entries()) {
-            const result = aggregationObj.getResult();
+        for (const [groupKey, groupData] of this.groups.entries()) {
+            const result = groupData.aggregation.getResult();
+            
+            // Add the group value to the result if we have grouping
+            if (this.groupByCallback) {
+                // Use the actual group value as returned by the callback - don't modify or assume anything about it
+                result.group_key = groupData.groupValue;
+            }
+            
             this.emit(result);
         }
     }

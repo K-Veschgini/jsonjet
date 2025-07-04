@@ -32,8 +32,8 @@ const Collect = createToken({ name: "Collect", pattern: /collect/i });
 const Print = createToken({ name: "Print", pattern: /\.print/i });
 
 // Aggregation functions
-const Count = createToken({ name: "Count", pattern: /count/i });
-const Sum = createToken({ name: "Sum", pattern: /sum/i });
+const Count = createToken({ name: "Count", pattern: /count\b/i });
+const Sum = createToken({ name: "Sum", pattern: /sum\b/i });
 
 // Window functions
 const HoppingWindow = createToken({ name: "HoppingWindow", pattern: /hopping_window/i });

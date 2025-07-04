@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MantineProvider, AppShell, Title, Container, Select, ScrollArea, Paper, Text, Button, Group, Checkbox, Stack, Tabs, Badge } from '@mantine/core';
-import Editor from '@monaco-editor/react';
-import '@andypf/json-viewer';
+import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import './App.css';
 
@@ -10,22 +8,20 @@ import { queryEngine } from './jsdb/core/query-engine.js';
 import { streamManager } from './jsdb/core/stream-manager.js';
 import CommandParser from './jsdb/parser/command-parser.js';
 
+// Import components
+import { Header } from './components/Header';
+import { ResizablePanels } from './components/ResizablePanels';
+import { CodeEditor } from './components/CodeEditor';
+import { DataTabs } from './components/DataTabs';
+
+// Import hooks
+import { useUnreadCounts } from './hooks/useUnreadCounts';
 
 interface Statement {
   text: string;
   line: number;
   isCommand: boolean;
   isQuery: boolean;
-}
-
-interface EditorMetrics {
-  lineHeight: number;
-  topOffset: number;
-}
-
-interface PlayButtonDecoration {
-  range: any;
-  options: any;
 }
 
 interface StreamMessage {
@@ -43,44 +39,112 @@ interface LogMessage {
 }
 
 function App() {
+  // Core state
   const [statements, setStatements] = useState<Statement[]>([]);
-  const editorRef = useRef<any>(null);
-  const [editorMetrics, setEditorMetrics] = useState<EditorMetrics>({ lineHeight: 19, topOffset: 0 });
-  const [editorReady, setEditorReady] = useState(false);
-  const decorationsRef = useRef<any>(null);
-  
-  // JSON viewer state
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [streamFilters, setStreamFilters] = useState<Record<string, { enabled: boolean; count: number }>>({});
-  const globalSubscriptionRef = useRef<number | null>(null);
-  
-  // Logs state
   const [logs, setLogs] = useState<LogMessage[]>([]);
   const [activeTab, setActiveTab] = useState<string>('streams');
-  const activeTabRef = useRef<string>('streams');
-  const [unreadCounts, setUnreadCounts] = useState<{
-    error: number;
-    warning: number;
-    success: number;
-    info: number;
-  }>({ error: 0, warning: 0, success: 0, info: 0 });
-  const [unreadStreamMessages, setUnreadStreamMessages] = useState<number>(0);
-  const [fadingOut, setFadingOut] = useState<{streams: boolean, logs: boolean}>({streams: false, logs: false});
-  
-  // Demo state
   const [selectedDemo, setSelectedDemo] = useState<string>('flow-processing');
   
+  // Refs
+  const globalSubscriptionRef = useRef<number | null>(null);
+  
+  // Custom hooks
+  const {
+    unreadCounts,
+    unreadStreamMessages,
+    fadingOut,
+    activeTabRef,
+    clearUnreadCounts,
+    incrementLogCount,
+    incrementStreamMessages
+  } = useUnreadCounts();
+
   // Configuration
   const MAX_MESSAGES_PER_STREAM = 100;
   const MAX_LOGS = 100;
-  
+
   // Demo options
   const demoOptions = [
-    { value: 'flow-processing', label: 'Flow Processing Demo' }
+    { value: 'flow-processing', label: 'Flow Processing' },
+    { value: 'summarize-demo', label: 'Data Summarization' },
+    { value: 'scan-demo', label: 'Stream Scanning' }
   ];
-  
-  const defaultValue = `// Welcome to JSDB Flow Processing Demo!
-// Execute commands and flows by clicking the play buttons
+
+  // Demo content
+  const getDemoContent = (demoType: string) => {
+    switch (demoType) {
+      case 'summarize-demo':
+        return `// JSDB Data Summarization Demo
+// Learn how to aggregate and summarize streaming data with windows
+
+// 1. Create streams for sales data
+create stream sales;
+create stream daily_summary;
+
+// 2. Create summarization flows FIRST
+// Summarize total sales by product using a 5-second tumbling window
+// Window ensures results are emitted every 5 seconds automatically
+create flow product_summary from sales 
+  | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(5000)
+  | insert_into(daily_summary);
+
+// 3. Insert sample sales data (flows will process this immediately)
+insert into sales { date: "2024-01-15", product: "laptop", amount: 1200, region: "north" };
+insert into sales { date: "2024-01-15", product: "mouse", amount: 25, region: "north" };
+insert into sales { date: "2024-01-15", product: "laptop", amount: 1100, region: "south" };
+insert into sales { date: "2024-01-15", product: "keyboard", amount: 75, region: "south" };
+
+// 4. Wait a moment, then insert more data
+// Results will appear in daily_summary stream automatically
+insert into sales { date: "2024-01-16", product: "laptop", amount: 1300, region: "north" };
+insert into sales { date: "2024-01-16", product: "mouse", amount: 30, region: "east" };
+insert into sales { date: "2024-01-16", product: "laptop", amount: 1150, region: "west" };
+
+// 5. View current flows and check the daily_summary stream
+list flows;
+list streams;
+`;
+
+      case 'scan-demo':
+        return `// JSDB Stream Scanning Demo
+// Learn how to scan and filter data streams in real-time
+
+// 1. Create monitoring streams
+create stream server_logs;
+create stream alerts;
+create stream metrics;
+
+// 2. Insert various log entries
+insert into server_logs { timestamp: "2024-01-15T10:00:00Z", level: "info", service: "api", message: "Request processed", response_time: 45 };
+insert into server_logs { timestamp: "2024-01-15T10:01:00Z", level: "warning", service: "db", message: "Slow query detected", response_time: 2500 };
+insert into server_logs { timestamp: "2024-01-15T10:02:00Z", level: "error", service: "api", message: "Connection timeout", response_time: 5000 };
+
+// 3. Create scanning flows for monitoring
+// Scan for errors and create alerts
+create flow error_scanner from server_logs 
+  | where level == "error" 
+  | project { alert_type: "ERROR", service: service, message: message, time: timestamp }
+  | insert_into(alerts);
+
+// Scan for slow responses and create performance metrics
+create flow performance_scanner from server_logs 
+  | where response_time > 1000 
+  | project { metric_type: "SLOW_RESPONSE", service: service, response_time: response_time }
+  | insert_into(metrics);
+
+// 4. Insert more log data to trigger scans
+insert into server_logs { timestamp: "2024-01-15T10:03:00Z", level: "error", service: "auth", message: "Authentication failed", response_time: 200 };
+insert into server_logs { timestamp: "2024-01-15T10:04:00Z", level: "info", service: "api", message: "Health check", response_time: 15 };
+
+// 5. Check what was detected
+list flows;
+`;
+
+      default: // 'flow-processing'
+        return `// JSDB Flow Processing Demo
+// Learn how to create flows that process and route data in real-time
 
 // 1. Create streams
 create stream events;
@@ -116,6 +180,8 @@ list flows;
 // 7. Delete a flow manually
 delete flow temp_monitor;
 `;
+    }
+  };
 
   // Subscribe to all streams on component mount
   useEffect(() => {
@@ -128,18 +194,16 @@ delete flow temp_monitor;
         data
       };
       
-      setMessages(prev => [newMessage, ...prev].slice(0, MAX_MESSAGES_PER_STREAM)); // Keep latest messages per stream
+      setMessages(prev => [newMessage, ...prev].slice(0, MAX_MESSAGES_PER_STREAM));
       
       // Track unread stream messages
-      if (activeTabRef.current !== 'streams') {
-        setUnreadStreamMessages(prev => prev + 1);
-      }
+      incrementStreamMessages();
       
-      // Update stream filters - add new streams as enabled by default and increment count
+      // Update stream filters
       setStreamFilters(prev => ({
         ...prev,
         [streamName]: {
-          enabled: prev[streamName]?.enabled ?? true, // Default to enabled for new streams
+          enabled: prev[streamName]?.enabled ?? true,
           count: (prev[streamName]?.count ?? 0) + 1
         }
       }));
@@ -152,42 +216,7 @@ delete flow temp_monitor;
         streamManager.unsubscribeFromAllStreams(globalSubscriptionRef.current);
       }
     };
-  }, []);
-
-  // Filter messages based on enabled streams and limit per stream
-  const filteredMessages = (() => {
-    const messagesByStream: Record<string, StreamMessage[]> = {};
-    
-    // Group messages by stream
-    messages.forEach(msg => {
-      if (streamFilters[msg.streamName]?.enabled ?? true) {
-        if (!messagesByStream[msg.streamName]) {
-          messagesByStream[msg.streamName] = [];
-        }
-        messagesByStream[msg.streamName].push(msg);
-      }
-    });
-    
-    // Limit each stream to MAX_MESSAGES_PER_STREAM and combine
-    const limitedMessages: StreamMessage[] = [];
-    Object.values(messagesByStream).forEach(streamMessages => {
-      limitedMessages.push(...streamMessages.slice(0, MAX_MESSAGES_PER_STREAM));
-    });
-    
-    // Sort by timestamp (newest first)
-    return limitedMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  })();
-
-  // Handle stream filter toggle
-  const handleStreamToggle = (streamName: string) => {
-    setStreamFilters(prev => ({
-      ...prev,
-      [streamName]: {
-        ...prev[streamName],
-        enabled: !prev[streamName]?.enabled
-      }
-    }));
-  };
+  }, [incrementStreamMessages]);
 
   // Add log message
   const addLog = (level: LogMessage['level'], message: string) => {
@@ -198,15 +227,10 @@ delete flow temp_monitor;
       message
     };
     
-    setLogs(prev => [newLog, ...prev].slice(0, MAX_LOGS)); // Keep latest logs
+    setLogs(prev => [newLog, ...prev].slice(0, MAX_LOGS));
     
     // Track unread logs by type
-    if (activeTab !== 'logs') {
-      setUnreadCounts(prev => ({
-        ...prev,
-        [level]: prev[level] + 1
-      }));
-    }
+    incrementLogCount(level);
     
     // Also log to console
     switch (level) {
@@ -228,332 +252,77 @@ delete flow temp_monitor;
   const handleTabChange = (value: string | null) => {
     const newTab = value || 'streams';
     setActiveTab(newTab);
-    activeTabRef.current = newTab; // Update ref for subscription callback
+    activeTabRef.current = newTab;
     
-    // Start fade out animation
+    // Clear unread counts for the selected tab
     if (newTab === 'logs') {
-      setFadingOut(prev => ({...prev, logs: true}));
-      setTimeout(() => {
-        setUnreadCounts({ error: 0, warning: 0, success: 0, info: 0 }); // Clear all unread counts when viewing logs
-        setFadingOut(prev => ({...prev, logs: false}));
-      }, 300); // Wait for fade out animation
+      clearUnreadCounts('logs');
     } else if (newTab === 'streams') {
-      setFadingOut(prev => ({...prev, streams: true}));
-      setTimeout(() => {
-        setUnreadStreamMessages(0); // Clear unread stream messages when viewing streams
-        setFadingOut(prev => ({...prev, streams: false}));
-      }, 300); // Wait for fade out animation
+      clearUnreadCounts('streams');
     }
   };
 
-  // Parse statements from editor content
-  const parseStatements = (content: string) => {
-    if (!content) return;
-    
-    const lines = content.split('\n');
-    const newStatements: Statement[] = [];
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      
-      // Skip empty lines and comments
-      if (!line || line.startsWith('//')) {
-        continue;
-      }
-      
-      // Check if this line looks like the start of a statement
-      if (/^(create|insert|delete|flush|list|info|subscribe|unsubscribe|[a-zA-Z_][a-zA-Z0-9_]*\s*\|)/.test(line)) {
-        let currentStatement = line;
-        let currentLine = i;
-        
-        // If the line doesn't end with semicolon, look for continuation
-        if (!line.endsWith(';')) {
-          // Look ahead for continuation lines until we find a semicolon or complete statement
-          for (let j = i + 1; j < lines.length; j++) {
-            const nextLine = lines[j].trim();
-            
-            // Stop at empty lines or comments
-            if (!nextLine || nextLine.startsWith('//')) {
-              break;
-            }
-            
-            currentStatement += ' ' + nextLine;
-            
-            // If we found a semicolon, this statement is complete
-            if (nextLine.endsWith(';')) {
-              i = j; // Skip the lines we've consumed
-              break;
-            }
-            
-            // If the accumulated statement looks complete, stop
-            if (isCompleteStatement(currentStatement)) {
-              i = j; // Skip the lines we've consumed
-              break;
-            }
-          }
-        }
-        
-        // Process the complete statement
-        if (isCompleteStatement(currentStatement)) {
-          const trimmed = currentStatement.replace(/;$/, '').trim();
-          const isCommand = /^(create\s+stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
-          const isFlow = /^create\s+flow\b/.test(trimmed);
-          
-          const stmt: Statement = {
-            text: trimmed,
-            line: currentLine, // Use the line where the statement actually starts
-            isCommand: isCommand && !isFlow,
-            isQuery: isFlow || (!isCommand && trimmed.length > 0),
-          };
-          
-          newStatements.push(stmt);
-        }
-      }
-    }
-    
-    
-    setStatements(newStatements);
-    
-    // Update play button decorations
-    if (editorRef.current && decorationsRef.current) {
-      updatePlayButtonDecorations(newStatements);
-    }
-  };
-
-  // Update play button decorations using Monaco's decoration API
-  const updatePlayButtonDecorations = (statements: Statement[]) => {
-    if (!editorRef.current || !decorationsRef.current) return;
-    
-    const decorations = statements.map((statement, index) => ({
-      range: {
-        startLineNumber: statement.line + 1,
-        startColumn: 1,
-        endLineNumber: statement.line + 1,
-        endColumn: 1
-      },
-      options: {
-        isWholeLine: false,
-        glyphMarginClassName: `play-button-glyph play-button-${index}`
+  // Handle stream filter toggle
+  const handleStreamToggle = (streamName: string) => {
+    setStreamFilters(prev => ({
+      ...prev,
+      [streamName]: {
+        ...prev[streamName],
+        enabled: !prev[streamName]?.enabled
       }
     }));
-    
-    decorationsRef.current.set(decorations);
-    
-    // Add click handlers for each decoration
-    setTimeout(() => {
-      statements.forEach((statement, index) => {
-        const element = document.querySelector(`.play-button-${index}`);
-        if (element) {
-          element.addEventListener('click', () => handlePlayClick(statement, index));
-        }
-      });
-    }, 100);
   };
 
-  // Check if a statement is complete (heuristic)
-  const isCompleteStatement = (stmt: string) => {
-    const trimmed = stmt.trim();
-    
-    if (!trimmed) return false;
-    
-    // Check for balanced braces and brackets for JSON
-    let braceCount = 0;
-    let bracketCount = 0;
-    let inString = false;
-    let escapeNext = false;
-    
-    for (let i = 0; i < trimmed.length; i++) {
-      const char = trimmed[i];
-      
-      if (escapeNext) {
-        escapeNext = false;
-        continue;
+  // Handle flush all streams
+  const handleFlushAllStreams = async () => {
+    try {
+      const streamNames = streamManager.listStreams();
+      if (streamNames.length === 0) {
+        addLog('info', 'No streams to flush');
+        return;
       }
       
-      if (char === '\\') {
-        escapeNext = true;
-        continue;
+      addLog('info', `Flushing ${streamNames.length} streams...`);
+      
+      for (const streamName of streamNames) {
+        await streamManager.flushStream(streamName);
       }
       
-      if (char === '"' && !escapeNext) {
-        inString = !inString;
-        continue;
-      }
-      
-      if (inString) continue;
-      
-      if (char === '{') braceCount++;
-      if (char === '}') braceCount--;
-      if (char === '[') bracketCount++;
-      if (char === ']') bracketCount--;
+      addLog('success', `✅ Flushed all ${streamNames.length} streams`);
+    } catch (error: any) {
+      addLog('error', `Error flushing streams: ${error.message}`);
     }
-    
-    // If JSON is not balanced, statement is incomplete
-    if (braceCount !== 0 || bracketCount !== 0) {
-      return false;
-    }
-    
-    // Commands and flows have different completion rules
-    if (/^(create|insert|delete|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed)) {
-      return true;
-    }
-    
-    // For queries, they're complete if they don't end with incomplete operators
-    if (trimmed.includes('|')) {
-      // Not complete if ends with | or incomplete operators
-      return !trimmed.endsWith('|') && 
-             !trimmed.endsWith('where') && 
-             !trimmed.endsWith('project') && 
-             !trimmed.endsWith('summarize') &&
-             !trimmed.endsWith('by') &&
-             !trimmed.endsWith('and') &&
-             !trimmed.endsWith('or');
-    }
-    
-    // Simple table references are complete
-    return trimmed.length > 0;
   };
 
-  // Handle editor mount
-  const handleEditorDidMount = (editor: any, monaco: any) => {
-    editorRef.current = editor;
-    
-    // Register JSDB language
-    monaco.languages.register({ id: 'jsdb' });
-    
-    // Define JSDB syntax highlighting
-    monaco.languages.setMonarchTokensProvider('jsdb', {
-      tokenizer: {
-        root: [
-          // Comments
-          [/\/\/.*$/, 'comment'],
-          
-          // Flow commands
-          [/\b(create|delete|insert|flush|list|info|subscribe|unsubscribe)\b/, 'keyword.command'],
-          
-          // Flow keywords
-          [/\b(flow|from|ttl)\b/, 'keyword.flow'],
-          
-          // Stream keyword
-          [/\bstream\b/, 'keyword.stream'],
-          
-          // Into keyword
-          [/\binto\b/, 'keyword.into'],
-          
-          // Query keywords
-          [/\b(where|project|summarize|insert_into|by|over|and|or|not)\b/, 'keyword.query'],
-          
-          // Function names
-          [/\b(count|sum|avg|min|max)\b/, 'keyword.function'],
-          
-          // Duration literals
-          [/\b\d+[nμmshwd]+\b/, 'number.duration'],
-          
-          // Operators
-          [/[|]/, 'operator.pipe'],
-          [/[=><!=]+/, 'operator.comparison'],
-          [/[+\-*/%]/, 'operator.arithmetic'],
-          
-          // Delimiters
-          [/[{}]/, 'delimiter.curly'],
-          [/[[\]]/, 'delimiter.square'],
-          [/[()]/, 'delimiter.parenthesis'],
-          [/[;]/, 'delimiter.semicolon'],
-          [/[,]/, 'delimiter.comma'],
-          [/[:]/, 'delimiter.colon'],
-          
-          // Strings
-          [/"([^"\\]|\\.)*$/, 'string.invalid'],
-          [/"/, 'string', '@string_double'],
-          [/'([^'\\]|\\.)*$/, 'string.invalid'],
-          [/'/, 'string', '@string_single'],
-          
-          // Numbers
-          [/\d*\.\d+([eE][\-+]?\d+)?/, 'number.float'],
-          [/\d+/, 'number'],
-          
-          // Object keys (unquoted identifiers followed by colon)
-          [/\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*:)/, 'key'],
-          
-          // Identifiers (stream names, field names)
-          [/[a-zA-Z_][a-zA-Z0-9_]*/, 'identifier'],
-          
-          // Whitespace
-          [/\s+/, 'white']
-        ],
-        
-        string_double: [
-          [/[^\\"]+/, 'string'],
-          [/\\./, 'string.escape'],
-          [/"/, 'string', '@pop']
-        ],
-        
-        string_single: [
-          [/[^\\']+/, 'string'],
-          [/\\./, 'string.escape'],
-          [/'/, 'string', '@pop']
-        ]
+  // Handle delete all streams
+  const handleDeleteAllStreams = async () => {
+    try {
+      const streamNames = streamManager.listStreams();
+      if (streamNames.length === 0) {
+        addLog('info', 'No streams to delete');
+        return;
       }
-    });
-    
-    // Define JSDB theme
-    monaco.editor.defineTheme('jsdb-theme', {
-      base: 'vs',
-      inherit: true,
-      rules: [
-        { token: 'keyword.command', foreground: '0066cc', fontStyle: 'bold' },
-        { token: 'keyword.flow', foreground: 'dc2626', fontStyle: 'bold' },
-        { token: 'keyword.stream', foreground: 'dc2626', fontStyle: 'bold' },
-        { token: 'keyword.into', foreground: 'dc2626', fontStyle: 'bold' },
-        { token: 'keyword.query', foreground: '7c3aed', fontStyle: 'bold' },
-        { token: 'keyword.function', foreground: '059669', fontStyle: 'bold' },
-        { token: 'number.duration', foreground: 'ea580c', fontStyle: 'bold' },
-        { token: 'comment', foreground: '6b7280', fontStyle: 'italic' },
-        { token: 'string', foreground: 'd97706' },
-        { token: 'number', foreground: '059669' },
-        { token: 'operator.pipe', foreground: 'dc2626', fontStyle: 'bold' },
-        { token: 'operator.comparison', foreground: '7c3aed' },
-        { token: 'operator.arithmetic', foreground: '7c3aed' },
-        { token: 'delimiter.curly', foreground: '374151' },
-        { token: 'delimiter.square', foreground: '374151' },
-        { token: 'delimiter.parenthesis', foreground: '374151' },
-        { token: 'delimiter.semicolon', foreground: 'dc2626', fontStyle: 'bold' },
-        { token: 'key', foreground: '0f766e', fontStyle: 'bold' },
-        { token: 'identifier', foreground: '111827' }
-      ],
-      colors: {
-        'editor.background': '#ffffff',
-        'editor.lineHighlightBackground': '#f8fafc',
-        'editorLineNumber.foreground': '#9ca3af',
-        'editorLineNumber.activeForeground': '#374151'
-      }
-    });
-    
-    // Set the language and theme
-    const model = editor.getModel();
-    monaco.editor.setModelLanguage(model, 'jsdb');
-    monaco.editor.setTheme('jsdb-theme');
-    
-    // Create decorations collection for play buttons
-    decorationsRef.current = editor.createDecorationsCollection([]);
-    
-    // Parse initial content
-    parseStatements(editor.getValue());
-    
-    // Listen for content changes
-    editor.onDidChangeModelContent(() => {
-      parseStatements(editor.getValue());
-    });
-    
-    // Mark editor as ready
-    setEditorReady(true);
+      
+      addLog('info', `Deleting ${streamNames.length} streams...`);
+      
+      streamManager.deleteAllStreams();
+      
+      // Clear stream filters in UI
+      setStreamFilters({});
+      
+      // Clear messages since all streams are gone
+      setMessages([]);
+      
+      addLog('success', `✅ Deleted all ${streamNames.length} streams`);
+    } catch (error: any) {
+      addLog('error', `Error deleting streams: ${error.message}`);
+    }
   };
 
-  // Handle play button click
-  const handlePlayClick = async (statement: Statement, index: number) => {
+  // Handle statement execution
+  const handleStatementExecute = async (statement: Statement, index: number) => {
     try {
       if (statement.isCommand) {
-        // Execute command
         const result = await CommandParser.executeCommand(statement.text);
         
         if (result.success) {
@@ -576,11 +345,10 @@ delete flow temp_monitor;
             });
           }
         } else {
-          addLog('error', `${result.message}`);
+          addLog('error', result.message);
         }
         
       } else if (statement.isQuery) {
-        // Execute flow - results will be written to streams via insert_into
         const result = await queryEngine.executeStatement(statement.text);
         
         if (result.success) {
@@ -594,7 +362,7 @@ delete flow temp_monitor;
     }
   };
 
-  // Handle run all button click
+  // Handle run all
   const handleRunAll = async () => {
     addLog('info', `🚀 Running ${statements.length} statements...`);
     
@@ -602,342 +370,53 @@ delete flow temp_monitor;
       const statement = statements[i];
       
       try {
-        await handlePlayClick(statement, i);
-        // Small delay between executions to see the flow
+        await handleStatementExecute(statement, i);
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error: any) {
         addLog('error', `Error in statement ${i + 1}: ${error.message}`);
-        // Continue with next statement even if one fails
       }
     }
     
     addLog('success', `✅ Completed ${statements.length} statements`);
   };
 
-  // JSON viewer component
-  const JsonDisplay = ({ data }: { data: any }) => {
-    return (
-      <div style={{ fontSize: '12px', fontFamily: '"Roboto Mono", Monaco, Consolas, monospace' }}>
-        <andypf-json-viewer 
-          data={JSON.stringify(data)}
-          expand-icon-type="square"
-          show-data-types="false"
-          theme="good-lighter"
-          style={{ fontSize: '12px', fontFamily: '"Roboto Mono", Monaco, Consolas, monospace' }}
-        ></andypf-json-viewer>
-      </div>
-    );
-  };
-
-  // Get available streams for checkboxes
-  const availableStreams = Object.keys(streamFilters).sort();
-
   return (
     <MantineProvider>
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Header */}
-        <div style={{ 
-          height: '60px', 
-          borderBottom: '1px solid #e0e0e0',
-          display: 'flex', 
-          alignItems: 'center',
-          padding: '0 24px',
-          backgroundColor: 'white',
-          flexShrink: 0
-        }}>
-          <Title order={3} c="blue">
-            🗃️ JSDB Query Demo
-          </Title>
-        </div>
+        <Header />
         
-        {/* Main Content */}
-        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-            {/* Left Panel - Code Editor */}
-            <div style={{ flex: 1, height: '100%', borderRight: '1px solid #e0e0e0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {/* Demo Controls */}
-              <div style={{ 
-                height: '48px',
-                padding: '0 16px', 
-                backgroundColor: '#f8f9fa',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <Group justify="space-between" align="center">
-                  <Button 
-                    onClick={handleRunAll}
-                    size="sm"
-                    variant="filled"
-                    disabled={statements.length === 0}
-                    leftSection="▶"
-                  >
-                    Run All
-                  </Button>
-                  <Select
-                    value={selectedDemo}
-                    data={demoOptions}
-                    onChange={(value) => setSelectedDemo(value || 'flow-processing')}
-                    size="sm"
-                    w={200}
-                  />
-                </Group>
-              </div>
-              
-              {/* Editor Container */}
-              <div 
-                className="editor-container"
-                style={{ 
-                  flex: 1, 
-                  position: 'relative'
-                }}
-              >
-                    <Editor
-                      height="100%"
-                      defaultLanguage="jsdb"
-                      defaultValue={defaultValue}
-                      theme="jsdb-theme"
-                      onMount={handleEditorDidMount}
-                      options={{
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                        lineHeight: 19,
-                        lineNumbers: 'on',
-                        lineNumbersMinChars: 4,
-                        roundedSelection: false,
-                        scrollBeyondLastLine: false,
-                        automaticLayout: true,
-                        wordWrap: 'on',
-                        glyphMargin: true,
-                        folding: false,
-                        lineDecorationsWidth: 20,
-                        padding: { 
-                          left: 20,
-                          right: 15,
-                          top: 10,
-                          bottom: 10
-                        },
-                        renderLineHighlight: 'line',
-                        fontFamily: '"Roboto Mono", Monaco, Consolas,monospace',
-                        suggest: { enabled: false },
-                        quickSuggestions: false,
-                        parameterHints: { enabled: false },
-                        hover: { enabled: false },
-                        codeLens: false,
-                        contextmenu: false,
-                        overviewRulerBorder: false,
-                        hideCursorInOverviewRuler: true,
-                        overviewRulerLanes: 0,
-                        disableLayerHinting: false,
-                        smoothScrolling: true,
-                        scrollbar: {
-                          vertical: 'auto',
-                          horizontal: 'auto',
-                          verticalScrollbarSize: 12,
-                          horizontalScrollbarSize: 12
-                        }
-                      }}
-                    />
-              </div>
-            </div>
-            
-            {/* Right Panel - Tabs */}
-            <div style={{ flex: 1, height: '100%', overflow: 'hidden' }}>
-              <Tabs value={activeTab} onChange={handleTabChange} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Tabs.List grow style={{ height: '48px', padding: '0 16px', flexShrink: 0 }}>
-                  <Tabs.Tab 
-                    value="streams"
-                    style={{ minWidth: '120px' }}
-                    rightSection={
-                      unreadStreamMessages > 0 ? (
-                        <Badge 
-                          size="xs" 
-                          color="blue"
-                          style={{ 
-                            transition: 'opacity 0.3s ease, transform 0.3s ease',
-                            opacity: fadingOut.streams ? 0 : 1,
-                            transform: fadingOut.streams ? 'scale(0.8)' : 'scale(1)'
-                          }}
-                        >
-                          {unreadStreamMessages}
-                        </Badge>
-                      ) : undefined
-                    }
-                  >
-                    Streams
-                  </Tabs.Tab>
-                  <Tabs.Tab 
-                    value="logs"
-                    style={{ minWidth: '120px' }}
-                    rightSection={
-                      (unreadCounts.error > 0 || unreadCounts.warning > 0 || unreadCounts.success > 0 || unreadCounts.info > 0) ? (
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          {unreadCounts.error > 0 && (
-                            <Badge 
-                              size="xs" 
-                              color="red"
-                              style={{ 
-                                transition: 'opacity 0.3s ease, transform 0.3s ease',
-                                opacity: fadingOut.logs ? 0 : 1,
-                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
-                              }}
-                            >
-                              {unreadCounts.error}
-                            </Badge>
-                          )}
-                          {unreadCounts.warning > 0 && (
-                            <Badge 
-                              size="xs" 
-                              color="yellow"
-                              style={{ 
-                                transition: 'opacity 0.3s ease, transform 0.3s ease',
-                                opacity: fadingOut.logs ? 0 : 1,
-                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
-                              }}
-                            >
-                              {unreadCounts.warning}
-                            </Badge>
-                          )}
-                          {unreadCounts.success > 0 && (
-                            <Badge 
-                              size="xs" 
-                              color="green"
-                              style={{ 
-                                transition: 'opacity 0.3s ease, transform 0.3s ease',
-                                opacity: fadingOut.logs ? 0 : 1,
-                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
-                              }}
-                            >
-                              {unreadCounts.success}
-                            </Badge>
-                          )}
-                          {unreadCounts.info > 0 && (
-                            <Badge 
-                              size="xs" 
-                              color="blue"
-                              style={{ 
-                                transition: 'opacity 0.3s ease, transform 0.3s ease',
-                                opacity: fadingOut.logs ? 0 : 1,
-                                transform: fadingOut.logs ? 'scale(0.8)' : 'scale(1)'
-                              }}
-                            >
-                              {unreadCounts.info}
-                            </Badge>
-                          )}
-                        </div>
-                      ) : undefined
-                    }
-                  >
-                    Logs
-                  </Tabs.Tab>
-                </Tabs.List>
-
-                <Tabs.Panel value="streams" style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ padding: '16px', paddingBottom: '0', flexShrink: 0 }}>
-                      <Text size="lg" fw={600} mb="xs">Stream Filters</Text>
-                      {availableStreams.length > 0 ? (
-                        <Stack gap="xs" mb="md">
-                          {availableStreams.map(streamName => (
-                            <Checkbox
-                              key={streamName}
-                              checked={streamFilters[streamName]?.enabled ?? true}
-                              onChange={() => handleStreamToggle(streamName)}
-                              label={`${streamName}: ${streamFilters[streamName]?.count ?? 0} documents`}
-                              size="sm"
-                            />
-                          ))}
-                        </Stack>
-                      ) : (
-                        <Text c="dimmed" size="sm" mb="md">No streams created yet</Text>
-                      )}
-                    </div>
-                    
-                    <div style={{ 
-                      padding: '8px 16px', 
-                      backgroundColor: '#f8f9fa', 
-                      fontSize: '12px',
-                      color: '#666',
-                      flexShrink: 0
-                    }}>
-                      Top {MAX_MESSAGES_PER_STREAM} recent messages per stream
-                    </div>
-                    
-                    <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px' }}>
-                      {filteredMessages.length === 0 ? (
-                        <Text c="dimmed" ta="center" mt="xl">
-                          No messages yet. Execute some commands to see data flowing through streams.
-                        </Text>
-                      ) : (
-                        filteredMessages.map((message) => (
-                          <Paper key={message.id} p="sm" mb="xs" withBorder>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <Text size="sm" fw={600} c="blue">
-                                {message.streamName}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                {message.timestamp.toLocaleTimeString()}
-                              </Text>
-                            </div>
-                            <JsonDisplay data={message.data} />
-                          </Paper>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </Tabs.Panel>
-
-                <Tabs.Panel value="logs" style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ 
-                      padding: '8px 16px', 
-                      backgroundColor: '#f8f9fa', 
-                      fontSize: '12px',
-                      color: '#666',
-                      flexShrink: 0
-                    }}>
-                      Top {MAX_LOGS} recent log entries
-                    </div>
-                    
-                    <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px' }}>
-                      {logs.length === 0 ? (
-                        <Text c="dimmed" ta="center" mt="xl">
-                          No logs yet. Execute some commands to see logs.
-                        </Text>
-                      ) : (
-                        logs.map((log) => (
-                          <Paper key={log.id} p="sm" mb="xs" withBorder>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <Badge 
-                                size="sm" 
-                                color={
-                                  log.level === 'error' ? 'red' : 
-                                  log.level === 'warning' ? 'yellow' : 
-                                  log.level === 'success' ? 'green' : 'blue'
-                                }
-                              >
-                                {log.level.toUpperCase()}
-                              </Badge>
-                              <Text size="xs" c="dimmed">
-                                {log.timestamp.toLocaleTimeString()}
-                              </Text>
-                            </div>
-                            <Text size="sm" style={{ 
-                              fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',
-                              wordWrap: 'break-word',
-                              whiteSpace: 'pre-wrap',
-                              overflowWrap: 'anywhere'
-                            }}>
-                              {log.message}
-                            </Text>
-                          </Paper>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </Tabs.Panel>
-              </Tabs>
-            </div>
-        </div>
+        <ResizablePanels
+          leftPanel={
+            <CodeEditor
+              demoContent={getDemoContent(selectedDemo)}
+              statements={statements}
+              onStatementsChange={setStatements}
+              onStatementExecute={handleStatementExecute}
+              onRunAll={handleRunAll}
+              selectedDemo={selectedDemo}
+              demoOptions={demoOptions}
+              onDemoChange={setSelectedDemo}
+            />
+          }
+          rightPanel={
+            <DataTabs
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              messages={messages}
+              streamFilters={streamFilters}
+              onStreamToggle={handleStreamToggle}
+              unreadStreamMessages={unreadStreamMessages}
+              fadingOutStreams={fadingOut.streams}
+              maxMessagesPerStream={MAX_MESSAGES_PER_STREAM}
+              onFlushAllStreams={handleFlushAllStreams}
+              onDeleteAllStreams={handleDeleteAllStreams}
+              logs={logs}
+              unreadCounts={unreadCounts}
+              fadingOutLogs={fadingOut.logs}
+              maxLogs={MAX_LOGS}
+            />
+          }
+        />
       </div>
     </MantineProvider>
   );

@@ -1,5 +1,4 @@
 import { Stream } from './stream.js';
-import { streamManager } from './stream-manager.js';
 import { transpileQuery } from '../parser/query-transpiler.js';
 import CommandParser from '../parser/command-parser.js';
 import * as Operators from '../operators/index.js';
@@ -8,9 +7,10 @@ import * as Operators from '../operators/index.js';
  * QueryEngine - Handles both commands and continuous queries
  */
 export class QueryEngine {
-    constructor() {
+    constructor(streamManagerInstance = null) {
         this.activeQueries = new Map(); // queryId -> QueryInfo
         this.nextQueryId = 1;
+        this.streamManager = streamManagerInstance;
     }
 
     /**
@@ -149,14 +149,14 @@ export class QueryEngine {
             // Extract source name from the query
             const sourceName = this.extractSourceName(queryText);
             
-            if (!streamManager.hasStream(sourceName)) {
+            if (!this.streamManager.hasStream(sourceName)) {
                 throw new Error(`Stream '${sourceName}' does not exist. Create it first with: create stream ${sourceName}`);
             }
 
             // Validate insert_into target streams exist
             const targetStreams = this.extractInsertIntoTargets(result.javascript);
             for (const targetStream of targetStreams) {
-                if (!streamManager.hasStream(targetStream)) {
+                if (!this.streamManager.hasStream(targetStream)) {
                     throw new Error(`Target stream '${targetStream}' does not exist. Create it first with: create stream ${targetStream}`);
                 }
             }
@@ -166,7 +166,7 @@ export class QueryEngine {
             const pipeline = this.createQueryPipeline(result.javascript);
             
             // Subscribe to the stream
-            const subscriptionId = streamManager.subscribeFlowToStream(sourceName, pipeline, null);
+            const subscriptionId = this.streamManager.subscribeFlowToStream(sourceName, pipeline, null);
             
             // Store query info
             const queryInfo = {
@@ -224,7 +224,7 @@ export class QueryEngine {
         }
 
         // Unsubscribe from stream
-        streamManager.unsubscribeFlowFromStream(queryInfo.sourceName, queryInfo.subscriptionId);
+        this.streamManager.unsubscribeFlowFromStream(queryInfo.sourceName, queryInfo.subscriptionId);
         
         // Mark as inactive
         queryInfo.isActive = false;
@@ -310,6 +310,20 @@ export class QueryEngine {
     }
 
     /**
+     * Stop all active queries (for testing cleanup)
+     */
+    stopAllQueries() {
+        const queryIds = Array.from(this.activeQueries.keys());
+        for (const queryId of queryIds) {
+            try {
+                this.stopQuery(queryId);
+            } catch (error) {
+                console.warn(`Error stopping query ${queryId}:`, error);
+            }
+        }
+    }
+
+    /**
      * Extract source name from query text
      * Simple implementation - assumes first word is the source
      */
@@ -365,13 +379,19 @@ export class QueryEngine {
             const stream = new Stream();
             
             // The transpiled code should be the pipeline operations
-            // We need to execute it in the context where Operators is available
-            const createPipeline = new Function('Stream', 'Operators', `
+            // We need to execute it in the context where Operators and insertIntoFactory are available
+            const insertIntoFactory = (streamName) => {
+                return new Operators.InsertInto(async (item) => {
+                    await this.streamManager.insertIntoStream(streamName, item);
+                });
+            };
+            
+            const createPipeline = new Function('Stream', 'Operators', 'insertIntoFactory', `
                 const stream = new Stream();
                 return stream${jsCode};
             `);
             
-            const pipeline = createPipeline(Stream, Operators);
+            const pipeline = createPipeline(Stream, Operators, insertIntoFactory);
             
             // No result callback needed - flows use insert_into to write results
             
@@ -383,5 +403,5 @@ export class QueryEngine {
     }
 }
 
-// Global instance
+// Global instance - will be initialized with stream manager
 export const queryEngine = new QueryEngine();

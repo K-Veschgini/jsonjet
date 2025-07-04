@@ -1,27 +1,25 @@
-import { streamManager } from '../core/stream-manager.js';
-
 /**
  * InsertInto - Pipe operator that writes results to another stream before passing them downstream
- * Usage: | insert_into(targetStream)
+ * Usage: | insert_into(insertCallback)
  */
 export class InsertInto {
-    constructor(targetStreamName) {
-        this.targetStreamName = targetStreamName;
+    constructor(insertCallback) {
+        this.insertCallback = insertCallback;
         this.downstream = null;
         this.stream = null;
     }
 
     async process(item) {
         try {
-            // Insert the item into the target stream
-            await streamManager.insertIntoStream(this.targetStreamName, item);
+            // Insert the item using the provided callback
+            await this.insertCallback(item);
             
             // Pass the item downstream unchanged
             if (this.downstream) {
                 await this.downstream.process(item);
             }
         } catch (error) {
-            console.error(`Error in insert_into(${this.targetStreamName}):`, error);
+            console.error(`Error in insert_into:`, error);
             // Still pass downstream even if insert fails
             if (this.downstream) {
                 await this.downstream.process(item);

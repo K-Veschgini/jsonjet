@@ -90,6 +90,11 @@ export class CommandParser {
             
             const streamName = remainingArgs[1];
             
+            // Validate stream name
+            if (!this.isValidIdentifier(streamName)) {
+                throw new Error(`Invalid stream name '${streamName}'. Stream names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
+            }
+            
             try {
                 // Check if stream exists
                 const exists = streamManager.hasStream(streamName);
@@ -155,6 +160,11 @@ export class CommandParser {
         const subcommand = args[0].toLowerCase();
         const name = args[1];
         
+        // Validate identifier name
+        if (!this.isValidIdentifier(name)) {
+            throw new Error(`Invalid ${subcommand} name '${name}'. Names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
+        }
+        
         if (subcommand === 'stream') {
             streamManager.deleteStream(name);
             
@@ -193,6 +203,12 @@ export class CommandParser {
         }
 
         const streamName = args[0];
+        
+        // Validate stream name
+        if (!this.isValidIdentifier(streamName)) {
+            throw new Error(`Invalid stream name '${streamName}'. Stream names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
+        }
+        
         streamManager.flushStream(streamName);
         
         return {
@@ -239,31 +255,65 @@ export class CommandParser {
     static async handleListCommand(args) {
         if (args.length === 0 || args[0].toLowerCase() === 'streams') {
             const streams = streamManager.listStreams();
+            
+            // Format streams output for better display
+            let streamsOutput = `Found ${streams.length} stream(s)`;
+            if (streams.length > 0) {
+                streamsOutput += ':\n';
+                streams.forEach((streamName, index) => {
+                    const info = streamManager.getStreamInfo(streamName);
+                    const docCount = info ? info.documentCount : 0;
+                    streamsOutput += `${index + 1}. ${streamName} (${docCount} documents)`;
+                    if (index < streams.length - 1) streamsOutput += '\n';
+                });
+            }
+            
             return {
                 type: 'command',
                 success: true,
                 result: { streams },
-                message: `Found ${streams.length} stream(s): ${streams.join(', ') || 'none'}`
+                message: streamsOutput
             };
         } else if (args[0].toLowerCase() === 'flows') {
             // Import queryEngine to handle flow listing
             const { queryEngine } = await import('../core/query-engine.js');
             const flows = queryEngine.getActiveFlows();
             
+            // Format flows output for better display
+            let flowsOutput = `Found ${flows.length} active flow(s)`;
+            if (flows.length > 0) {
+                flowsOutput += ':\n';
+                flows.forEach((flow, index) => {
+                    const ttlInfo = flow.ttlSeconds ? ` (TTL: ${flow.ttlSeconds}s remaining)` : '';
+                    flowsOutput += `${index + 1}. ${flow.flowName}: ${flow.queryText}${ttlInfo}`;
+                    if (index < flows.length - 1) flowsOutput += '\n';
+                });
+            }
+            
             return {
                 type: 'command',
                 success: true,
                 result: { flows },
-                message: `Found ${flows.length} active flow(s)`
+                message: flowsOutput
             };
         } else if (args[0].toLowerCase() === 'subscriptions') {
             const subscriptions = streamManager.getSubscriptions();
+            
+            // Format subscriptions output for better display
+            let subscriptionsOutput = `Found ${subscriptions.length} active subscription(s)`;
+            if (subscriptions.length > 0) {
+                subscriptionsOutput += ':\n';
+                subscriptions.forEach((sub, index) => {
+                    subscriptionsOutput += `${index + 1}. ID ${sub.id}: ${sub.streamName}`;
+                    if (index < subscriptions.length - 1) subscriptionsOutput += '\n';
+                });
+            }
             
             return {
                 type: 'command',
                 success: true,
                 result: { subscriptions },
-                message: `Found ${subscriptions.length} active subscription(s)`
+                message: subscriptionsOutput
             };
         }
 
@@ -286,6 +336,12 @@ export class CommandParser {
         } else if (args.length === 1) {
             // Show info for specific stream
             const streamName = args[0];
+            
+            // Validate stream name
+            if (!this.isValidIdentifier(streamName)) {
+                throw new Error(`Invalid stream name '${streamName}'. Stream names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
+            }
+            
             const info = streamManager.getStreamInfo(streamName);
             
             if (!info) {
@@ -312,6 +368,11 @@ export class CommandParser {
         }
 
         const streamName = args[0];
+        
+        // Validate stream name
+        if (!this.isValidIdentifier(streamName)) {
+            throw new Error(`Invalid stream name '${streamName}'. Stream names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
+        }
         
         try {
             const subscriptionId = streamManager.subscribeToStream(streamName, 
@@ -529,6 +590,19 @@ export class CommandParser {
             queryPart,
             modifier
         };
+    }
+
+    /**
+     * Validate identifier names (stream names, flow names, etc.)
+     * Must start with letter or underscore, contain only letters, numbers, underscores
+     */
+    static isValidIdentifier(name) {
+        if (!name || typeof name !== 'string') {
+            return false;
+        }
+        
+        // Check if name matches valid identifier pattern
+        return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
     }
 
     /**

@@ -146,18 +146,29 @@ export class StreamManager {
     }
 
     /**
-     * Flush operation doesn't make sense for pure streams
-     * Streams don't store data, so there's nothing to flush
+     * Flush all pipelines subscribed to a stream
+     * This triggers final processing in operators like summarize without windows
      */
-    flushStream(name) {
+    async flushStream(name) {
         const container = this.streams.get(name);
         if (!container) {
             throw new Error(`Stream '${name}' does not exist`);
         }
 
-        // In a pure streaming system, flush is a no-op
-        // There's no stored data to clear
-        console.log(`📝 Stream '${name}' flushed (no-op in pure streaming system)`);
+        // Call flushAll on all flow pipelines subscribed to this stream
+        const flushPromises = [];
+        for (const [queryId, { pipeline }] of container.flowSubscribers) {
+            try {
+                if (pipeline && typeof pipeline.flushAll === 'function') {
+                    flushPromises.push(pipeline.flushAll());
+                }
+            } catch (error) {
+                console.error(`Error flushing pipeline ${queryId}:`, error);
+            }
+        }
+
+        // Wait for all flushes to complete
+        await Promise.all(flushPromises);
     }
 
     /**
@@ -316,6 +327,25 @@ export class StreamManager {
             };
         }
         return info;
+    }
+
+    /**
+     * Delete all streams (for testing cleanup)
+     */
+    deleteAllStreams() {
+        const streamNames = Array.from(this.streams.keys());
+        for (const name of streamNames) {
+            try {
+                this.deleteStream(name);
+            } catch (error) {
+                console.warn(`Error deleting stream ${name}:`, error);
+            }
+        }
+        
+        // Clear global subscribers as well
+        this.globalSubscribers.clear();
+        this.userSubscriptions.clear();
+        this.nextSubscriptionId = 1;
     }
 }
 

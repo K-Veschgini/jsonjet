@@ -570,7 +570,7 @@ class QueryTranspiler extends BaseCstVisitor {
     // INSERT_INTO clause transpilation
     insertIntoClause(ctx) {
         const targetStream = ctx.targetStream[0].image;
-        return `.pipe(new Operators.InsertInto('${targetStream}'))`;
+        return `.pipe(insertIntoFactory('${targetStream}'))`;
     }
 
     // COLLECT clause transpilation - prints results as they come
