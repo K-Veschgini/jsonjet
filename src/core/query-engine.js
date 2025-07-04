@@ -374,7 +374,6 @@ export class QueryEngine {
      */
     createQueryPipeline(jsCode) {
         try {
-            
             // Create a new stream and build the pipeline
             const stream = new Stream();
             
@@ -404,4 +403,5 @@ export class QueryEngine {
 }
 
 // Global instance - will be initialized with stream manager
-export const queryEngine = new QueryEngine();
+import { streamManager } from './stream-manager.js';
+export const queryEngine = new QueryEngine(streamManager);

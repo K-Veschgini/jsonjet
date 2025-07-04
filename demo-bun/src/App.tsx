@@ -84,10 +84,10 @@ create stream sales;
 create stream daily_summary;
 
 // 2. Create summarization flows FIRST
-// Summarize total sales by product using a 5-second tumbling window
-// Window ensures results are emitted every 5 seconds automatically
+// Summarize total sales by product using a 2-item tumbling window
+// Window ensures results are emitted every 2 items automatically
 create flow product_summary from sales 
-  | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(5000)
+  | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(2)
   | insert_into(daily_summary);
 
 // 3. Insert sample sales data (flows will process this immediately)
@@ -102,9 +102,8 @@ insert into sales { date: "2024-01-16", product: "laptop", amount: 1300, region:
 insert into sales { date: "2024-01-16", product: "mouse", amount: 30, region: "east" };
 insert into sales { date: "2024-01-16", product: "laptop", amount: 1150, region: "west" };
 
-// 5. View current flows and check the daily_summary stream
-list flows;
-list streams;
+// 5. Flush the sales stream to emit any remaining summarizations
+flush sales;
 `;
 
       case 'scan-demo':
@@ -187,6 +186,7 @@ delete flow temp_monitor;
   useEffect(() => {
     const subscriptionId = streamManager.subscribeToAllStreams((message) => {
       const { data, streamName } = message;
+      
       const newMessage: StreamMessage = {
         id: Date.now().toString() + Math.random().toString(36),
         timestamp: new Date(),
@@ -305,6 +305,12 @@ delete flow temp_monitor;
       
       addLog('info', `Deleting ${streamNames.length} streams...`);
       
+      // Stop all active flows first
+      const activeFlows = queryEngine.getActiveFlows();
+      for (const flow of activeFlows) {
+        queryEngine.stopQuery(flow.queryId);
+      }
+      
       streamManager.deleteAllStreams();
       
       // Clear stream filters in UI
@@ -313,7 +319,7 @@ delete flow temp_monitor;
       // Clear messages since all streams are gone
       setMessages([]);
       
-      addLog('success', `✅ Deleted all ${streamNames.length} streams`);
+      addLog('success', `✅ Deleted all ${streamNames.length} streams and ${activeFlows.length} flows`);
     } catch (error: any) {
       addLog('error', `Error deleting streams: ${error.message}`);
     }

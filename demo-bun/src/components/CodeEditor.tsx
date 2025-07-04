@@ -32,6 +32,7 @@ export function CodeEditor({
 }: CodeEditorProps) {
   const editorRef = useRef<any>(null);
   const decorationsRef = useRef<any>(null);
+  const eventListenersRef = useRef<Array<{ element: Element, listener: () => void }>>([]);
 
   const parseStatements = (content: string) => {
     if (!content) return;
@@ -101,9 +102,16 @@ export function CodeEditor({
     
     if (!trimmed) return false;
     
+    // A statement is complete when:
+    // 1. It ends with a semicolon, AND
+    // 2. All braces/brackets/parens are balanced, AND  
+    // 3. The semicolon is not inside a string literal
+    
     let braceCount = 0;
-    let bracketCount = 0;
-    let inString = false;
+    let bracketCount = 0; 
+    let parenCount = 0;
+    let inDoubleQuote = false;
+    let inSingleQuote = false;
     let escapeNext = false;
     
     for (let i = 0; i < trimmed.length; i++) {
@@ -119,42 +127,46 @@ export function CodeEditor({
         continue;
       }
       
-      if (char === '"' && !escapeNext) {
-        inString = !inString;
+      // Handle string literals
+      if (char === '"' && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
         continue;
       }
       
-      if (inString) continue;
+      if (char === "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+        continue;
+      }
       
+      // Skip everything inside strings
+      if (inDoubleQuote || inSingleQuote) continue;
+      
+      // Track brace/bracket/paren nesting
       if (char === '{') braceCount++;
       if (char === '}') braceCount--;
       if (char === '[') bracketCount++;
       if (char === ']') bracketCount--;
+      if (char === '(') parenCount++;
+      if (char === ')') parenCount--;
     }
     
-    if (braceCount !== 0 || bracketCount !== 0) {
-      return false;
-    }
-    
-    if (/^(create|insert|delete|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed)) {
-      return true;
-    }
-    
-    if (trimmed.includes('|')) {
-      return !trimmed.endsWith('|') && 
-             !trimmed.endsWith('where') && 
-             !trimmed.endsWith('project') && 
-             !trimmed.endsWith('summarize') &&
-             !trimmed.endsWith('by') &&
-             !trimmed.endsWith('and') &&
-             !trimmed.endsWith('or');
-    }
-    
-    return trimmed.length > 0;
+    // Statement is complete if:
+    // 1. Ends with semicolon
+    // 2. All braces/brackets/parens are balanced
+    return trimmed.endsWith(';') && 
+           braceCount === 0 && 
+           bracketCount === 0 && 
+           parenCount === 0;
   };
 
   const updatePlayButtonDecorations = (statements: Statement[]) => {
     if (!editorRef.current || !decorationsRef.current) return;
+    
+    // Remove all existing event listeners
+    eventListenersRef.current.forEach(({ element, listener }) => {
+      element.removeEventListener('click', listener);
+    });
+    eventListenersRef.current = [];
     
     const decorations = statements.map((statement, index) => ({
       range: {
@@ -175,11 +187,25 @@ export function CodeEditor({
       statements.forEach((statement, index) => {
         const element = document.querySelector(`.play-button-${index}`);
         if (element) {
-          element.addEventListener('click', () => onStatementExecute(statement, index));
+          const listener = () => {
+            onStatementExecute(statement, index);
+          };
+          element.addEventListener('click', listener);
+          eventListenersRef.current.push({ element, listener });
         }
       });
     }, 100);
   };
+
+  // Reparse statements when demo content changes
+  useEffect(() => {
+    if (editorRef.current) {
+      // Add a small delay to ensure editor content is updated
+      setTimeout(() => {
+        parseStatements(editorRef.current.getValue());
+      }, 100);
+    }
+  }, [demoContent]);
 
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
