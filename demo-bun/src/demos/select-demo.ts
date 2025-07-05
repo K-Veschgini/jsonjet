@@ -15,7 +15,7 @@ create flow basic_select from user_data
 
 // 3. Demo 2: Spread and transform - include all fields plus computed ones
 create flow spread_transform from user_data 
-  | select { ...*, full_name: name + " " + surname, is_adult: age >= 18 } 
+  | select { ...*, full_name: name + " " + surname, is_adult: age && age >= 18 } 
   | insert_into(transformed_output);
 
 // 4. Demo 3: Spread with exclusions - all fields except sensitive ones

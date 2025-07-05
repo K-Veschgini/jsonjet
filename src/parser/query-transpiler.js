@@ -1,4 +1,4 @@
-import { parseQuery, QueryParser } from './query-parser.js';
+import { parseQuery, QueryParser } from './grammar/query-parser.js';
 import { safeGet } from '../utils/safe-access.js';
 
 // Create parser instance to get the base visitor constructor
@@ -184,14 +184,14 @@ class QueryTranspiler extends BaseCstVisitor {
         return `${columnName}: safeGet(item, '${columnName}')`;
     }
 
-    // Expression handling
+    // Expression handling - clean, single-syntax approach
     expression(ctx) {
         let result = this.visit(ctx.andExpression[0]);
         
         if (ctx.andExpression.length > 1) {
             for (let i = 1; i < ctx.andExpression.length; i++) {
                 const rightExpr = this.visit(ctx.andExpression[i]);
-                // Support both 'or' keyword and '||' operator
+                // Only || operator supported (clean syntax)
                 result = `(${result}) || (${rightExpr})`;
             }
         }
@@ -205,7 +205,7 @@ class QueryTranspiler extends BaseCstVisitor {
         if (ctx.comparisonExpression.length > 1) {
             for (let i = 1; i < ctx.comparisonExpression.length; i++) {
                 const rightExpr = this.visit(ctx.comparisonExpression[i]);
-                // Support both 'and' keyword and '&&' operator
+                // Only && operator supported (clean syntax)
                 result = `(${result}) && (${rightExpr})`;
             }
         }
