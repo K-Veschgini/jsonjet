@@ -1,5 +1,6 @@
 import { Count } from '../functions/count.js';
 import { Sum } from '../functions/sum.js';
+import { safeGet } from '../../utils/safe-access.js';
 
 /**
  * Registry of available aggregation functions

@@ -2,6 +2,7 @@ export { Filter } from './filter.js';
 export { InsertInto } from './insert-into.js';
 export { Map } from './map.js';
 export { ScanOperator } from './scan.js';
+export { Select } from './select.js';
 export { Sorter } from './sorter.js';
 export { SummarizeOperator, createSummarizeOperator } from './summarize.js';
 

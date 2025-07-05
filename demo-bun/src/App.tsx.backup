@@ -92,6 +92,186 @@ function App() {
     }
   };
 
+// Learn how to aggregate and summarize streaming data with windows
+
+// 1. Create streams for sales data
+create stream sales;
+create stream daily_summary;
+
+// 2. Create summarization flows FIRST
+// Summarize total sales by product using a 2-item tumbling window
+// Window ensures results are emitted every 2 items automatically
+create flow product_summary from sales 
+  | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(2)
+  | insert_into(daily_summary);
+
+// 3. Insert sample sales data (flows will process this immediately)
+insert into sales { date: "2024-01-15", product: "laptop", amount: 1200, region: "north" };
+insert into sales { date: "2024-01-15", product: "mouse", amount: 25, region: "north" };
+insert into sales { date: "2024-01-15", product: "laptop", amount: 1100, region: "south" };
+insert into sales { date: "2024-01-15", product: "keyboard", amount: 75, region: "south" };
+
+// 4. Wait a moment, then insert more data
+// Results will appear in daily_summary stream automatically
+insert into sales { date: "2024-01-16", product: "laptop", amount: 1300, region: "north" };
+insert into sales { date: "2024-01-16", product: "mouse", amount: 30, region: "east" };
+insert into sales { date: "2024-01-16", product: "laptop", amount: 1150, region: "west" };
+
+// 5. Flush the sales stream to emit any remaining summarizations
+flush sales;
+`;
+
+      case 'scan-demo':
+        return `// JSDB Stream Scanning Demo
+// Learn how to scan and filter data streams in real-time
+
+// 1. Create monitoring streams
+create stream server_logs;
+create stream alerts;
+create stream metrics;
+
+// 2. Create scanning flows for monitoring FIRST
+// Scan for errors and create alerts
+create flow error_scanner from server_logs 
+  | where level == "error" 
+  | project { alert_type: "ERROR", service: service, message: message, time: timestamp }
+  | insert_into(alerts);
+
+// Scan for slow responses and create performance metrics
+create flow performance_scanner from server_logs 
+  | where response_time > 1000 
+  | project { metric_type: "SLOW_RESPONSE", service: service, response_time: response_time }
+  | insert_into(metrics);
+
+// 3. Insert various log entries (flows will process these immediately)
+insert into server_logs { timestamp: "2024-01-15T10:00:00Z", level: "info", service: "api", message: "Request processed", response_time: 45 };
+insert into server_logs { timestamp: "2024-01-15T10:01:00Z", level: "warning", service: "db", message: "Slow query detected", response_time: 2500 };
+insert into server_logs { timestamp: "2024-01-15T10:02:00Z", level: "error", service: "api", message: "Connection timeout", response_time: 5000 };
+
+// 4. Insert more log data to trigger scans
+insert into server_logs { timestamp: "2024-01-15T10:03:00Z", level: "error", service: "auth", message: "Authentication failed", response_time: 200 };
+insert into server_logs { timestamp: "2024-01-15T10:04:00Z", level: "info", service: "api", message: "Health check", response_time: 15 };
+
+// 5. Check what was detected
+list flows;
+`;
+
+      case 'flow-processing':
+        return `// JSDB Flow Processing Demo
+// Learn how to create flows that process and route data in real-time
+
+// 1. Create streams
+create stream events;
+create stream archive;
+
+// 2. Create result streams for flow outputs
+create stream high_sales_results;
+create stream monitor_results;
+
+// 3. Create flows that process and route data
+// High value sales flow - writes results to a dedicated stream
+create flow high_sales from events | where amount > 100 | insert_into(high_sales_results);
+
+// Also archive high value sales to archive stream
+create flow archiver from events | where amount > 100 | insert_into(archive);
+
+// Temporary monitoring flow with TTL (auto-deletes after 2 minutes)
+create flow temp_monitor ttl(2m) from events | project { id: id, doubled: amount * 2 } | insert_into(monitor_results);
+
+// 4. Insert data to see it flow through the system
+insert into events { id: 1, amount: 150, type: "sale" };
+insert into events [
+  { id: 2, amount: 50, type: "refund" },
+  { id: 3, amount: 200, type: "sale" }
+];
+
+// 5. Insert more data and see it flow through
+insert into events { id: 4, amount: 300, type: "sale" };
+
+// 6. List active flows
+list flows;
+
+// 7. Delete a flow manually
+delete flow temp_monitor;
+`;
+
+      case 'safe-access-demo':
+        return `// JSDB Safe Property Access Demo
+// Learn how JSDB handles missing fields and null values gracefully
+
+// 1. Create streams for testing safe access
+create stream user_data;
+create stream clean_output;
+create stream missing_fields_output;
+
+// 2. Create flows that handle missing and nested fields safely
+// This flow safely accesses fields that might not exist
+create flow clean_data from user_data 
+  | project { name: name, age: age, email: email } 
+  | insert_into(clean_output);
+
+// This flow tries to access fields that will be missing
+create flow handle_missing from user_data 
+  | project { name: name, missing: nonexistent_field, also_missing: another_field } 
+  | insert_into(missing_fields_output);
+
+// 3. Insert complete user data (all fields present)
+insert into user_data { name: "John Doe", age: 30, email: "john@example.com", city: "Boston" };
+
+// 4. Insert incomplete user data (missing fields)
+insert into user_data { name: "Jane Smith", age: 25 };
+
+// 5. Insert user data with null values
+insert into user_data { name: "Bob Wilson", age: null, email: "bob@example.com" };
+
+// 6. Insert minimal user data
+insert into user_data { name: "Alice Brown" };
+
+// 7. Check what was processed - notice no errors despite missing fields!
+list streams;
+`;
+
+      default:
+        return `// JSDB Flow Processing Demo
+// Learn how to create flows that process and route data in real-time
+
+// 1. Create streams
+create stream events;
+create stream archive;
+
+// 2. Create result streams for flow outputs
+create stream high_sales_results;
+create stream monitor_results;
+
+// 3. Create flows that process and route data
+// High value sales flow - writes results to a dedicated stream
+create flow high_sales from events | where amount > 100 | insert_into(high_sales_results);
+
+// Also archive high value sales to archive stream
+create flow archiver from events | where amount > 100 | insert_into(archive);
+
+// Temporary monitoring flow with TTL (auto-deletes after 2 minutes)
+create flow temp_monitor ttl(2m) from events | project { id: id, doubled: amount * 2 } | insert_into(monitor_results);
+
+// 4. Insert data to see it flow through the system
+insert into events { id: 1, amount: 150, type: "sale" };
+insert into events [
+  { id: 2, amount: 50, type: "refund" },
+  { id: 3, amount: 200, type: "sale" }
+];
+
+// 5. Insert more data and see it flow through
+insert into events { id: 4, amount: 300, type: "sale" };
+
+// 6. List active flows
+list flows;
+
+// 7. Delete a flow manually
+delete flow temp_monitor;
+`;
+    }
+  };
+
   // Subscribe to all streams on component mount
   useEffect(() => {
     const subscriptionId = streamManager.subscribeToAllStreams((message) => {

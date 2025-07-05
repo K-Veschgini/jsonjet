@@ -1,6 +1,7 @@
 /**
  * Window function definitions for aggregation queries
  */
+import { safeGet } from '../utils/safe-access.js';
 
 /**
  * Creates a hopping window that moves forward by a fixed interval
@@ -21,7 +22,7 @@ export function hopping_window(size, hop, timeField = null) {
             if (timeField) {
                 // Time-based windowing
                 return (item) => {
-                    const timestamp = item[timeField];
+                    const timestamp = safeGet(item, timeField);
                     if (typeof timestamp === 'number') {
                         const windowStart = Math.floor(timestamp / hop) * hop;
                         return {
@@ -84,7 +85,7 @@ export function session_window(timeout, timeField) {
             let sessionStart = null;
             
             return (item) => {
-                const timestamp = item[timeField];
+                const timestamp = safeGet(item, timeField);
                 if (typeof timestamp !== 'number') {
                     throw new Error(`Invalid timestamp in field ${timeField}`);
                 }

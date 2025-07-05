@@ -17,7 +17,7 @@ export function JsonDisplay({ data, compact = false }: JsonDisplayProps) {
         data={JSON.stringify(data)}
         expand-icon-type="square"
         show-data-types="false"
-        theme="good-lighter"
+        theme="one-light"
         style={{ 
           fontSize: compact ? '11px' : '12px', 
           fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',

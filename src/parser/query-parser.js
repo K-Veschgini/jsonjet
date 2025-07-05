@@ -16,6 +16,7 @@ const Comment = createToken({
 // Keywords
 const Where = createToken({ name: "Where", pattern: /where/i });
 const Project = createToken({ name: "Project", pattern: /project/i });
+const Select = createToken({ name: "Select", pattern: /select/i });
 const Scan = createToken({ name: "Scan", pattern: /scan/i });
 const Step = createToken({ name: "Step", pattern: /step/i });
 const Summarize = createToken({ name: "Summarize", pattern: /summarize/i });
@@ -50,6 +51,8 @@ const LessThan = createToken({ name: "LessThan", pattern: /</ });
 const GreaterThan = createToken({ name: "GreaterThan", pattern: />/ });
 const LessEquals = createToken({ name: "LessEquals", pattern: /<=/ });
 const GreaterEquals = createToken({ name: "GreaterEquals", pattern: />=/ });
+const LogicalOr = createToken({ name: "LogicalOr", pattern: /\|\|/ });
+const LogicalAnd = createToken({ name: "LogicalAnd", pattern: /&&/ });
 const Plus = createToken({ name: "Plus", pattern: /\+/ });
 const Minus = createToken({ name: "Minus", pattern: /-/ });
 const Multiply = createToken({ name: "Multiply", pattern: /\*/ });
@@ -101,10 +104,10 @@ const allTokens = [
     Comment,
     // Keywords and functions first (longer patterns first)
     HoppingWindow, TumblingWindow, SessionWindow,
-    Where, Project, Scan, Step, Summarize, InsertInto, By, Over, And, Or, Iff, Emit, Collect, Print,
+    Where, Project, Select, Scan, Step, Summarize, InsertInto, By, Over, And, Or, Iff, Emit, Collect, Print,
     Count, Sum,
     // Operators (longer patterns first)
-    Arrow, Equals, NotEquals, LessEquals, GreaterEquals, LessThan, GreaterThan, Assign, Pipe, Plus, Minus, Multiply, Divide, Spread,
+    LogicalOr, LogicalAnd, Arrow, Equals, NotEquals, LessEquals, GreaterEquals, LessThan, GreaterThan, Assign, Pipe, Plus, Minus, Multiply, Divide, Spread,
     // Literals
     StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
     // Identifiers last (after keywords)
@@ -193,6 +196,7 @@ class QueryParser extends CstParser {
         this.OR([
             { ALT: () => this.SUBRULE(this.whereClause) },
             { ALT: () => this.SUBRULE(this.projectClause) },
+            { ALT: () => this.SUBRULE(this.selectClause) },
             { ALT: () => this.SUBRULE(this.scanClause) },
             { ALT: () => this.SUBRULE(this.summarizeClause) },
             { ALT: () => this.SUBRULE(this.insertIntoClause) },
@@ -214,6 +218,53 @@ class QueryParser extends CstParser {
             { ALT: () => this.SUBRULE(this.objectLiteral) },
             // Simple column list: project id, name, email
             { ALT: () => this.SUBRULE(this.columnList) }
+        ]);
+    });
+
+    // SELECT clause - modern syntax with spread and exclusions
+    selectClause = this.RULE("selectClause", () => {
+        this.CONSUME(Select);
+        this.SUBRULE(this.selectObject);
+    });
+
+    // Select object with spread and exclusions: { ...*, field: expr, -excludeField }
+    selectObject = this.RULE("selectObject", () => {
+        this.CONSUME(LeftBrace);
+        this.MANY_SEP({
+            SEP: Comma,
+            DEF: () => {
+                this.OR([
+                    // Spread all: ...*
+                    { ALT: () => {
+                        this.CONSUME(Spread);
+                        this.CONSUME(Multiply, { LABEL: "spreadAll" });
+                    }},
+                    // Exclusion: -fieldName
+                    { ALT: () => {
+                        this.CONSUME(Minus, { LABEL: "exclusion" });
+                        this.CONSUME(Identifier, { LABEL: "excludeField" });
+                    }},
+                    // Regular property
+                    { ALT: () => this.SUBRULE(this.selectProperty) }
+                ]);
+            }
+        });
+        this.CONSUME(RightBrace);
+    });
+
+    // Select property: field, field: expr, or shorthand
+    selectProperty = this.RULE("selectProperty", () => {
+        this.OR([
+            // Key-value pair: key: value
+            { ALT: () => {
+                this.SUBRULE(this.propertyKey);
+                this.CONSUME(Colon);
+                this.SUBRULE(this.expression, { LABEL: "propertyValue" });
+            }},
+            // Shorthand property: identifier
+            { ALT: () => {
+                this.CONSUME(Identifier, { LABEL: "shorthandProperty" });
+            }}
         ]);
     });
 
@@ -465,7 +516,10 @@ class QueryParser extends CstParser {
     expression = this.RULE("expression", () => {
         this.SUBRULE(this.andExpression);
         this.MANY(() => {
-            this.CONSUME(Or);
+            this.OR([
+                { ALT: () => this.CONSUME(Or) },
+                { ALT: () => this.CONSUME(LogicalOr) }
+            ]);
             this.SUBRULE2(this.andExpression);
         });
     });
@@ -473,7 +527,10 @@ class QueryParser extends CstParser {
     andExpression = this.RULE("andExpression", () => {
         this.SUBRULE(this.comparisonExpression);
         this.MANY(() => {
-            this.CONSUME(And);
+            this.OR([
+                { ALT: () => this.CONSUME(And) },
+                { ALT: () => this.CONSUME(LogicalAnd) }
+            ]);
             this.SUBRULE2(this.comparisonExpression);
         });
     });
@@ -671,10 +728,7 @@ class QueryParser extends CstParser {
     });
 }
 
-// Create parser instance
-const parserInstance = new QueryParser();
-
-// Export function to parse queries
+// Export function to parse queries - creates fresh parser each time for syntax changes
 export function parseQuery(queryText) {
     const lexingResult = QueryLexer.tokenize(queryText);
     
@@ -682,6 +736,8 @@ export function parseQuery(queryText) {
         throw new Error(`Lexing errors: ${lexingResult.errors.map(e => e.message).join(', ')}`);
     }
 
+    // Create fresh parser instance to pick up any grammar changes
+    const parserInstance = new QueryParser();
     parserInstance.input = lexingResult.tokens;
     const cst = parserInstance.query();
 

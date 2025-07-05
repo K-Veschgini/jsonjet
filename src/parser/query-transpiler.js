@@ -1,4 +1,5 @@
 import { parseQuery, QueryParser } from './query-parser.js';
+import { safeGet } from '../utils/safe-access.js';
 
 // Create parser instance to get the base visitor constructor
 const parserInstance = new QueryParser();
@@ -99,6 +100,8 @@ class QueryTranspiler extends BaseCstVisitor {
             return this.visit(ctx.whereClause);
         } else if (ctx.projectClause) {
             return this.visit(ctx.projectClause);
+        } else if (ctx.selectClause) {
+            return this.visit(ctx.selectClause);
         } else if (ctx.scanClause) {
             return this.visit(ctx.scanClause);
         } else if (ctx.summarizeClause) {
@@ -131,6 +134,44 @@ class QueryTranspiler extends BaseCstVisitor {
         return '';
     }
 
+    // SELECT clause transpilation - new syntax with spread and exclusions
+    selectClause(ctx) {
+        const selectCode = this.visit(ctx.selectObject);
+        return `.pipe(new Operators.Select((item) => (${selectCode})))`;
+    }
+
+    // Select object transpilation - handles { ...*, field: expr, -excludeField }
+    selectObject(ctx) {
+        // For now, let's implement basic field selection like project
+        // TODO: Implement spread and exclusion syntax
+        
+        if (ctx.selectProperty) {
+            // Has select properties
+            const properties = ctx.selectProperty.map(prop => this.visit(prop));
+            return `{ ${properties.join(', ')} }`;
+        }
+        
+        // Empty select object
+        return '{}';
+    }
+
+    // Select property transpilation
+    selectProperty(ctx) {
+        if (ctx.propertyKey && ctx.propertyValue) {
+            // Key-value pair: key: value
+            const keyValue = this.visit(ctx.propertyKey);
+            const value = this.visit(ctx.propertyValue);
+            
+            // Generate the property assignment
+            return `${keyValue}: ${value}`;
+        } else if (ctx.shorthandProperty) {
+            // Shorthand property: identifier
+            const identifier = ctx.shorthandProperty[0].image;
+            return `${identifier}: safeGet(item, '${identifier}')`;
+        }
+        return '';
+    }
+
     // Column list for project
     columnList(ctx) {
         const columns = ctx.column.map(col => this.visit(col));
@@ -140,7 +181,7 @@ class QueryTranspiler extends BaseCstVisitor {
     // Column reference
     column(ctx) {
         const columnName = ctx.Identifier[0].image;
-        return `${columnName}: item.${columnName}`;
+        return `${columnName}: safeGet(item, '${columnName}')`;
     }
 
     // Expression handling
@@ -150,6 +191,7 @@ class QueryTranspiler extends BaseCstVisitor {
         if (ctx.andExpression.length > 1) {
             for (let i = 1; i < ctx.andExpression.length; i++) {
                 const rightExpr = this.visit(ctx.andExpression[i]);
+                // Support both 'or' keyword and '||' operator
                 result = `(${result}) || (${rightExpr})`;
             }
         }
@@ -163,6 +205,7 @@ class QueryTranspiler extends BaseCstVisitor {
         if (ctx.comparisonExpression.length > 1) {
             for (let i = 1; i < ctx.comparisonExpression.length; i++) {
                 const rightExpr = this.visit(ctx.comparisonExpression[i]);
+                // Support both 'and' keyword and '&&' operator
                 result = `(${result}) && (${rightExpr})`;
             }
         }
@@ -315,9 +358,9 @@ class QueryTranspiler extends BaseCstVisitor {
             const value = this.visit(ctx.propertyValue);
             return `${key}: ${value}`;
         } else if (ctx.shorthandProperty) {
-            // Shorthand: identifier becomes key: item.identifier
+            // Shorthand: identifier becomes key: safeGet(item, identifier)
             const identifier = ctx.shorthandProperty[0].image;
-            return `${identifier}: item.${identifier}`;
+            return `${identifier}: safeGet(item, '${identifier}')`;
         }
         
         return '';
@@ -679,18 +722,15 @@ class QueryTranspiler extends BaseCstVisitor {
         if (ctx.variableName) {
             // This is stepName.variableName - access from state
             const variableName = ctx.variableName[0].image;
-            return `state.${stepOrVariable}.${variableName}`;
+            return `safeGet(state, '${stepOrVariable}.${variableName}')`;
         } else {
             // This is just variableName - access from item (not row for consistency)
-            return `item.${stepOrVariable}`;
+            return `safeGet(item, '${stepOrVariable}')`;
         }
     }
 }
 
-// Create transpiler instance
-const transpilerInstance = new QueryTranspiler();
-
-// Main transpilation function
+// Main transpilation function - creates fresh transpiler for syntax changes
 export function transpileQuery(queryText) {
     try {
         // Parse the query first
@@ -700,11 +740,15 @@ export function transpileQuery(queryText) {
             throw new Error(`Parse errors: ${parseResult.parseErrors.map(e => e.message).join(', ')}`);
         }
         
+        // Create fresh transpiler instance to pick up any grammar changes
+        const transpilerInstance = new QueryTranspiler();
+        
         // Transpile the CST to JavaScript
         const jsCode = transpilerInstance.visit(parseResult.cst);
         
-        // Import all operators from index
-        const imports = `import * as Operators from './src/operators/index.js';`;
+        // Import all operators from index and safe access utility
+        const imports = `import * as Operators from './src/operators/index.js';
+import { safeGet } from './src/utils/safe-access.js';`;
         
         return {
             javascript: jsCode,
