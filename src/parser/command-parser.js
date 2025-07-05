@@ -552,7 +552,8 @@ export class CommandParser {
      * Returns { ttlSeconds: number | null, flowName: string, queryPart: string, modifier: string | null }
      */
     static parseFlowCommand(flowCommand) {
-        const trimmed = flowCommand.trim();
+        // Normalize whitespace to handle multi-line flow definitions
+        const trimmed = flowCommand.trim().replace(/\s+/g, ' ');
         
         // Match: create [or replace | if not exists] flow <name> [ttl(<duration>)] from <stream> | ...
         let match = trimmed.match(/^create\s+or\s+replace\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);

@@ -3,7 +3,8 @@ import {
     LogicalOr, LogicalAnd, And, Or, Equals, NotEquals, LessThan, GreaterThan, 
     LessEquals, GreaterEquals, Plus, Minus, Multiply, Divide,
     LeftParen, RightParen, LeftBracket, RightBracket, Dot,
-    StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier
+    StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier,
+    Count, Sum, Where, Project, Select
 } from '../tokens/token-registry.js';
 
 export function defineExpressionRules() {
@@ -130,10 +131,30 @@ export function defineExpressionRules() {
     // =============================================================================
     
     this.stepVariable = this.RULE("stepVariable", () => {
-        this.CONSUME(Identifier, { LABEL: "stepOrVariable" });
+        // Allow both identifiers and keywords as variable names
+        this.OR([
+            { ALT: () => this.CONSUME(Identifier, { LABEL: "stepOrVariable" }) },
+            { ALT: () => this.CONSUME(Count, { LABEL: "stepOrVariable" }) },
+            { ALT: () => this.CONSUME(Sum, { LABEL: "stepOrVariable" }) },
+            { ALT: () => this.CONSUME(Where, { LABEL: "stepOrVariable" }) },
+            { ALT: () => this.CONSUME(Project, { LABEL: "stepOrVariable" }) },
+            { ALT: () => this.CONSUME(Select, { LABEL: "stepOrVariable" }) },
+            { ALT: () => this.CONSUME(And, { LABEL: "stepOrVariable" }) },
+            { ALT: () => this.CONSUME(Or, { LABEL: "stepOrVariable" }) }
+        ]);
         this.OPTION(() => {
             this.CONSUME(Dot);
-            this.CONSUME2(Identifier, { LABEL: "variableName" });
+            // Also allow keywords after the dot
+            this.OR2([
+                { ALT: () => this.CONSUME2(Identifier, { LABEL: "variableName" }) },
+                { ALT: () => this.CONSUME2(Count, { LABEL: "variableName" }) },
+                { ALT: () => this.CONSUME2(Sum, { LABEL: "variableName" }) },
+                { ALT: () => this.CONSUME2(Where, { LABEL: "variableName" }) },
+                { ALT: () => this.CONSUME2(Project, { LABEL: "variableName" }) },
+                { ALT: () => this.CONSUME2(Select, { LABEL: "variableName" }) },
+                { ALT: () => this.CONSUME2(And, { LABEL: "variableName" }) },
+                { ALT: () => this.CONSUME2(Or, { LABEL: "variableName" }) }
+            ]);
         });
     });
 }

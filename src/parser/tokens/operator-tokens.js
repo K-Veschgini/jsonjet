@@ -13,8 +13,8 @@ export const LogicalAnd = createToken({ name: "LogicalAnd", pattern: /&&/ });
 // Order matters: longer patterns first to avoid partial matches
 export const Equals = createToken({ name: "Equals", pattern: /==/ });
 export const NotEquals = createToken({ name: "NotEquals", pattern: /!=/ });
-export const LessEquals = createToken({ name: "LessEquals", pattern: /<═/ });
-export const GreaterEquals = createToken({ name: "GreaterEquals", pattern: />═/ });
+export const LessEquals = createToken({ name: "LessEquals", pattern: /<=/ });
+export const GreaterEquals = createToken({ name: "GreaterEquals", pattern: />=/ });
 export const LessThan = createToken({ name: "LessThan", pattern: /</ });
 export const GreaterThan = createToken({ name: "GreaterThan", pattern: />/ });
 

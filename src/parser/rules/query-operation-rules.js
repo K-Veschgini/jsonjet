@@ -3,7 +3,7 @@ import {
     Where, Project, Select, Scan, Summarize, InsertInto, Collect,
     By, Over, Step, Count, Sum, Assign, Arrow, Comma, Colon, Semicolon,
     LeftParen, RightParen, LeftBrace, RightBrace,
-    Spread, Multiply, Minus, Identifier
+    Spread, Multiply, Minus, Identifier, And, Or
 } from '../tokens/token-registry.js';
 
 export function defineQueryOperationRules() {
@@ -204,7 +204,17 @@ export function defineQueryOperationRules() {
 
     this.stepDefinition = this.RULE("stepDefinition", () => {
         this.CONSUME(Step);
-        this.CONSUME(Identifier, { LABEL: "stepName" });
+        this.OR([
+            { ALT: () => this.CONSUME(Identifier, { LABEL: "stepName" }) },
+            // Allow keywords as step names
+            { ALT: () => this.CONSUME(Count, { LABEL: "stepName" }) },
+            { ALT: () => this.CONSUME(Sum, { LABEL: "stepName" }) },
+            { ALT: () => this.CONSUME(Where, { LABEL: "stepName" }) },
+            { ALT: () => this.CONSUME(Project, { LABEL: "stepName" }) },
+            { ALT: () => this.CONSUME(Scan, { LABEL: "stepName" }) },
+            { ALT: () => this.CONSUME(And, { LABEL: "stepName" }) },
+            { ALT: () => this.CONSUME(Or, { LABEL: "stepName" }) }
+        ]);
         this.CONSUME(Colon);
         this.SUBRULE(this.stepCondition);
         this.CONSUME(Arrow);

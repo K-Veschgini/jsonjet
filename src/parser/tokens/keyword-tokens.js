@@ -46,5 +46,5 @@ export const Print = createToken({ name: "Print", pattern: /\.print/i });
 // LOGICAL KEYWORDS (deprecated - prefer symbols)
 // =============================================================================
 // Note: Keeping these for backward compatibility, but || and && are preferred
-export const And = createToken({ name: "And", pattern: /and/i });
-export const Or = createToken({ name: "Or", pattern: /or/i });
+export const And = createToken({ name: "And", pattern: /\band\b/i });
+export const Or = createToken({ name: "Or", pattern: /\bor\b/i });
