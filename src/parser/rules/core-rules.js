@@ -35,7 +35,6 @@ export function defineCoreCrules() {
     this.operation = this.RULE("operation", () => {
         this.OR([
             { ALT: () => this.SUBRULE(this.whereClause) },
-            { ALT: () => this.SUBRULE(this.projectClause) },
             { ALT: () => this.SUBRULE(this.selectClause) },
             { ALT: () => this.SUBRULE(this.scanClause) },
             { ALT: () => this.SUBRULE(this.summarizeClause) },

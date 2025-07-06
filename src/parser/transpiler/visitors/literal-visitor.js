@@ -15,13 +15,31 @@ export const LiteralVisitorMixin = {
     objectLiteral(ctx) {
         if (ctx.propertyList) {
             const properties = this.visit(ctx.propertyList);
-            return VisitorUtils.createObjectLiteral(properties);
+            
+            // Check if we have any exclusions
+            const hasExclusions = properties.some(prop => prop && prop.includes('__EXCLUDE_'));
+            
+            if (hasExclusions) {
+                // Extract exclusions and regular properties
+                const exclusions = properties.filter(prop => prop && prop.includes('__EXCLUDE_'))
+                    .map(prop => prop.match(/__EXCLUDE_(.+)__/)[1]);
+                const regularProps = properties.filter(prop => prop && !prop.includes('__EXCLUDE_') && typeof prop === 'string' && prop.trim() !== '');
+                
+                // Create object with exclusions handled
+                const objStr = regularProps.length > 0 ? `{ ${regularProps.join(', ')} }` : '{}';
+                const exclusionStr = exclusions.map(field => `'${field}'`).join(', ');
+                return `((() => { const obj = ${objStr}; [${exclusionStr}].forEach(key => delete obj[key]); return obj; })())`;
+            }
+            
+            return VisitorUtils.createObjectLiteral(properties.filter(prop => prop && typeof prop === 'string' && prop.trim() !== ''));
         }
         return VisitorUtils.createObjectLiteral([]);
     },
 
     propertyList(ctx) {
-        return VisitorUtils.visitArray(this, ctx.property);
+        // Visit each property individually and filter out empty ones
+        const properties = ctx.property.map(propertyCtx => this.visit(propertyCtx)).filter(prop => prop && typeof prop === 'string' && prop.trim() !== '');
+        return properties;
     },
 
     property(ctx) {
@@ -29,6 +47,10 @@ export const LiteralVisitorMixin = {
             // Spread syntax: ...expr
             const expression = this.visit(ctx.spreadExpression);
             return `...${expression}`;
+        } else if (ctx.excludedProperty) {
+            // Exclusion syntax: -field
+            const identifier = VisitorUtils.getTokenImage(ctx.excludedProperty);
+            return `__EXCLUDE_${identifier}__: undefined`;
         } else if (ctx.propertyKey && ctx.propertyValue) {
             // Key-value pair: key: value
             const key = this.visit(ctx.propertyKey);
@@ -157,34 +179,72 @@ export const LiteralVisitorMixin = {
 
     windowFunctionCall(ctx) {
         const windowFunctions = {
+            // Count-based window functions
             hoppingWindowFunction: () => this.visit(ctx.hoppingWindowFunction),
             tumblingWindowFunction: () => this.visit(ctx.tumblingWindowFunction),
-            sessionWindowFunction: () => this.visit(ctx.sessionWindowFunction)
+            slidingWindowFunction: () => this.visit(ctx.slidingWindowFunction),
+            countWindowFunction: () => this.visit(ctx.countWindowFunction),
+            sessionWindowFunction: () => this.visit(ctx.sessionWindowFunction),
+            // Value-based window functions
+            hoppingWindowByFunction: () => this.visit(ctx.hoppingWindowByFunction),
+            tumblingWindowByFunction: () => this.visit(ctx.tumblingWindowByFunction),
+            slidingWindowByFunction: () => this.visit(ctx.slidingWindowByFunction)
         };
 
         for (const [key, handler] of Object.entries(windowFunctions)) {
-            if (ctx[key]) return handler();
+            if (ctx[key]) {
+                return handler();
+            }
         }
         
         return 'null';
     },
 
+    // Count-based window functions
     hoppingWindowFunction(ctx) {
         const size = this.visit(ctx.size);
         const hop = this.visit(ctx.hop);
-        const timeField = ctx.timeField ? this.visit(ctx.timeField) : 'null';
-        return `Operators.hopping_window(${size}, ${hop}, ${timeField})`;
+        return `Operators.hopping_window(${size}, ${hop})`;
     },
 
     tumblingWindowFunction(ctx) {
         const size = this.visit(ctx.size);
-        const timeField = ctx.timeField ? this.visit(ctx.timeField) : 'null';
-        return `Operators.tumbling_window(${size}, ${timeField})`;
+        return `Operators.tumbling_window(${size})`;
+    },
+
+    slidingWindowFunction(ctx) {
+        const size = this.visit(ctx.size);
+        return `Operators.sliding_window(${size})`;
+    },
+
+    countWindowFunction(ctx) {
+        const size = this.visit(ctx.size);
+        return `Operators.count_window(${size})`;
     },
 
     sessionWindowFunction(ctx) {
         const timeout = this.visit(ctx.timeout);
-        const timeField = this.visit(ctx.timeField);
-        return `Operators.session_window(${timeout}, ${timeField})`;
+        const valueCallback = this.visit(ctx.valueCallback);
+        return `Operators.session_window(${timeout}, (item) => ${valueCallback})`;
+    },
+
+    // Value-based window functions
+    hoppingWindowByFunction(ctx) {
+        const size = this.visit(ctx.size);
+        const hop = this.visit(ctx.hop);
+        const valueCallback = this.visit(ctx.valueCallback);
+        return `Operators.hopping_window_by(${size}, ${hop}, (item) => ${valueCallback})`;
+    },
+
+    tumblingWindowByFunction(ctx) {
+        const size = this.visit(ctx.size);
+        const valueCallback = this.visit(ctx.valueCallback);
+        return `Operators.tumbling_window_by(${size}, (item) => ${valueCallback})`;
+    },
+
+    slidingWindowByFunction(ctx) {
+        const size = this.visit(ctx.size);
+        const valueCallback = this.visit(ctx.valueCallback);
+        return `Operators.sliding_window_by(${size}, (item) => ${valueCallback})`;
     }
 };

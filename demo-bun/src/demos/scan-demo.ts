@@ -1,22 +1,22 @@
 export const scanDemo = `// JSDB Stream Scanning Demo
 // Learn how to scan and filter data streams in real-time
 
-// 1. Create monitoring streams
-create stream server_logs;
-create stream alerts;
-create stream metrics;
+// 1. Create monitoring streams (using or replace to handle existing streams)
+create or replace stream server_logs;
+create or replace stream alerts;
+create or replace stream metrics;
 
 // 2. Create scanning flows for monitoring FIRST
 // Scan for errors and create alerts
 create flow error_scanner from server_logs 
   | where level == "error" 
-  | project { alert_type: "ERROR", service: service, message: message, time: timestamp }
+  | select { alert_type: "ERROR", service: service, message: message, time: timestamp }
   | insert_into(alerts);
 
 // Scan for slow responses and create performance metrics
 create flow performance_scanner from server_logs 
   | where response_time > 1000 
-  | project { metric_type: "SLOW_RESPONSE", service: service, response_time: response_time }
+  | select { metric_type: "SLOW_RESPONSE", service: service, response_time: response_time }
   | insert_into(metrics);
 
 // 3. Insert various log entries (flows will process these immediately)

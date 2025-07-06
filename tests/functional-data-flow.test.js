@@ -204,40 +204,6 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       expect(middle.status).toBe('adult');
     });
 
-    it('should handle PROJECT operations (legacy)', async () => {
-      // Setup
-      streamManager.createStream('legacy_input');
-      streamManager.createStream('legacy_output');
-      
-      // Create flow with PROJECT (legacy syntax)
-      const flowResult = await queryEngine.executeStatement(
-        'create flow project_test from legacy_input | project { id: id, full_name: name + " " + surname } | insert_into(legacy_output)'
-      );
-      
-      expect(flowResult.success).toBe(true);
-      
-      // Start collecting results
-      const resultsPromise = collectFromStream('legacy_output');
-      
-      // Insert test data
-      await streamManager.insertIntoStream('legacy_input', { 
-        id: 123,
-        name: 'John',
-        surname: 'Doe',
-        extra: 'ignored'
-      });
-      
-      await waitForProcessing();
-      
-      const results = await resultsPromise;
-      
-      // Verify PROJECT transformation
-      expect(results.length).toBe(1);
-      const result = results[0];
-      expect(result.id).toBe(123);
-      expect(result.full_name).toBe('John Doe');
-      expect(result.extra).toBeUndefined(); // Should be excluded
-    });
   });
 
   describe('Edge Cases and Error Handling', () => {
@@ -315,7 +281,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       const test1 = results[0];
       expect(test1.name).toBe('Test1');
       expect(test1.safe_value).toBe('default');  // null || "default"
-      expect(test1.has_flag).toBe(false);        // null && true (falsy)
+      expect(test1.has_flag).toBe(null);         // null && true (returns null)
       
       const test2 = results[1];
       expect(test2.name).toBe('Test2');
@@ -325,7 +291,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       const test3 = results[2];
       expect(test3.name).toBe('Test3');
       expect(test3.safe_value).toBe('default');  // undefined || "default"
-      expect(test3.has_flag).toBe(false);        // undefined && true (falsy)
+      expect(test3.has_flag).toBe(undefined);    // undefined && true (returns undefined)
     });
   });
 
@@ -338,7 +304,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Test the exact flow from flow-processing demo
       const flowResult = await queryEngine.executeStatement(
-        'create flow process_users from user_data | where age > 18 | project { name: name, age: age, status: "processed" } | insert_into(archive)'
+        'create flow process_users from user_data | where age > 18 | select { name: name, age: age, status: "processed" } | insert_into(archive)'
       );
       
       if (!flowResult.success) {

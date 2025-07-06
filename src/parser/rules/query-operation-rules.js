@@ -1,9 +1,10 @@
 // Query operation rules - WHERE, SELECT, PROJECT, SUMMARIZE, etc.
 import { 
-    Where, Project, Select, Scan, Summarize, InsertInto, Collect,
-    By, Over, Step, Count, Sum, Assign, Arrow, Comma, Colon, Semicolon,
+    Where, Select, Scan, Summarize, InsertInto, Collect,
+    By, Over, Step, Count, Sum, Emit, Every, When, On, Change, Group, Update, Using,
+    Assign, Arrow, Comma, Colon, Semicolon,
     LeftParen, RightParen, LeftBrace, RightBrace,
-    Spread, Multiply, Minus, Identifier, And, Or
+    Spread, Multiply, Minus, Identifier
 } from '../tokens/token-registry.js';
 
 export function defineQueryOperationRules() {
@@ -16,31 +17,6 @@ export function defineQueryOperationRules() {
         this.SUBRULE(this.expression);
     });
 
-    // =============================================================================
-    // PROJECT CLAUSE (legacy - prefer SELECT)
-    // =============================================================================
-    
-    this.projectClause = this.RULE("projectClause", () => {
-        this.CONSUME(Project);
-        this.OR([
-            // Object literal syntax: project {id: id, newField: expression}
-            { ALT: () => this.SUBRULE(this.objectLiteral) },
-            // Simple column list: project id, name, email
-            { ALT: () => this.SUBRULE(this.columnList) }
-        ]);
-    });
-
-    this.columnList = this.RULE("columnList", () => {
-        this.SUBRULE(this.column);
-        this.MANY(() => {
-            this.CONSUME(Comma);
-            this.SUBRULE2(this.column);
-        });
-    });
-
-    this.column = this.RULE("column", () => {
-        this.CONSUME(Identifier);
-    });
 
     // =============================================================================
     // SELECT CLAUSE (modern, clean syntax)
@@ -104,8 +80,17 @@ export function defineQueryOperationRules() {
             this.SUBRULE(this.byExpressionList);
         });
         this.OPTION2(() => {
-            this.CONSUME(Over);
-            this.SUBRULE(this.windowDefinition);
+            this.OR([
+                // Window clause
+                { ALT: () => {
+                    this.CONSUME(Over);
+                    this.SUBRULE(this.windowDefinition);
+                }},
+                // Emit clause
+                { ALT: () => {
+                    this.SUBRULE(this.emitClause);
+                }}
+            ]);
         });
     });
 
@@ -185,6 +170,57 @@ export function defineQueryOperationRules() {
     });
 
     // =============================================================================
+    // EMIT CLAUSE (alternative to window clause)
+    // =============================================================================
+    
+    this.emitClause = this.RULE("emitClause", () => {
+        this.CONSUME(Emit);
+        this.OR([
+            // emit every N [using expression]
+            { ALT: () => this.SUBRULE(this.emitEvery) },
+            // emit when condition
+            { ALT: () => this.SUBRULE(this.emitWhen) },
+            // emit on change expression
+            { ALT: () => this.SUBRULE(this.emitOnChange) },
+            // emit on group change
+            { ALT: () => this.SUBRULE(this.emitOnGroupChange) },
+            // emit on update
+            { ALT: () => this.SUBRULE(this.emitOnUpdate) }
+        ]);
+    });
+
+    this.emitEvery = this.RULE("emitEvery", () => {
+        this.CONSUME(Every);
+        this.SUBRULE(this.expression, { LABEL: "interval" });
+        this.OPTION(() => {
+            this.CONSUME(Using);
+            this.SUBRULE2(this.expression, { LABEL: "valueExpression" });
+        });
+    });
+
+    this.emitWhen = this.RULE("emitWhen", () => {
+        this.CONSUME(When);
+        this.SUBRULE(this.expression, { LABEL: "condition" });
+    });
+
+    this.emitOnChange = this.RULE("emitOnChange", () => {
+        this.CONSUME(On);
+        this.CONSUME(Change);
+        this.SUBRULE(this.expression, { LABEL: "valueExpression" });
+    });
+
+    this.emitOnGroupChange = this.RULE("emitOnGroupChange", () => {
+        this.CONSUME(On);
+        this.CONSUME(Group);
+        this.CONSUME(Change);
+    });
+
+    this.emitOnUpdate = this.RULE("emitOnUpdate", () => {
+        this.CONSUME(On);
+        this.CONSUME(Update);
+    });
+
+    // =============================================================================
     // SCAN CLAUSE
     // =============================================================================
     
@@ -210,10 +246,7 @@ export function defineQueryOperationRules() {
             { ALT: () => this.CONSUME(Count, { LABEL: "stepName" }) },
             { ALT: () => this.CONSUME(Sum, { LABEL: "stepName" }) },
             { ALT: () => this.CONSUME(Where, { LABEL: "stepName" }) },
-            { ALT: () => this.CONSUME(Project, { LABEL: "stepName" }) },
             { ALT: () => this.CONSUME(Scan, { LABEL: "stepName" }) },
-            { ALT: () => this.CONSUME(And, { LABEL: "stepName" }) },
-            { ALT: () => this.CONSUME(Or, { LABEL: "stepName" }) }
         ]);
         this.CONSUME(Colon);
         this.SUBRULE(this.stepCondition);

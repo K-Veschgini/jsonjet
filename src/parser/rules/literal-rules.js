@@ -1,10 +1,11 @@
 // Literal rules - objects, arrays, functions, properties
 import { 
     LeftBrace, RightBrace, LeftBracket, RightBracket, LeftParen, RightParen,
-    Comma, Colon, Spread, Identifier, StringLiteral,
+    Comma, Colon, Spread, Identifier, StringLiteral, Minus,
     Iff, Emit, Count, Sum, 
-    Where, Project, Scan, Step, InsertInto, And, Or, Collect,
-    HoppingWindow, TumblingWindow, SessionWindow, Assign
+    Where, Scan, Step, InsertInto, Collect,
+    HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Assign
 } from '../tokens/token-registry.js';
 
 export function defineLiteralRules() {
@@ -35,6 +36,11 @@ export function defineLiteralRules() {
                 this.CONSUME(Spread);
                 this.SUBRULE(this.expression, { LABEL: "spreadExpression" });
             }},
+            // Exclusion syntax: -field
+            { ALT: () => {
+                this.CONSUME(Minus);
+                this.CONSUME(Identifier, { LABEL: "excludedProperty" });
+            }},
             // Key-value pair: key: value
             { ALT: () => {
                 this.SUBRULE(this.propertyKey);
@@ -43,7 +49,7 @@ export function defineLiteralRules() {
             }},
             // Shorthand: just identifier (becomes key: key)
             { ALT: () => {
-                this.CONSUME(Identifier, { LABEL: "shorthandProperty" });
+                this.CONSUME2(Identifier, { LABEL: "shorthandProperty" });
             }}
         ]);
     });
@@ -55,12 +61,9 @@ export function defineLiteralRules() {
             { ALT: () => this.CONSUME(StringLiteral) },
             // Allow keywords as property names
             { ALT: () => this.CONSUME(Where) },
-            { ALT: () => this.CONSUME(Project) },
             { ALT: () => this.CONSUME(Scan) },
             { ALT: () => this.CONSUME(Step) },
             { ALT: () => this.CONSUME(InsertInto) },
-            { ALT: () => this.CONSUME(And) },
-            { ALT: () => this.CONSUME(Or) },
             { ALT: () => this.CONSUME(Iff) },
             { ALT: () => this.CONSUME(Emit) },
             { ALT: () => this.CONSUME(Collect) },
@@ -142,8 +145,15 @@ export function defineLiteralRules() {
 
     this.windowFunctionCall = this.RULE("windowFunctionCall", () => {
         this.OR([
+            // Value-based window functions (with _by suffix)
+            { ALT: () => this.SUBRULE(this.hoppingWindowByFunction) },
+            { ALT: () => this.SUBRULE(this.tumblingWindowByFunction) },
+            { ALT: () => this.SUBRULE(this.slidingWindowByFunction) },
+            // Count-based window functions
             { ALT: () => this.SUBRULE(this.hoppingWindowFunction) },
             { ALT: () => this.SUBRULE(this.tumblingWindowFunction) },
+            { ALT: () => this.SUBRULE(this.slidingWindowFunction) },
+            { ALT: () => this.SUBRULE(this.countWindowFunction) },
             { ALT: () => this.SUBRULE(this.sessionWindowFunction) }
         ]);
     });
@@ -165,10 +175,6 @@ export function defineLiteralRules() {
         this.CONSUME(TumblingWindow);
         this.CONSUME(LeftParen);
         this.SUBRULE(this.expression, { LABEL: "size" });
-        this.OPTION(() => {
-            this.CONSUME(Comma);
-            this.SUBRULE2(this.expression, { LABEL: "timeField" });
-        });
         this.CONSUME(RightParen);
     });
 
@@ -177,7 +183,52 @@ export function defineLiteralRules() {
         this.CONSUME(LeftParen);
         this.SUBRULE(this.expression, { LABEL: "timeout" });
         this.CONSUME(Comma);
-        this.SUBRULE2(this.expression, { LABEL: "timeField" });
+        this.SUBRULE2(this.expression, { LABEL: "valueCallback" });
+        this.CONSUME(RightParen);
+    });
+
+    // Value-based window functions (with _by suffix)
+    this.hoppingWindowByFunction = this.RULE("hoppingWindowByFunction", () => {
+        this.CONSUME(HoppingWindowBy);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "size" });
+        this.CONSUME(Comma);
+        this.SUBRULE2(this.expression, { LABEL: "hop" });
+        this.CONSUME2(Comma);
+        this.SUBRULE3(this.expression, { LABEL: "valueCallback" });
+        this.CONSUME(RightParen);
+    });
+
+    this.tumblingWindowByFunction = this.RULE("tumblingWindowByFunction", () => {
+        this.CONSUME(TumblingWindowBy);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "size" });
+        this.CONSUME(Comma);
+        this.SUBRULE2(this.expression, { LABEL: "valueCallback" });
+        this.CONSUME(RightParen);
+    });
+
+    this.slidingWindowByFunction = this.RULE("slidingWindowByFunction", () => {
+        this.CONSUME(SlidingWindowBy);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "size" });
+        this.CONSUME(Comma);
+        this.SUBRULE2(this.expression, { LABEL: "valueCallback" });
+        this.CONSUME(RightParen);
+    });
+
+    // Count-based window functions
+    this.slidingWindowFunction = this.RULE("slidingWindowFunction", () => {
+        this.CONSUME(SlidingWindow);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "size" });
+        this.CONSUME(RightParen);
+    });
+
+    this.countWindowFunction = this.RULE("countWindowFunction", () => {
+        this.CONSUME(CountWindow);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "size" });
         this.CONSUME(RightParen);
     });
 }

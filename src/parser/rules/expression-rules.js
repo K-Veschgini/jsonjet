@@ -1,25 +1,21 @@
 // Expression grammar rules - clean, single-syntax approach
 import { 
-    LogicalOr, LogicalAnd, And, Or, Equals, NotEquals, LessThan, GreaterThan, 
+    LogicalOr, LogicalAnd, Equals, NotEquals, LessThan, GreaterThan, 
     LessEquals, GreaterEquals, Plus, Minus, Multiply, Divide,
     LeftParen, RightParen, LeftBracket, RightBracket, Dot,
     StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier,
-    Count, Sum, Where, Project, Select
+    Count, Sum, Where, Select
 } from '../tokens/token-registry.js';
 
 export function defineExpressionRules() {
     // =============================================================================
-    // LOGICAL EXPRESSIONS (||, && preferred; or, and for compatibility)
+    // LOGICAL EXPRESSIONS
     // =============================================================================
-    // Clean approach: Prefer symbols (||, &&) but support keywords for backward compatibility
     
     this.expression = this.RULE("expression", () => {
         this.SUBRULE(this.andExpression);
         this.MANY(() => {
-            this.OR([
-                { ALT: () => this.CONSUME(LogicalOr) },   // Preferred: ||
-                { ALT: () => this.CONSUME(Or) }           // Compatibility: or
-            ]);
+            this.CONSUME(LogicalOr);
             this.SUBRULE2(this.andExpression);
         });
     });
@@ -27,10 +23,7 @@ export function defineExpressionRules() {
     this.andExpression = this.RULE("andExpression", () => {
         this.SUBRULE(this.comparisonExpression);
         this.MANY(() => {
-            this.OR([
-                { ALT: () => this.CONSUME(LogicalAnd) },  // Preferred: &&
-                { ALT: () => this.CONSUME(And) }          // Compatibility: and
-            ]);
+            this.CONSUME(LogicalAnd);
             this.SUBRULE2(this.comparisonExpression);
         });
     });
@@ -137,10 +130,7 @@ export function defineExpressionRules() {
             { ALT: () => this.CONSUME(Count, { LABEL: "stepOrVariable" }) },
             { ALT: () => this.CONSUME(Sum, { LABEL: "stepOrVariable" }) },
             { ALT: () => this.CONSUME(Where, { LABEL: "stepOrVariable" }) },
-            { ALT: () => this.CONSUME(Project, { LABEL: "stepOrVariable" }) },
             { ALT: () => this.CONSUME(Select, { LABEL: "stepOrVariable" }) },
-            { ALT: () => this.CONSUME(And, { LABEL: "stepOrVariable" }) },
-            { ALT: () => this.CONSUME(Or, { LABEL: "stepOrVariable" }) }
         ]);
         this.OPTION(() => {
             this.CONSUME(Dot);
@@ -150,10 +140,7 @@ export function defineExpressionRules() {
                 { ALT: () => this.CONSUME2(Count, { LABEL: "variableName" }) },
                 { ALT: () => this.CONSUME2(Sum, { LABEL: "variableName" }) },
                 { ALT: () => this.CONSUME2(Where, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(Project, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(Select, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(And, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(Or, { LABEL: "variableName" }) }
+                { ALT: () => this.CONSUME2(Select, { LABEL: "variableName" }) }
             ]);
         });
     });

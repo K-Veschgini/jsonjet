@@ -30,6 +30,8 @@ export class AggregationObject {
         this.context = context; // Context variables like window reference
         this.aggregations = []; // Array of { path: string, instance: Aggregation, valueExpression: function }
         this.processedSpec = null; // Processed spec with aggregation placeholders
+        this.lastResult = null; // Cache of last result for change detection
+        this.hasChangedSinceLastCheck = false; // Track if values changed
         
         this.parseObjectSpec();
     }
@@ -111,13 +113,31 @@ export class AggregationObject {
             const value = valueExpression ? valueExpression(item) : item;
             instance.push(value);
         }
+        // Mark that values have changed since we added new data
+        this.hasChangedSinceLastCheck = true;
     }
     
     /**
      * Get the final result object with aggregations replaced by their values
      */
     getResult() {
-        return this.buildResultRecursively(this.processedSpec);
+        const result = this.buildResultRecursively(this.processedSpec);
+        this.lastResult = result;
+        return result;
+    }
+    
+    /**
+     * Check if aggregation values have changed since last check
+     */
+    hasChanged() {
+        return this.hasChangedSinceLastCheck;
+    }
+    
+    /**
+     * Mark change flag as checked (reset the flag)
+     */
+    markChangeChecked() {
+        this.hasChangedSinceLastCheck = false;
     }
     
     /**

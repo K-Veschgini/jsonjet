@@ -15,7 +15,6 @@ export const QueryOperationVisitorMixin = {
     operation(ctx) {
         const operationMap = {
             whereClause: () => this.visit(ctx.whereClause),
-            projectClause: () => this.visit(ctx.projectClause),
             selectClause: () => this.visit(ctx.selectClause),
             scanClause: () => this.visit(ctx.scanClause),
             summarizeClause: () => this.visit(ctx.summarizeClause),
@@ -50,10 +49,6 @@ export const QueryOperationVisitorMixin = {
     },
 
     selectObject(ctx) {
-        if (!ctx.selectProperty || ctx.selectProperty.length === 0) {
-            return VisitorUtils.createObjectLiteral([]);
-        }
-
         const properties = [];
         
         // Handle spread syntax (...*)
@@ -61,20 +56,24 @@ export const QueryOperationVisitorMixin = {
             properties.push('...item');
         }
 
-        // Handle exclusions (-field)
-        if (ctx.excludeField) {
-            const excludeFields = ctx.excludeField.map(field => 
-                VisitorUtils.getTokenImage(field)
-            );
-            // Note: Exclusion logic needs to be implemented in the Select operator
-            // For now, we'll generate a comment
-            properties.push(`/* exclude: ${excludeFields.join(', ')} */`);
+        // Handle regular properties
+        if (ctx.selectProperty) {
+            const regularProperties = ctx.selectProperty.map(prop => this.visit(prop));
+            properties.push(...regularProperties);
         }
 
-        // Handle regular properties
-        const regularProperties = ctx.selectProperty.map(prop => this.visit(prop));
-        properties.push(...regularProperties);
+        // Handle exclusions (-field) - create an object and delete properties
+        if (ctx.excludeField) {
+            const excludeFields = ctx.excludeField.map(field => 
+                field.image || field[0]?.image || ''
+            );
+            
+            const objStr = properties.length > 0 ? `{ ${properties.join(', ')} }` : '{}';
+            const exclusionStr = excludeFields.map(field => `'${field}'`).join(', ');
+            return `((() => { const obj = ${objStr}; [${exclusionStr}].forEach(key => delete obj[key]); return obj; })())`;
+        }
 
+        // No exclusions - return regular object literal
         return VisitorUtils.createObjectLiteral(properties.filter(p => p));
     },
 
@@ -92,31 +91,6 @@ export const QueryOperationVisitorMixin = {
         return '';
     },
 
-    // =============================================================================
-    // PROJECT CLAUSE (Legacy - prefer SELECT)
-    // =============================================================================
-
-    projectClause(ctx) {
-        if (ctx.objectLiteral) {
-            // Object literal syntax: project {id: id, newField: expression}
-            const objectCode = this.visit(ctx.objectLiteral);
-            return `.pipe(new Operators.Map(item => (${objectCode})))`;
-        } else if (ctx.columnList) {
-            // Simple column list: project id, name, email
-            const columns = this.visit(ctx.columnList);
-            return `.pipe(new Operators.Map(item => (${VisitorUtils.createObjectLiteral(columns)})))`;
-        }
-        return '';
-    },
-
-    columnList(ctx) {
-        return VisitorUtils.visitArray(this, ctx.column);
-    },
-
-    column(ctx) {
-        const columnName = VisitorUtils.getTokenImage(ctx.Identifier);
-        return `${columnName}: ${VisitorUtils.createSafeAccess('item', columnName)}`;
-    },
 
     // =============================================================================
     // SUMMARIZE CLAUSE
@@ -132,14 +106,27 @@ export const QueryOperationVisitorMixin = {
         }
         
         let windowSpec = 'null';
-        let windowName = "'window'";
+        let emitSpec = 'null';
+        let windowVariableName = "'window'";
+        
         if (ctx.windowDefinition) {
-            const windowDef = this.visit(ctx.windowDefinition);
-            windowSpec = windowDef.spec;
-            windowName = `'${windowDef.name}'`;
+            const windowDefArray = this.visit(ctx.windowDefinition);
+            const windowDef = Array.isArray(windowDefArray) ? windowDefArray[0] : windowDefArray;
+            // Also handle spec that may be wrapped in arrays
+            let spec = windowDef.spec;
+            if (Array.isArray(spec)) {
+                // Flatten nested arrays
+                while (Array.isArray(spec) && spec.length > 0) {
+                    spec = spec[0];
+                }
+            }
+            windowSpec = spec;
+            windowVariableName = `'${windowDef.name}'`;
+        } else if (ctx.emitClause) {
+            emitSpec = this.visit(ctx.emitClause);
         }
         
-        return `.pipe(Operators.createSummarizeOperator(${aggregationObject}, ${groupByCallback}, ${windowSpec}, ${windowName}))`;
+        return `.pipe(Operators.createSummarizeOperator(${aggregationObject}, ${groupByCallback}, ${windowSpec}, ${emitSpec}, ${windowVariableName}))`;
     },
 
     aggregationObject(ctx) {
@@ -203,6 +190,53 @@ export const QueryOperationVisitorMixin = {
         // For now, just take the first expression
         const expression = this.visit(ctx.expression[0]);
         return expression;
+    },
+
+    // =============================================================================
+    // EMIT CLAUSE VISITORS
+    // =============================================================================
+    
+    emitClause(ctx) {
+        if (ctx.emitEvery) {
+            return this.visit(ctx.emitEvery);
+        } else if (ctx.emitWhen) {
+            return this.visit(ctx.emitWhen);
+        } else if (ctx.emitOnChange) {
+            return this.visit(ctx.emitOnChange);
+        } else if (ctx.emitOnGroupChange) {
+            return this.visit(ctx.emitOnGroupChange);
+        } else if (ctx.emitOnUpdate) {
+            return this.visit(ctx.emitOnUpdate);
+        }
+        return 'null';
+    },
+
+    emitEvery(ctx) {
+        const interval = this.visit(ctx.interval);
+        if (ctx.valueExpression) {
+            const valueExpr = this.visit(ctx.valueExpression);
+            return `Operators.emit_every(${interval}, (item) => ${valueExpr})`;
+        } else {
+            return `Operators.emit_every(${interval})`;
+        }
+    },
+
+    emitWhen(ctx) {
+        const condition = this.visit(ctx.condition);
+        return `Operators.emit_when((item) => ${condition})`;
+    },
+
+    emitOnChange(ctx) {
+        const valueExpr = this.visit(ctx.valueExpression);
+        return `Operators.emit_on_change((item) => ${valueExpr})`;
+    },
+
+    emitOnGroupChange(ctx) {
+        return `Operators.emit_on_group_change()`;
+    },
+
+    emitOnUpdate(ctx) {
+        return `Operators.emit_on_update()`;
     },
 
     // =============================================================================

@@ -6,7 +6,7 @@ import {
     getTranspilationInfo 
 } from '../src/parser/transpiler/index.js';
 
-describe('Transpiler Refactor - Grade A+ Architecture', () => {
+describe('Transpiler Refactor', () => {
 
     // =============================================================================
     // FUNCTIONALITY PRESERVATION TESTS
@@ -32,7 +32,7 @@ describe('Transpiler Refactor - Grade A+ Architecture', () => {
             },
             {
                 name: 'Nested object and array literals',
-                query: 'data | project { info: { name: name, scores: [math, english] } }'
+                query: 'data | select { info: { name: name, scores: [math, english] } }'
             },
             {
                 name: 'Function calls with conditionals',
@@ -276,7 +276,7 @@ describe('Transpiler Refactor - Grade A+ Architecture', () => {
                 // Basic operations
                 'users | where age > 18',
                 'users | select { name: name, age: age }',
-                'users | project { id: id, full_name: name + " " + surname }',
+                'users | select { id: id, full_name: name + " " + surname }',
                 
                 // Complex operations
                 'sales | summarize { total: sum(amount), count: count() } by product',

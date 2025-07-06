@@ -11,7 +11,8 @@ export class CommandParser {
      * Parse and execute a command
      * Returns { type: 'command', result: any, message: string }
      */
-    static async executeCommand(commandText) {
+    static async executeCommand(commandText, customStreamManager = null) {
+        const sm = customStreamManager || streamManager;
         const trimmed = commandText.trim();
         
         if (!trimmed) {
@@ -25,28 +26,28 @@ export class CommandParser {
 
             switch (action.toLowerCase()) {
                 case 'create':
-                    return await this.handleCreateCommand(args);
+                    return await this.handleCreateCommand(args, sm);
                 
                 case 'delete':
-                    return await this.handleDeleteCommand(args);
+                    return await this.handleDeleteCommand(args, sm);
                 
                 case 'insert':
-                    return await this.handleInsertCommand(args);
+                    return await this.handleInsertCommand(args, sm);
                 
                 case 'flush':
-                    return await this.handleFlushCommand(args);
+                    return await this.handleFlushCommand(args, sm);
                 
                 case 'list':
-                    return await this.handleListCommand(args);
+                    return await this.handleListCommand(args, sm);
                 
                 case 'info':
-                    return await this.handleInfoCommand(args);
+                    return await this.handleInfoCommand(args, sm);
                 
                 case 'subscribe':
-                    return await this.handleSubscribeCommand(args);
+                    return await this.handleSubscribeCommand(args, sm);
                 
                 case 'unsubscribe':
-                    return await this.handleUnsubscribeCommand(args);
+                    return await this.handleUnsubscribeCommand(args, sm);
                 
                 default:
                     throw new Error(`Unknown command: ${action}`);
@@ -64,7 +65,7 @@ export class CommandParser {
     /**
      * Handle create [or replace | if not exists] stream <name> or create flow <name> [ttl(<duration>)] from <stream> | ...
      */
-    static async handleCreateCommand(args) {
+    static async handleCreateCommand(args, sm) {
         if (args.length === 0) {
             throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
         }
@@ -97,13 +98,13 @@ export class CommandParser {
             
             try {
                 // Check if stream exists
-                const exists = streamManager.hasStream(streamName);
+                const exists = sm.hasStream(streamName);
                 
                 if (exists) {
                     if (modifier === 'or_replace') {
                         // Delete existing stream and create new one
-                        streamManager.deleteStream(streamName);
-                        streamManager.createStream(streamName);
+                        sm.deleteStream(streamName);
+                        sm.createStream(streamName);
                         return {
                             type: 'command',
                             success: true,
@@ -124,7 +125,7 @@ export class CommandParser {
                     }
                 } else {
                     // Stream doesn't exist, create it
-                    streamManager.createStream(streamName);
+                    sm.createStream(streamName);
                     return {
                         type: 'command',
                         success: true,
@@ -152,7 +153,7 @@ export class CommandParser {
     /**
      * Handle delete stream <name> or delete flow <name>
      */
-    static async handleDeleteCommand(args) {
+    static async handleDeleteCommand(args, sm) {
         if (args.length !== 2) {
             throw new Error('Usage: delete stream <name> OR delete flow <name>');
         }
@@ -166,7 +167,7 @@ export class CommandParser {
         }
         
         if (subcommand === 'stream') {
-            streamManager.deleteStream(name);
+            sm.deleteStream(name);
             
             return {
                 type: 'command',
@@ -197,7 +198,7 @@ export class CommandParser {
     /**
      * Handle flush <name>
      */
-    static async handleFlushCommand(args) {
+    static async handleFlushCommand(args, sm) {
         if (args.length !== 1) {
             throw new Error('Usage: flush <stream_name>');
         }
@@ -209,7 +210,7 @@ export class CommandParser {
             throw new Error(`Invalid stream name '${streamName}'. Stream names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
         }
         
-        streamManager.flushStream(streamName);
+        sm.flushStream(streamName);
         
         return {
             type: 'command',
@@ -222,7 +223,7 @@ export class CommandParser {
     /**
      * Handle insert into <name> <data>
      */
-    static async handleInsertCommand(args) {
+    static async handleInsertCommand(args, sm) {
         if (args.length < 3 || args[0].toLowerCase() !== 'into') {
             throw new Error('Usage: insert into <stream_name> <json_data>');
         }
@@ -238,7 +239,7 @@ export class CommandParser {
             throw new Error(`Invalid JSON data: ${error.message}`);
         }
 
-        await streamManager.insertIntoStream(streamName, data);
+        await sm.insertIntoStream(streamName, data);
         
         const count = Array.isArray(data) ? data.length : 1;
         return {
@@ -252,16 +253,16 @@ export class CommandParser {
     /**
      * Handle list streams or list flows
      */
-    static async handleListCommand(args) {
+    static async handleListCommand(args, sm) {
         if (args.length === 0 || args[0].toLowerCase() === 'streams') {
-            const streams = streamManager.listStreams();
+            const streams = sm.listStreams();
             
             // Format streams output for better display
             let streamsOutput = `Found ${streams.length} stream(s)`;
             if (streams.length > 0) {
                 streamsOutput += ':\n';
                 streams.forEach((streamName, index) => {
-                    const info = streamManager.getStreamInfo(streamName);
+                    const info = sm.getStreamInfo(streamName);
                     const docCount = info ? info.documentCount : 0;
                     streamsOutput += `${index + 1}. ${streamName} (${docCount} documents)`;
                     if (index < streams.length - 1) streamsOutput += '\n';
@@ -297,7 +298,7 @@ export class CommandParser {
                 message: flowsOutput
             };
         } else if (args[0].toLowerCase() === 'subscriptions') {
-            const subscriptions = streamManager.getSubscriptions();
+            const subscriptions = sm.getSubscriptions();
             
             // Format subscriptions output for better display
             let subscriptionsOutput = `Found ${subscriptions.length} active subscription(s)`;
@@ -323,10 +324,10 @@ export class CommandParser {
     /**
      * Handle info <name> or info
      */
-    static async handleInfoCommand(args) {
+    static async handleInfoCommand(args, sm) {
         if (args.length === 0) {
             // Show info for all streams
-            const info = streamManager.getAllStreamInfo();
+            const info = sm.getAllStreamInfo();
             return {
                 type: 'command',
                 success: true,
@@ -342,7 +343,7 @@ export class CommandParser {
                 throw new Error(`Invalid stream name '${streamName}'. Stream names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
             }
             
-            const info = streamManager.getStreamInfo(streamName);
+            const info = sm.getStreamInfo(streamName);
             
             if (!info) {
                 throw new Error(`Stream '${streamName}' does not exist`);
@@ -362,7 +363,7 @@ export class CommandParser {
     /**
      * Handle subscribe <stream_name>
      */
-    static async handleSubscribeCommand(args) {
+    static async handleSubscribeCommand(args, sm) {
         if (args.length !== 1) {
             throw new Error('Usage: subscribe <stream_name>');
         }
@@ -375,7 +376,7 @@ export class CommandParser {
         }
         
         try {
-            const subscriptionId = streamManager.subscribeToStream(streamName, 
+            const subscriptionId = sm.subscribeToStream(streamName, 
                 (message) => {
                     const { data, streamName: actualStreamName } = message;
                     console.log(`📡 [${actualStreamName}]:`, data);
@@ -396,7 +397,7 @@ export class CommandParser {
     /**
      * Handle unsubscribe <subscription_id>
      */
-    static async handleUnsubscribeCommand(args) {
+    static async handleUnsubscribeCommand(args, sm) {
         if (args.length !== 1) {
             throw new Error('Usage: unsubscribe <subscription_id>');
         }
@@ -406,7 +407,7 @@ export class CommandParser {
             throw new Error('Subscription ID must be a number');
         }
         
-        const success = streamManager.unsubscribeFromStream(subscriptionId);
+        const success = sm.unsubscribeFromStream(subscriptionId);
         
         if (success) {
             return {

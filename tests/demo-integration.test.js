@@ -58,7 +58,7 @@ describe('Demo Integration Tests', () => {
         
         if (isCompleteStatement(currentStatement)) {
           const trimmed = currentStatement.replace(/;$/, '').trim();
-          const isCommand = /^(create\s+stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
+          const isCommand = /^(create\s+(?:or\s+replace\s+|if\s+not\s+exists\s+)?stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
           const isFlow = /^create\s+flow\b/.test(trimmed);
           
           statements.push({
@@ -129,7 +129,7 @@ describe('Demo Integration Tests', () => {
   // Helper function to execute a single statement
   const executeStatement = async (statement) => {
     if (statement.isCommand) {
-      return await CommandParser.executeCommand(statement.text);
+      return await CommandParser.executeCommand(statement.text, streamManager);
     } else if (statement.isQuery) {
       return await queryEngine.executeStatement(statement.text);
     }

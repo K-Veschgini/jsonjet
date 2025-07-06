@@ -203,7 +203,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('computed_sales');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow compute_sales from sales_data | project { product: product, quantity: quantity, price: price, total: quantity * price, tax: quantity * price * 0.1 } | insert_into(computed_sales)'
+        'create flow compute_sales from sales_data | select { product: product, quantity: quantity, price: price, total: quantity * price, tax: quantity * price * 0.1 } | insert_into(computed_sales)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -236,7 +236,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('formatted_names');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow format_names from person_data | project { id: id, full_name: first_name + " " + last_name, email_domain: "@" + domain, display: first_name + " (" + role + ")" } | insert_into(formatted_names)'
+        'create flow format_names from person_data | select { id: id, full_name: first_name + " " + last_name, email_domain: "@" + domain, display: first_name + " (" + role + ")" } | insert_into(formatted_names)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -272,7 +272,7 @@ describe('PROPER Output Validation Tests', () => {
         create flow process_orders from raw_orders
         | where status == "pending" && amount > 100
         | select { order_id: order_id, customer: customer_name, amount: amount, priority: urgent || false }
-        | project { order_id: order_id, customer: customer, amount: amount, priority: priority, fee: amount * 0.03, total: amount + (amount * 0.03) }
+        | select { order_id: order_id, customer: customer, amount: amount, priority: priority, fee: amount * 0.03, total: amount + (amount * 0.03) }
         | insert_into(processed_orders)
       `);
       expect(flowResult.success).toBe(true);
@@ -368,7 +368,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('archive');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow process_users from user_data | where age > 18 | project { name: name, age: age, status: "processed" } | insert_into(archive)'
+        'create flow process_users from user_data | where age > 18 | select { name: name, age: age, status: "processed" } | insert_into(archive)'
       );
       
       if (!flowResult.success) {
@@ -389,14 +389,14 @@ describe('PROPER Output Validation Tests', () => {
       expect(results[0].name).toBe('Alice');
       expect(results[0].age).toBe(25);
       expect(results[0].status).toBe('processed');
-      expect(results[0].city).toBeUndefined();    // Should be excluded by project
-      expect(results[0].job).toBeUndefined();     // Should be excluded by project
+      expect(results[0].city).toBeUndefined();    // Should be excluded by select
+      expect(results[0].job).toBeUndefined();     // Should be excluded by select
       
       expect(results[1].name).toBe('Carol');
       expect(results[1].age).toBe(30);
       expect(results[1].status).toBe('processed');
-      expect(results[1].city).toBeUndefined();    // Should be excluded by project
-      expect(results[1].job).toBeUndefined();     // Should be excluded by project
+      expect(results[1].city).toBeUndefined();    // Should be excluded by select
+      expect(results[1].job).toBeUndefined();     // Should be excluded by select
       
       // Verify Bob was filtered out
       const bobResult = results.find(r => r.name === 'Bob');

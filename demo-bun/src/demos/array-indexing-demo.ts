@@ -9,18 +9,18 @@ export const runArrayIndexingDemo = `// JSDB Array Indexing Demo
 // Learn how to access array elements in SELECT clauses
 
 // ====================================================
-// SETUP: Create streams for testing
+// SETUP: Create streams for testing (using or replace to handle existing streams)
 // ====================================================
 
-create stream users;
-create stream results;
+create or replace stream users;
+create or replace stream results;
 
 // ====================================================
 // TEST 1: Basic Array Indexing
 // ====================================================
 
 // Create flow to access first, second, and third elements of arrays
-create flow basic_indexing from users 
+create or replace flow basic_indexing from users 
 | select { 
     id: id, 
     name: name, 
@@ -154,27 +154,25 @@ insert into users {
 // SUMMARY OF ARRAY INDEXING CAPABILITIES
 // ====================================================
 
-/*
-✅ SUPPORTED:
-- Basic indexing: array[0], array[1], array[2]
-- Nested object arrays: obj.array[0] 
-- Deep nested access: obj.array[0].prop
-- Complex chaining: obj.array[0].subarray[1]
-- Variable indexing: array[variable]
-- Out-of-bounds handling: returns undefined
-- Empty array handling: returns undefined
-
-❌ NOT SUPPORTED YET:
-- Negative indexing: array[-1] (last element)
-- Array slicing: array[1:3]  
-- Array methods: array.length, array.slice()
-
-📝 NOTES:
-- Out-of-bounds access returns undefined (safe)
-- Empty arrays return undefined for any index
-- Variable indices work with any numeric field
-- Nested access chains work at any depth
-*/
+// ✅ SUPPORTED:
+// - Basic indexing: array[0], array[1], array[2]
+// - Nested object arrays: obj.array[0] 
+// - Deep nested access: obj.array[0].prop
+// - Complex chaining: obj.array[0].subarray[1]
+// - Variable indexing: array[variable]
+// - Out-of-bounds handling: returns undefined
+// - Empty array handling: returns undefined
+//
+// ❌ NOT SUPPORTED YET:
+// - Negative indexing: array[-1] (last element)
+// - Array slicing: array[1:3]  
+// - Array methods: array.length, array.slice()
+//
+// 📝 NOTES:
+// - Out-of-bounds access returns undefined (safe)
+// - Empty arrays return undefined for any index
+// - Variable indices work with any numeric field
+// - Nested access chains work at any depth
 
 // View results to see array indexing in action
 .flush results;`;

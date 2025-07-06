@@ -75,7 +75,7 @@ export function CodeEditor({
         
         if (isCompleteStatement(currentStatement)) {
           const trimmed = currentStatement.replace(/;$/, '').trim();
-          const isCommand = /^(create\s+stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
+          const isCommand = /^(create\s+(?:or\s+replace\s+|if\s+not\s+exists\s+)?stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
           const isFlow = /^create\s+flow\b/.test(trimmed);
           
           const stmt: Statement = {
@@ -216,7 +216,7 @@ export function CodeEditor({
       tokenizer: {
         root: [
           [/\/\/.*$/, 'comment'],
-          [/\b(create|delete|insert|flush|list|info|subscribe|unsubscribe)\b/, 'keyword.command'],
+          [/\b(create|or|replace|delete|insert|flush|list|info|subscribe|unsubscribe)\b/, 'keyword.command'],
           [/\b(flow|from|ttl)\b/, 'keyword.flow'],
           [/\bstream\b/, 'keyword.stream'],
           [/\binto\b/, 'keyword.into'],

@@ -1,9 +1,9 @@
 export const summarizeDemo = `// JSDB Data Summarization Demo
 // Learn how to aggregate and summarize streaming data with windows
 
-// 1. Create streams for sales data
-create stream sales;
-create stream daily_summary;
+// 1. Create streams for sales data (using or replace to handle existing streams)
+create or replace stream sales;
+create or replace stream daily_summary;
 
 // 2. Create summarization flows FIRST
 // Summarize total sales by product using a 2-item tumbling window

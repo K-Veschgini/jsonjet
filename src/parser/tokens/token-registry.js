@@ -3,10 +3,11 @@ import { Lexer } from 'chevrotain';
 // Import all token categories
 import { WhiteSpace, Comment, Identifier } from './core-tokens.js';
 import { 
-    Where, Project, Select, Scan, Summarize, InsertInto, Collect,
+    Where, Select, Scan, Summarize, InsertInto, Collect,
     By, Over, Step, Iff, Emit, Count, Sum,
-    HoppingWindow, TumblingWindow, SessionWindow, Print,
-    And, Or  // Deprecated but kept for compatibility
+    Every, When, On, Change, Group, Update, Using,
+    HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
 } from './keyword-tokens.js';
 import {
     LogicalOr, LogicalAnd, Equals, NotEquals, LessEquals, GreaterEquals,
@@ -29,17 +30,17 @@ export const allTokens = [
     Comment,
     
     // Complex keywords first (longest patterns)
-    HoppingWindow, TumblingWindow, SessionWindow,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy,
+    HoppingWindow, TumblingWindow, SlidingWindow, CountWindow, SessionWindow,
     
     // Query operation keywords
-    Where, Project, Select, Scan, Step, Summarize, InsertInto, By, Over, 
-    Iff, Emit, Collect, Print,
+    Where, Select, Scan, Step, Summarize, InsertInto, By, Over, 
+    Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print,
     
     // Function keywords
     Count, Sum,
     
     // Logical keywords (deprecated but supported for compatibility)
-    And, Or,
     
     // Operators (longer patterns first)
     LogicalOr,      // || must come before |
@@ -80,10 +81,10 @@ export {
     WhiteSpace, Comment, Identifier,
     
     // Keywords
-    Where, Project, Select, Scan, Summarize, InsertInto, Collect,
-    By, Over, Step, Iff, Emit, Count, Sum,
-    HoppingWindow, TumblingWindow, SessionWindow, Print,
-    And, Or,
+    Where, Select, Scan, Summarize, InsertInto, Collect,
+    By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using, Count, Sum,
+    HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
     
     // Operators
     LogicalOr, LogicalAnd, Equals, NotEquals, LessEquals, GreaterEquals,

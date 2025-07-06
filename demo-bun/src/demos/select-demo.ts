@@ -1,11 +1,11 @@
 export const selectDemo = `// JSDB Select Operator Demo
 // Learn the new select syntax with spread, exclusions, and transformations
 
-// 1. Create streams for testing select operations
-create stream user_data;
-create stream clean_output;
-create stream transformed_output;
-create stream excluded_output;
+// 1. Create streams for testing select operations (using or replace to handle existing streams)
+create or replace stream user_data;
+create or replace stream clean_output;
+create or replace stream transformed_output;
+create or replace stream excluded_output;
 
 // 2. Demo 1: Basic field selection (like project but safer)
 // Select only specific fields - missing fields return undefined safely

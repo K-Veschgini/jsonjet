@@ -6,7 +6,6 @@ import { createToken } from 'chevrotain';
 
 // Source and pipeline operations
 export const Where = createToken({ name: "Where", pattern: /where/i });
-export const Project = createToken({ name: "Project", pattern: /project/i });
 export const Select = createToken({ name: "Select", pattern: /select/i });
 export const Scan = createToken({ name: "Scan", pattern: /scan/i });
 export const Summarize = createToken({ name: "Summarize", pattern: /summarize/i });
@@ -26,13 +25,29 @@ export const Step = createToken({ name: "Step", pattern: /step/i });
 export const Iff = createToken({ name: "Iff", pattern: /iff/i });
 export const Emit = createToken({ name: "Emit", pattern: /emit/i });
 
+// Emit clause keywords
+export const Every = createToken({ name: "Every", pattern: /every/i });
+export const When = createToken({ name: "When", pattern: /when/i });
+export const On = createToken({ name: "On", pattern: /on/i });
+export const Change = createToken({ name: "Change", pattern: /change/i });
+export const Group = createToken({ name: "Group", pattern: /group/i });
+export const Update = createToken({ name: "Update", pattern: /update/i });
+export const Using = createToken({ name: "Using", pattern: /using/i });
+
 // Aggregation functions
 export const Count = createToken({ name: "Count", pattern: /count\b/i });
 export const Sum = createToken({ name: "Sum", pattern: /sum\b/i });
 
-// Window functions
+// Window functions - count-based
 export const HoppingWindow = createToken({ name: "HoppingWindow", pattern: /hopping_window/i });
 export const TumblingWindow = createToken({ name: "TumblingWindow", pattern: /tumbling_window/i });
+export const SlidingWindow = createToken({ name: "SlidingWindow", pattern: /sliding_window/i });
+export const CountWindow = createToken({ name: "CountWindow", pattern: /count_window/i });
+
+// Window functions - value-based (with _by suffix)
+export const HoppingWindowBy = createToken({ name: "HoppingWindowBy", pattern: /hopping_window_by/i });
+export const TumblingWindowBy = createToken({ name: "TumblingWindowBy", pattern: /tumbling_window_by/i });
+export const SlidingWindowBy = createToken({ name: "SlidingWindowBy", pattern: /sliding_window_by/i });
 export const SessionWindow = createToken({ name: "SessionWindow", pattern: /session_window/i });
 
 // =============================================================================
@@ -42,9 +57,3 @@ export const SessionWindow = createToken({ name: "SessionWindow", pattern: /sess
 // Dot commands
 export const Print = createToken({ name: "Print", pattern: /\.print/i });
 
-// =============================================================================
-// LOGICAL KEYWORDS (deprecated - prefer symbols)
-// =============================================================================
-// Note: Keeping these for backward compatibility, but || and && are preferred
-export const And = createToken({ name: "And", pattern: /\band\b/i });
-export const Or = createToken({ name: "Or", pattern: /\bor\b/i });
