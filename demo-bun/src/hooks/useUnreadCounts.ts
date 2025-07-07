@@ -53,6 +53,18 @@ export function useUnreadCounts() {
     }
   };
 
+  const resetAllCounts = () => {
+    setUnreadCounts({
+      error: 0,
+      warning: 0,
+      success: 0,
+      info: 0
+    });
+    setUnreadStreamMessages(0);
+    setUnreadConsoleEntries(0);
+    setFadingOut({ streams: false, console: false });
+  };
+
   return {
     unreadCounts,
     unreadStreamMessages,
@@ -61,6 +73,7 @@ export function useUnreadCounts() {
     activeTabRef,
     clearUnreadCounts,
     incrementConsoleEntries,
-    incrementStreamMessages
+    incrementStreamMessages,
+    resetAllCounts
   };
 }

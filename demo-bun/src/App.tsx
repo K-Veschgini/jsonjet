@@ -75,7 +75,8 @@ function App() {
     activeTabRef,
     clearUnreadCounts,
     incrementConsoleEntries,
-    incrementStreamMessages
+    incrementStreamMessages,
+    resetAllCounts
   } = useUnreadCounts();
 
   // Configuration
@@ -241,41 +242,30 @@ function App() {
     }
   }, [addConsoleEntry]);
 
-  // Handle delete all streams
-  const handleDeleteAllStreams = useCallback(async () => {
+  // Handle reset - clears everything
+  const handleReset = useCallback(async () => {
     try {
-      const streamNames = streamManager.listStreams();
-      if (streamNames.length === 0) {
-        addConsoleEntry(
-          'delete // all streams',
-          { success: true, type: 'system', message: 'No streams to delete' }
-        );
-        return;
-      }
-      
-      // Stop all active flows first
-      const activeFlows = queryEngine.getActiveFlows();
+      // Stop all active flows
+      const activeFlows = queryEngine.listActiveFlows();
       for (const flow of activeFlows) {
         queryEngine.stopQuery(flow.queryId);
       }
       
+      // Delete all streams
       streamManager.deleteAllStreams();
       
-      // Clear stream filters in UI
-      setStreamFilters({});
-      
-      // Clear messages since all streams are gone
+      // Clear all UI state
+      setStreamFilters({ '_log': { enabled: false, count: 0 } });
       setMessages([]);
+      setConsoleEntries([]);
+      setActiveFlows([]);
       
-      addConsoleEntry(
-        `delete // ${streamNames.join(', ')}`,
-        { success: true, type: 'system', message: `✅ Deleted all ${streamNames.length} streams and ${activeFlows.length} flows` }
-      );
+      // Reset all unread badge counts
+      resetAllCounts();
+      
     } catch (error: any) {
-      addConsoleEntry(
-        'delete // all streams',
-        { success: false, error: { code: 'DELETE_ERROR', message: `Error deleting streams: ${error.message}` } }
-      );
+      // Reset is a UI action, so only log errors to browser console, not JSDB console
+      console.error('Reset error:', error);
     }
   }, [addConsoleEntry]);
 
@@ -368,6 +358,7 @@ function App() {
               onStatementsChange={setStatements}
               onStatementExecute={handleStatementExecute}
               onRunAll={handleRunAll}
+              onReset={handleReset}
               selectedDemo={selectedDemo}
               demoOptions={demoOptions}
               onDemoChange={setSelectedDemo}
@@ -384,7 +375,6 @@ function App() {
               fadingOutStreams={fadingOut.streams}
               maxMessagesPerStream={MAX_MESSAGES_PER_STREAM}
               onFlushAllStreams={handleFlushAllStreams}
-              onDeleteAllStreams={handleDeleteAllStreams}
               consoleEntries={consoleEntries}
               unreadConsoleEntries={unreadConsoleEntries}
               fadingOutConsole={fadingOut.console}

@@ -15,6 +15,7 @@ interface CodeEditorProps {
   onStatementsChange: (statements: Statement[]) => void;
   onStatementExecute: (statement: Statement, index: number) => void;
   onRunAll: () => void;
+  onReset: () => void;
   selectedDemo: string;
   demoOptions: Array<{ value: string; label: string }>;
   onDemoChange: (value: string) => void;
@@ -26,6 +27,7 @@ export function CodeEditor({
   onStatementsChange,
   onStatementExecute,
   onRunAll,
+  onReset,
   selectedDemo,
   demoOptions,
   onDemoChange
@@ -318,15 +320,26 @@ export function CodeEditor({
         alignItems: 'center'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <Button 
-            onClick={onRunAll}
-            size="sm"
-            variant="filled"
-            disabled={statements.length === 0}
-            leftSection="▶"
-          >
-            Run All
-          </Button>
+          <Group gap="xs">
+            <Button 
+              onClick={onRunAll}
+              size="sm"
+              variant="filled"
+              disabled={statements.length === 0}
+              leftSection="▶"
+            >
+              Run All
+            </Button>
+            <Button
+              onClick={onReset}
+              size="sm"
+              variant="light"
+              color="red"
+              leftSection="↻"
+            >
+              Reset
+            </Button>
+          </Group>
           <Select
             value={selectedDemo}
             data={demoOptions}

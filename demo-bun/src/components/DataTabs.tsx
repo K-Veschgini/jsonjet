@@ -46,7 +46,6 @@ interface DataTabsProps {
   fadingOutStreams: boolean;
   maxMessagesPerStream: number;
   onFlushAllStreams: () => void;
-  onDeleteAllStreams: () => void;
   
   // Console data  
   consoleEntries: ConsoleEntry[];
@@ -68,7 +67,6 @@ export const DataTabs = memo(function DataTabs({
   fadingOutStreams,
   maxMessagesPerStream,
   onFlushAllStreams,
-  onDeleteAllStreams,
   consoleEntries,
   unreadConsoleEntries,
   fadingOutConsole,
@@ -209,14 +207,6 @@ export const DataTabs = memo(function DataTabs({
                   onClick={onFlushAllStreams}
                 >
                   Flush All Streams
-                </Button>
-                <Button 
-                  size="xs" 
-                  variant="light" 
-                  color="red"
-                  onClick={onDeleteAllStreams}
-                >
-                  Delete All Streams
                 </Button>
               </Group>
             )}
