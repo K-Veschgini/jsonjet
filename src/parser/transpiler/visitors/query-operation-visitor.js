@@ -56,6 +56,12 @@ export const QueryOperationVisitorMixin = {
             properties.push('...item');
         }
 
+        // Handle spread expression (...expr)
+        if (ctx.spreadExpression) {
+            const spreadExpressions = ctx.spreadExpression.map(expr => `...${this.visit(expr)}`);
+            properties.push(...spreadExpressions);
+        }
+
         // Handle regular properties
         if (ctx.selectProperty) {
             const regularProperties = ctx.selectProperty.map(prop => this.visit(prop));
@@ -132,18 +138,58 @@ export const QueryOperationVisitorMixin = {
     aggregationObject(ctx) {
         if (ctx.aggregationPropertyList) {
             const properties = this.visit(ctx.aggregationPropertyList);
-            return VisitorUtils.createObjectLiteral(properties);
+            
+            // Flatten the properties array if it's nested
+            const propArray = Array.isArray(properties) && Array.isArray(properties[0]) ? properties[0] : properties;
+            
+            // Separate exclusions from regular properties
+            const exclusions = propArray.filter(prop => typeof prop === 'string' && prop.startsWith('__EXCLUDE_'));
+            const regularProperties = propArray.filter(prop => typeof prop === 'string' && !prop.startsWith('__EXCLUDE_'));
+            
+            // Check if any property uses context variables
+            const hasContextVars = regularProperties.some(prop => 
+                prop.includes('safeGet(context,') || prop.includes('...safeGet(context,')
+            );
+            
+            if (exclusions.length > 0) {
+                // Handle exclusions with object deletion
+                const excludeFields = exclusions.map(exc => `'${exc.replace('__EXCLUDE_', '')}'`);
+                
+                if (hasContextVars) {
+                    // Create object first, then delete excluded fields
+                    const objStr = regularProperties.length > 0 ? VisitorUtils.createObjectLiteral(regularProperties) : '{}';
+                    return `(context) => { const obj = ${objStr}; [${excludeFields.join(', ')}].forEach(key => delete obj[key]); return obj; }`;
+                } else {
+                    const objStr = regularProperties.length > 0 ? VisitorUtils.createObjectLiteral(regularProperties) : '{}';
+                    return `((() => { const obj = ${objStr}; [${excludeFields.join(', ')}].forEach(key => delete obj[key]); return obj; })())`;
+                }
+            } else if (hasContextVars) {
+                // Generate a function that evaluates with context
+                return `(context) => (${VisitorUtils.createObjectLiteral(regularProperties)})`;
+            } else {
+                return VisitorUtils.createObjectLiteral(regularProperties);
+            }
         }
         return VisitorUtils.createObjectLiteral([]);
     },
 
     aggregationPropertyList(ctx) {
-        return VisitorUtils.visitArray(this, ctx.aggregationProperty);
+        // Get individual property strings instead of joining them
+        if (!ctx.aggregationProperty) return [];
+        return ctx.aggregationProperty.map(prop => this.visit(prop));
     },
 
     aggregationProperty(ctx) {
         if (ctx.spreadAll) {
             return '...item';
+        } else if (ctx.spreadExpression) {
+            // For spread expressions in aggregations, use state context instead of item context
+            const expr = this.visitWithStateContext(ctx.spreadExpression);
+            return `...${expr}`;
+        } else if (ctx.excludeField) {
+            // Handle exclusion field with special marker
+            const fieldName = VisitorUtils.getTokenImage(ctx.excludeField);
+            return `__EXCLUDE_${fieldName}`;
         } else if (ctx.propertyKey && ctx.aggregationExpression) {
             const key = this.visit(ctx.propertyKey);
             const value = this.visit(ctx.aggregationExpression);
@@ -159,7 +205,7 @@ export const QueryOperationVisitorMixin = {
         if (ctx.aggregationFunctionCall) {
             return this.visit(ctx.aggregationFunctionCall);
         } else if (ctx.expression) {
-            return this.visit(ctx.expression);
+            return this.visitWithStateContext(ctx.expression);
         }
         return '';
     },
@@ -190,6 +236,37 @@ export const QueryOperationVisitorMixin = {
         // For now, just take the first expression
         const expression = this.visit(ctx.expression[0]);
         return expression;
+    },
+
+
+    /**
+     * Visit an expression in state context (for aggregations)
+     * This treats bare identifiers as state variables instead of item properties
+     */
+    visitWithStateContext(ctx) {
+        // Save the original stepVariable method
+        const originalStepVariable = this.stepVariable;
+        
+        // Override stepVariable to use proper context access in aggregations
+        this.stepVariable = (ctx) => {
+            const stepOrVariable = VisitorUtils.getTokenImage(ctx.stepOrVariable);
+            
+            if (ctx.variableName) {
+                const variableName = VisitorUtils.getTokenImage(ctx.variableName);
+                return `safeGet(context, '${stepOrVariable}.${variableName}')`;
+            } else {
+                return `safeGet(context, '${stepOrVariable}')`;
+            }
+        };
+        
+        try {
+            // Visit the expression with the modified context
+            const result = this.visit(ctx);
+            return result;
+        } finally {
+            // Restore the original stepVariable method
+            this.stepVariable = originalStepVariable;
+        }
     },
 
     // =============================================================================

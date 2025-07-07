@@ -32,6 +32,7 @@ export class AggregationObject {
         this.processedSpec = null; // Processed spec with aggregation placeholders
         this.lastResult = null; // Cache of last result for change detection
         this.hasChangedSinceLastCheck = false; // Track if values changed
+        this.isFunction = typeof objectSpec === 'function'; // Check if spec is a function
         
         this.parseObjectSpec();
     }
@@ -40,7 +41,13 @@ export class AggregationObject {
      * Parse the object specification and set up aggregations recursively
      */
     parseObjectSpec() {
-        this.processedSpec = this.parseRecursively(this.originalSpec, '');
+        if (this.isFunction) {
+            // If spec is a function, evaluate it with context to get the actual spec
+            const actualSpec = this.originalSpec(this.context);
+            this.processedSpec = this.parseRecursively(actualSpec, '');
+        } else {
+            this.processedSpec = this.parseRecursively(this.originalSpec, '');
+        }
     }
     
     /**
@@ -157,7 +164,20 @@ export class AggregationObject {
         if (obj && typeof obj === 'object' && obj.constructor === Object) {
             const result = {};
             for (const [key, value] of Object.entries(obj)) {
-                result[key] = this.buildResultRecursively(value);
+                // Handle spread operations for context tokens
+                if (key.startsWith('...') && typeof value === 'string' && value.startsWith('__CONTEXT_') && value.endsWith('__')) {
+                    const contextPath = value.slice(10, -2); // Remove __CONTEXT_ and __
+                    const parts = contextPath.split('.');
+                    let contextValue = this.context;
+                    for (const part of parts) {
+                        contextValue = contextValue?.[part];
+                    }
+                    if (contextValue && typeof contextValue === 'object') {
+                        Object.assign(result, contextValue);
+                    }
+                } else {
+                    result[key] = this.buildResultRecursively(value);
+                }
             }
             return result;
         }
@@ -165,6 +185,17 @@ export class AggregationObject {
         // Handle context references for primitive values
         if (typeof obj === 'string' && this.context[obj]) {
             return this.context[obj];
+        }
+        
+        // Handle context reference tokens (__CONTEXT_varname__)
+        if (typeof obj === 'string' && obj.startsWith('__CONTEXT_') && obj.endsWith('__')) {
+            const contextPath = obj.slice(10, -2); // Remove __CONTEXT_ and __
+            const parts = contextPath.split('.');
+            let value = this.context;
+            for (const part of parts) {
+                value = value?.[part];
+            }
+            return value;
         }
         
         // Primitive value, return as-is

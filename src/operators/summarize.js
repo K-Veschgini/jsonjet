@@ -222,11 +222,6 @@ export class SummarizeOperator extends Operator {
         for (const [groupKey, groupData] of this.noWindowGroups.entries()) {
             const result = groupData.aggregation.getResult();
             
-            // Add the group value to the result if we have grouping
-            if (this.groupByCallback) {
-                result.group_key = groupData.groupValue;
-            }
-            
             // Add emit information to the result
             if (this.emitFunc) {
                 result.emit_info = this.emitFunc.getEmitInfo();
@@ -292,15 +287,7 @@ export class SummarizeOperator extends Operator {
         for (const [groupKey, groupData] of windowData.groups.entries()) {
             const result = groupData.aggregation.getResult();
             
-            // Add the group value to the result if we have grouping
-            if (this.groupByCallback) {
-                result.group_key = groupData.groupValue;
-            }
-            
-            // Add window information to the result
-            if (windowData.windowInfo) {
-                result.window = windowData.windowInfo;
-            }
+            // Window information is available through the context variable if user wants it
             
             this.emit(result);
         }
@@ -317,15 +304,7 @@ export class SummarizeOperator extends Operator {
             for (const [groupKey, groupData] of windowData.groups.entries()) {
                 const result = groupData.aggregation.getResult();
                 
-                // Add the group value to the result if we have grouping
-                if (this.groupByCallback) {
-                    result.group_key = groupData.groupValue;
-                }
-                
-                // Add window information to the result
-                if (windowData.windowInfo) {
-                    result.window = windowData.windowInfo;
-                }
+                // Window information is available through the context variable if user wants it
                 
                 this.emit(result);
             }
@@ -366,11 +345,6 @@ export class SummarizeOperator extends Operator {
     async emitNoWindowResults() {
         for (const [groupKey, groupData] of this.noWindowGroups.entries()) {
             const result = groupData.aggregation.getResult();
-            
-            // Add the group value to the result if we have grouping
-            if (this.groupByCallback) {
-                result.group_key = groupData.groupValue;
-            }
             
             this.emit(result);
         }

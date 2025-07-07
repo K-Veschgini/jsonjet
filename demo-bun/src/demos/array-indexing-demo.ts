@@ -175,4 +175,4 @@ insert into users {
 // - Nested access chains work at any depth
 
 // View results to see array indexing in action
-.flush results;`;
+flush results;`;

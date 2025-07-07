@@ -248,7 +248,7 @@ function App() {
           addLog('success', result.message);
           
           // Handle stream creation
-          if (result.result?.streamName && statement.text.includes('create stream')) {
+          if (result.result?.streamName && /create\s+(?:or\s+replace\s+)?stream/.test(statement.text)) {
             setStreamFilters(prev => ({
               ...prev,
               [result.result.streamName]: { enabled: true, count: 0 }

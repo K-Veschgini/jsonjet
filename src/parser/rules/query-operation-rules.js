@@ -39,6 +39,11 @@ export function defineQueryOperationRules() {
                         this.CONSUME(Spread);
                         this.CONSUME(Multiply, { LABEL: "spreadAll" });
                     }},
+                    // Spread expression: ...expr
+                    { ALT: () => {
+                        this.CONSUME2(Spread);
+                        this.SUBRULE(this.expression, { LABEL: "spreadExpression" });
+                    }},
                     // Exclusion: -fieldName
                     { ALT: () => {
                         this.CONSUME(Minus, { LABEL: "exclusion" });
@@ -112,10 +117,20 @@ export function defineQueryOperationRules() {
 
     this.aggregationProperty = this.RULE("aggregationProperty", () => {
         this.OR([
-            // Spread syntax: ...*
+            // Spread all: ...*
             { ALT: () => {
                 this.CONSUME(Spread);
                 this.CONSUME(Multiply, { LABEL: "spreadAll" });
+            }},
+            // Spread expression: ...expr
+            { ALT: () => {
+                this.CONSUME2(Spread);
+                this.SUBRULE(this.expression, { LABEL: "spreadExpression" });
+            }},
+            // Exclusion: -fieldName
+            { ALT: () => {
+                this.CONSUME(Minus, { LABEL: "exclusion" });
+                this.CONSUME(Identifier, { LABEL: "excludeField" });
             }},
             // Key-value pair: key: aggregationFunction()
             { ALT: () => {
@@ -125,7 +140,7 @@ export function defineQueryOperationRules() {
             }},
             // Shorthand: just identifier
             { ALT: () => {
-                this.CONSUME(Identifier, { LABEL: "shorthandProperty" });
+                this.CONSUME2(Identifier, { LABEL: "shorthandProperty" });
             }}
         ]);
     });

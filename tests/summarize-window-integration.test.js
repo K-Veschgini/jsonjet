@@ -42,17 +42,13 @@ describe('Summarize Window Integration', () => {
       
       // Only laptop should have triggered (2 items), mouse still has partial window
       
-      // Verify the structure of results
-      const laptopResult = results.find(r => r.group_key === 'laptop');
-      const mouseResult = results.find(r => r.group_key === 'mouse');
-      
-      expect(laptopResult).toBeDefined();
-      expect(laptopResult.total_amount).toBe(2300); // 1200 + 1100
-      expect(laptopResult.count).toBe(2);
+      // Verify the structure of results - should have 1 result (laptop group)
+      expect(results).toHaveLength(1);
+      expect(results[0].total_amount).toBe(2300); // 1200 + 1100
+      expect(results[0].count).toBe(2);
       
       // Mouse window hasn't triggered yet since only laptop has 2 items
       // This is correct behavior - windows are per group
-      expect(mouseResult).toBeUndefined();
 
     } finally {
       streamManager.unsubscribeFromStream(subscriptionId);
