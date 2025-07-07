@@ -70,13 +70,14 @@ export function createQueryFunction(queryText) {
             const { Stream } = await import('../../../core/stream.js');
             const Operators = await import('../../../operators/index.js');
             const { safeGet } = await import('../../../utils/safe-access.js');
+            const { functionRegistry } = await import('../../../functions/index.js');
             
             // Create execution context with imports available
-            const createPipeline = new Function('Stream', 'Operators', 'safeGet', `
+            const createPipeline = new Function('Stream', 'Operators', 'safeGet', 'functionRegistry', `
                 return new Stream()${result.javascript};
             `);
             
-            const stream = createPipeline(Stream, Operators, safeGet);
+            const stream = createPipeline(Stream, Operators, safeGet, functionRegistry);
             
             // Push data through the stream
             for (const item of data) {
@@ -177,7 +178,8 @@ export function getTranspilationInfo(queryText) {
 
 function generateImports() {
     return `import * as Operators from './src/operators/index.js';
-import { safeGet } from './src/utils/safe-access.js';`;
+import { safeGet } from './src/utils/safe-access.js';
+import { functionRegistry } from './src/functions/index.js';`;
 }
 
 function estimateComplexity(cst) {

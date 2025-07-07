@@ -16,6 +16,9 @@ export class StreamManager {
         this.globalSubscribers = new Map(); // subscriptionId -> callback - for all-streams subscriptions
         this.logger = null; // Will be initialized lazily
         
+        // Event callbacks for stream lifecycle
+        this.streamEventCallbacks = new Set(); // callbacks for stream created/deleted
+        
         // Create the _log stream at startup
         this.createStreamInternal('_log');
     }
@@ -55,6 +58,12 @@ export class StreamManager {
         };
 
         this.streams.set(name, streamContainer);
+        
+        // Emit stream created event (skip for system streams starting with _ to avoid noise)
+        if (!name.startsWith('_')) {
+            this._emitStreamEvent('created', { streamName: name, streamContainer });
+        }
+        
         return streamContainer;
     }
 
@@ -89,6 +98,9 @@ export class StreamManager {
             }
         }
         this.streams.delete(name);
+        
+        // Emit stream deleted event
+        this._emitStreamEvent('deleted', { streamName: name });
     }
 
     /**
@@ -384,6 +396,32 @@ export class StreamManager {
         this.globalSubscribers.clear();
         this.userSubscriptions.clear();
         this.nextSubscriptionId = 1;
+    }
+    
+    /**
+     * Subscribe to stream lifecycle events (created, deleted)
+     * @param {Function} callback - Callback function (event, data) => void
+     * @returns {Function} Unsubscribe function
+     */
+    onStreamEvent(callback) {
+        this.streamEventCallbacks.add(callback);
+        return () => this.streamEventCallbacks.delete(callback);
+    }
+    
+    /**
+     * Emit a stream event to all listeners
+     * @param {string} event - Event type ('created' or 'deleted')
+     * @param {Object} data - Event data
+     * @private
+     */
+    _emitStreamEvent(event, data) {
+        for (const callback of this.streamEventCallbacks) {
+            try {
+                callback(event, data);
+            } catch (error) {
+                console.error('Error in stream event callback:', error);
+            }
+        }
     }
 }
 

@@ -3,6 +3,7 @@ import { transpileQuery } from '../parser/query-transpiler.js';
 import CommandParser from '../parser/command-parser.js';
 import * as Operators from '../operators/index.js';
 import { safeGet } from '../utils/safe-access.js';
+import { functionRegistry } from '../functions/index.js';
 
 /**
  * QueryEngine - Handles both commands and continuous queries
@@ -426,12 +427,12 @@ export class QueryEngine {
                 });
             };
             
-            const createPipeline = new Function('Stream', 'Operators', 'insertIntoFactory', 'safeGet', `
+            const createPipeline = new Function('Stream', 'Operators', 'insertIntoFactory', 'safeGet', 'functionRegistry', `
                 const stream = new Stream();
                 return stream${jsCode};
             `);
             
-            const pipeline = createPipeline(Stream, Operators, insertIntoFactory, safeGet);
+            const pipeline = createPipeline(Stream, Operators, insertIntoFactory, safeGet, functionRegistry);
             
             // No result callback needed - flows use insert_into to write results
             

@@ -99,7 +99,8 @@ export function defineLiteralRules() {
     this.functionCall = this.RULE("functionCall", () => {
         this.OR([
             { ALT: () => this.SUBRULE(this.iffFunction) },
-            { ALT: () => this.SUBRULE(this.emitFunction) }
+            { ALT: () => this.SUBRULE(this.emitFunction) },
+            { ALT: () => this.SUBRULE(this.scalarFunction) }
         ]);
     });
 
@@ -118,6 +119,16 @@ export function defineLiteralRules() {
     // EMIT function: emit(value)
     this.emitFunction = this.RULE("emitFunction", () => {
         this.CONSUME(Emit);
+        this.CONSUME(LeftParen);
+        this.OPTION(() => {
+            this.SUBRULE(this.argumentList);
+        });
+        this.CONSUME(RightParen);
+    });
+
+    // Scalar function: functionName(args...)
+    this.scalarFunction = this.RULE("scalarFunction", () => {
+        this.CONSUME(Identifier, { LABEL: "functionName" });
         this.CONSUME(LeftParen);
         this.OPTION(() => {
             this.SUBRULE(this.argumentList);

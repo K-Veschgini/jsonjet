@@ -140,6 +140,8 @@ export const LiteralVisitorMixin = {
             return this.visit(ctx.iffFunction);
         } else if (ctx.emitFunction) {
             return this.visit(ctx.emitFunction);
+        } else if (ctx.scalarFunction) {
+            return this.visit(ctx.scalarFunction);
         }
         return '';
     },
@@ -158,6 +160,15 @@ export const LiteralVisitorMixin = {
             return `return ${args}`;
         }
         return 'return null';
+    },
+
+    scalarFunction(ctx) {
+        const functionName = VisitorUtils.getTokenImage(ctx.functionName);
+        if (ctx.argumentList) {
+            const args = this.visit(ctx.argumentList);
+            return `functionRegistry.execute('${functionName}', [${args}])`;
+        }
+        return `functionRegistry.execute('${functionName}', [])`;
     },
 
     argumentList(ctx) {

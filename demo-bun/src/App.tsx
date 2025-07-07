@@ -18,7 +18,7 @@ import { DataTabs } from './components/DataTabs';
 import { useUnreadCounts } from './hooks/useUnreadCounts';
 
 // Import demos
-import { flowProcessingDemo, summarizeDemo, scanDemo, selectDemo, runArrayIndexingDemo } from './demos';
+import { flowProcessingDemo, summarizeDemo, scanDemo, selectDemo, runArrayIndexingDemo, expDemo } from './demos';
 
 interface Statement {
   text: string;
@@ -89,7 +89,8 @@ function App() {
     { value: 'summarize-demo', label: 'Data Summarization' },
     { value: 'scan-demo', label: 'Stream Scanning' },
     { value: 'select-demo', label: 'Select Operator' },
-    { value: 'array-indexing-demo', label: 'Array Indexing' }
+    { value: 'array-indexing-demo', label: 'Array Indexing' },
+    { value: 'exp-demo', label: 'Exp Function' }
   ];
 
   // Demo content
@@ -103,6 +104,8 @@ function App() {
         return selectDemo;
       case 'array-indexing-demo':
         return runArrayIndexingDemo;
+      case 'exp-demo':
+        return expDemo;
       case 'flow-processing':
         return flowProcessingDemo;
       default:
@@ -152,7 +155,7 @@ function App() {
     setActiveFlows(initialFlows);
 
     // Subscribe to flow events
-    const unsubscribe = queryEngine.onFlowEvent((event, flowInfo) => {
+    const unsubscribeFlow = queryEngine.onFlowEvent((event, flowInfo) => {
       if (event === 'created') {
         setActiveFlows(prev => [...prev, flowInfo]);
       } else if (event === 'deleted') {
@@ -161,7 +164,34 @@ function App() {
     });
 
     return () => {
-      unsubscribe();
+      unsubscribeFlow();
+    };
+  }, []);
+
+  // Subscribe to stream events for real-time stream tracking
+  useEffect(() => {
+    const unsubscribeStream = streamManager.onStreamEvent((event, data) => {
+      if (event === 'created') {
+        const { streamName } = data;
+        setStreamFilters(prev => ({
+          ...prev,
+          [streamName]: { 
+            enabled: !streamName.startsWith('_'), // Default off for system streams
+            count: 0 
+          }
+        }));
+      } else if (event === 'deleted') {
+        const { streamName } = data;
+        setStreamFilters(prev => {
+          const newFilters = { ...prev };
+          delete newFilters[streamName];
+          return newFilters;
+        });
+      }
+    });
+
+    return () => {
+      unsubscribeStream();
     };
   }, []);
 
@@ -278,27 +308,7 @@ function App() {
         // Add to console
         addConsoleEntry(statement.text, result);
         
-        if (result.success) {
-          // Handle stream creation
-          if (result.result?.streamName && /create\s+(?:or\s+replace\s+)?stream/.test(statement.text)) {
-            setStreamFilters(prev => ({
-              ...prev,
-              [result.result.streamName]: { 
-                enabled: !result.result.streamName.startsWith('_'), // Default off for system streams
-                count: 0 
-              }
-            }));
-          }
-          
-          // Handle stream deletion
-          if (result.result?.streamName && statement.text.includes('delete stream')) {
-            setStreamFilters(prev => {
-              const newFilters = { ...prev };
-              delete newFilters[result.result.streamName];
-              return newFilters;
-            });
-          }
-        }
+        // Stream creation/deletion is now handled by event listeners
         
       } else if (statement.isQuery) {
         const result = await queryEngine.executeStatement(statement.text);

@@ -5,11 +5,13 @@
 
 export { ScalarFunction } from './core/scalar-function.js';
 export { FunctionRegistry, functionRegistry } from './core/function-registry.js';
+export { Config, config } from './core/function-config.js';
 
 // Math functions
 export { ExpFunction } from './math/index.js';
 
 // Register all functions
+import { functionRegistry } from './core/function-registry.js';
 import { ExpFunction } from './math/index.js';
 
 // Auto-register all functions on import
