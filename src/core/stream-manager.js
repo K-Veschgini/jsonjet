@@ -1,6 +1,7 @@
 import { Stream } from './stream.js';
 import { Logger } from './logger.js';
 import { JSDBError, ErrorCodes } from './jsdb-error.js';
+import { sanitizeForJSON } from '../utils/json-sanitizer.js';
 
 /**
  * StreamManager - Manages named streams as pure data pipes
@@ -137,10 +138,13 @@ export class StreamManager {
 
         // Push data to all active subscribers immediately
         for (const item of items) {
+            // Sanitize data to remove undefined values before processing
+            const sanitizedItem = sanitizeForJSON(item);
+            
             // Push to flow subscribers (pipelines)
             for (const [queryId, { pipeline }] of container.flowSubscribers) {
                 try {
-                    pipeline.push(item);
+                    pipeline.push(sanitizedItem);
                 } catch (error) {
                     console.error(`Error pushing to flow ${queryId}:`, error);
                     // Remove failed subscriber
@@ -151,7 +155,7 @@ export class StreamManager {
             // Push to user subscribers (direct callbacks)
             for (const [subId, callback] of container.userSubscribers) {
                 try {
-                    callback({ data: item, streamName: name });
+                    callback({ data: sanitizedItem, streamName: name });
                 } catch (error) {
                     console.error(`Error calling user subscription ${subId}:`, error);
                     // Remove failed subscriber
@@ -163,7 +167,7 @@ export class StreamManager {
             // Push to global subscribers (all streams)
             for (const [subId, callback] of this.globalSubscribers) {
                 try {
-                    callback({ data: item, streamName: name });
+                    callback({ data: sanitizedItem, streamName: name });
                 } catch (error) {
                     console.error(`Error calling global subscription ${subId}:`, error);
                     // Remove failed subscriber

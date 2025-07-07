@@ -220,16 +220,22 @@ export class Sum extends Aggregation {
      * @returns {Object} - Statistics object
      */
     getStats() {
-        return {
+        const result = {
             algorithm: this.algorithm,
             sum: this.getResult(),
             count: this.count,
             invalidInputCount: this.invalidInputCount,
             hasOverflowed: this.hasOverflowed,
-            compensation: this.algorithm === 'kahan' ? this.compensation : undefined,
             precision: this.algorithm === 'kahan' ? 'high' : 
                       this.algorithm === 'pairwise' ? 'medium' : 'standard'
         };
+        
+        // Only include compensation for kahan algorithm
+        if (this.algorithm === 'kahan') {
+            result.compensation = this.compensation;
+        }
+        
+        return result;
     }
     
     /**

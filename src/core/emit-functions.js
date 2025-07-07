@@ -128,7 +128,7 @@ export function emit_when(conditionCallback) {
                 getEmitInfo: () => ({
                     type: 'when',
                     conditionCallback: conditionCallback,
-                    conditionExpr: typeof conditionCallback === 'function' ? conditionCallback : undefined
+                    ...(typeof conditionCallback === 'function' && { conditionExpr: conditionCallback })
                 })
             };
         }
