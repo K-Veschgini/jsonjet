@@ -12,6 +12,7 @@ export class QueryEngine {
         this.activeQueries = new Map(); // queryId -> QueryInfo
         this.nextQueryId = 1;
         this.streamManager = streamManagerInstance;
+        this.flowCallbacks = new Set(); // Callbacks for flow lifecycle events
     }
 
     /**
@@ -108,6 +109,17 @@ export class QueryEngine {
                     queryInfo.ttlSeconds = ttlSeconds;
                     queryInfo.type = 'flow';
                     
+                    // Notify flow created
+                    this.notifyFlowEvent('created', {
+                        queryId: result.queryId,
+                        flowName,
+                        source: { type: 'stream', name: queryInfo.sourceName },
+                        sinks: queryInfo.sinks || [],
+                        ttlSeconds,
+                        status: 'active',
+                        startTime: queryInfo.startTime
+                    });
+                    
                     // Set up TTL deletion if specified
                     if (ttlSeconds) {
                         queryInfo.ttlTimeout = setTimeout(() => {
@@ -176,6 +188,9 @@ export class QueryEngine {
             // Subscribe to the stream
             const subscriptionId = this.streamManager.subscribeFlowToStream(sourceName, pipeline, null);
             
+            // Extract sink information from the query
+            const sinks = this.extractSinksFromQuery(result.javascript);
+            
             // Store query info
             const queryInfo = {
                 queryId,
@@ -183,6 +198,7 @@ export class QueryEngine {
                 sourceName,
                 queryText,
                 pipeline,
+                sinks,
                 startTime: new Date(),
                 isActive: true,
                 type: 'query'
@@ -241,6 +257,19 @@ export class QueryEngine {
         // Mark as inactive
         queryInfo.isActive = false;
         queryInfo.endTime = new Date();
+        
+        // Notify flow deleted if it's a flow
+        if (queryInfo.type === 'flow') {
+            this.notifyFlowEvent('deleted', {
+                queryId,
+                flowName: queryInfo.flowName,
+                source: { type: 'stream', name: queryInfo.sourceName },
+                sinks: queryInfo.sinks || [],
+                ttlSeconds: queryInfo.ttlSeconds,
+                status: 'inactive',
+                startTime: queryInfo.startTime
+            });
+        }
         
         const itemType = queryInfo.type === 'flow' ? 'Flow' : 'Query';
         const itemName = queryInfo.flowName || queryId;
@@ -410,6 +439,156 @@ export class QueryEngine {
             return pipeline;
         } catch (error) {
             throw new Error(`Failed to create pipeline: ${error.message}`);
+        }
+    }
+
+    /**
+     * Extract sink information from transpiled JavaScript code
+     * Returns array of sink objects with type, name, and order
+     */
+    extractSinksFromQuery(jsCode) {
+        const sinks = [];
+        let order = 0;
+        
+        // Match insert_into patterns: insertIntoFactory('streamName')
+        const insertIntoPattern = /insertIntoFactory\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g;
+        
+        let match;
+        while ((match = insertIntoPattern.exec(jsCode)) !== null) {
+            sinks.push({
+                type: 'stream',
+                name: match[1],
+                order: order++
+            });
+        }
+        
+        // Future: Add patterns for other sink types (file, database, etc.)
+        
+        return sinks;
+    }
+
+    /**
+     * Flow Introspection API
+     */
+    
+    /**
+     * Get all active flows with their source and sink information
+     */
+    listActiveFlows() {
+        const flows = [];
+        
+        for (const [queryId, queryInfo] of this.activeQueries) {
+            if (queryInfo.isActive && queryInfo.type === 'flow') {
+                flows.push({
+                    queryId,
+                    flowName: queryInfo.flowName,
+                    source: {
+                        type: 'stream',
+                        name: queryInfo.sourceName
+                    },
+                    sinks: queryInfo.sinks || [],
+                    ttlSeconds: queryInfo.ttlSeconds,
+                    status: 'active',
+                    startTime: queryInfo.startTime
+                });
+            }
+        }
+        
+        return flows;
+    }
+
+    /**
+     * Get flow information by flow name
+     */
+    getFlowInfo(flowName) {
+        for (const [queryId, queryInfo] of this.activeQueries) {
+            if (queryInfo.flowName === flowName && queryInfo.isActive) {
+                return {
+                    queryId,
+                    flowName: queryInfo.flowName,
+                    source: {
+                        type: 'stream',
+                        name: queryInfo.sourceName
+                    },
+                    sinks: queryInfo.sinks || [],
+                    ttlSeconds: queryInfo.ttlSeconds,
+                    status: queryInfo.isActive ? 'active' : 'inactive',
+                    startTime: queryInfo.startTime,
+                    queryText: queryInfo.queryText
+                };
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get what flows/sources feed into a stream
+     */
+    getStreamSources(streamName) {
+        const sources = [];
+        
+        for (const [queryId, queryInfo] of this.activeQueries) {
+            if (queryInfo.isActive && queryInfo.sinks) {
+                const matchingSink = queryInfo.sinks.find(sink => sink.name === streamName);
+                if (matchingSink) {
+                    sources.push({
+                        type: 'flow',
+                        flowName: queryInfo.flowName,
+                        queryId,
+                        source: {
+                            type: 'stream',
+                            name: queryInfo.sourceName
+                        }
+                    });
+                }
+            }
+        }
+        
+        return sources;
+    }
+
+    /**
+     * Get what flows/sinks a stream feeds into
+     */
+    getStreamSinks(streamName) {
+        const sinks = [];
+        
+        for (const [queryId, queryInfo] of this.activeQueries) {
+            if (queryInfo.isActive && queryInfo.sourceName === streamName) {
+                sinks.push({
+                    type: 'flow',
+                    flowName: queryInfo.flowName,
+                    queryId,
+                    sinks: queryInfo.sinks || []
+                });
+            }
+        }
+        
+        return sinks;
+    }
+
+    /**
+     * Flow Lifecycle Callbacks
+     */
+    
+    /**
+     * Subscribe to flow lifecycle events
+     */
+    onFlowEvent(callback) {
+        this.flowCallbacks.add(callback);
+        return () => this.flowCallbacks.delete(callback);
+    }
+
+    /**
+     * Notify flow event callbacks
+     */
+    notifyFlowEvent(event, flowInfo) {
+        for (const callback of this.flowCallbacks) {
+            try {
+                callback(event, flowInfo);
+            } catch (error) {
+                console.error('Flow callback error:', error);
+            }
         }
     }
 }

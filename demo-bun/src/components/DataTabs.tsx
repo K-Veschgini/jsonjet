@@ -24,6 +24,16 @@ interface ConsoleEntry {
   response: any;
 }
 
+interface FlowInfo {
+  queryId: number;
+  flowName: string;
+  source: { type: string; name: string };
+  sinks: { type: string; name: string; order: number }[];
+  ttlSeconds?: number;
+  status: string;
+  startTime: Date;
+}
+
 interface DataTabsProps {
   activeTab: string;
   onTabChange: (value: string | null) => void;
@@ -43,6 +53,9 @@ interface DataTabsProps {
   unreadConsoleEntries: number;
   fadingOutConsole: boolean;
   maxConsoleEntries: number;
+  
+  // Flow data
+  activeFlows: FlowInfo[];
 }
 
 export const DataTabs = memo(function DataTabs({
@@ -59,7 +72,8 @@ export const DataTabs = memo(function DataTabs({
   consoleEntries,
   unreadConsoleEntries,
   fadingOutConsole,
-  maxConsoleEntries
+  maxConsoleEntries,
+  activeFlows
 }: DataTabsProps) {
   const availableStreams = useMemo(() => Object.keys(streamFilters).sort(), [streamFilters]);
   
@@ -89,6 +103,9 @@ export const DataTabs = memo(function DataTabs({
   return (
     <Tabs value={activeTab} onChange={onTabChange} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Tabs.List grow style={{ height: '48px', padding: '0 16px', flexShrink: 0 }}>
+        <Tabs.Tab value="flows" style={{ minWidth: '120px' }}>
+          Flows
+        </Tabs.Tab>
         <Tabs.Tab 
           value="streams"
           style={{ minWidth: '120px' }}
@@ -118,6 +135,50 @@ export const DataTabs = memo(function DataTabs({
           Console
         </Tabs.Tab>
       </Tabs.List>
+
+      <Tabs.Panel value="flows" style={{ flex: 1, overflow: 'hidden' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '16px', paddingBottom: '0', flexShrink: 0 }}>
+            <Text size="lg" fw={600} mb="xs">Active Flows</Text>
+            {activeFlows.length > 0 ? (
+              <Stack gap="xs" mb="md">
+                {activeFlows.map(flow => {
+                  const ttlDisplay = flow.ttlSeconds ? ` (ttl:${flow.ttlSeconds}s)` : '';
+                  
+                  return (
+                    <Paper key={flow.queryId} p="sm" withBorder style={{ backgroundColor: '#f8f9fa' }}>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text size="sm" fw={600} c="blue">
+                          {flow.flowName}{ttlDisplay}
+                        </Text>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        {/* Source */}
+                        <Badge size="sm" color="green" variant="light">
+                          {flow.source.type}: {flow.source.name}
+                        </Badge>
+                        
+                        {/* Arrow and sinks */}
+                        {flow.sinks.map((sink, index) => (
+                          <React.Fragment key={index}>
+                            <Text size="xs" c="dimmed">→</Text>
+                            <Badge size="sm" color="blue" variant="light">
+                              {sink.type}: {sink.name}
+                            </Badge>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <Text c="dimmed" size="sm" mb="md">No active flows</Text>
+            )}
+          </div>
+        </div>
+      </Tabs.Panel>
 
       <Tabs.Panel value="streams" style={{ flex: 1, overflow: 'hidden' }}>
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

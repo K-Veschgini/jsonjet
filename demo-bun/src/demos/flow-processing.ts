@@ -32,5 +32,5 @@ insert into events { id: 4, amount: 300, type: "sale" };
 // 6. List active flows
 list flows;
 
-// 7. Delete a flow manually
-delete flow temp_monitor;`;
+// 7. Flows with TTL will auto-delete after their timeout
+// The temp_monitor flow will auto-delete after 2 minutes`;

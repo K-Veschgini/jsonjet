@@ -41,6 +41,16 @@ interface ConsoleEntry {
   response: any;
 }
 
+interface FlowInfo {
+  queryId: number;
+  flowName: string;
+  source: { type: string; name: string };
+  sinks: { type: string; name: string; order: number }[];
+  ttlSeconds?: number;
+  status: string;
+  startTime: Date;
+}
+
 function App() {
   // Core state
   const [statements, setStatements] = useState<Statement[]>([]);
@@ -49,7 +59,8 @@ function App() {
     '_log': { enabled: false, count: 0 } // Add _log stream with default unchecked state
   });
   const [consoleEntries, setConsoleEntries] = useState<ConsoleEntry[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('console');
+  const [activeFlows, setActiveFlows] = useState<FlowInfo[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('flows');
   const [selectedDemo, setSelectedDemo] = useState<string>('flow-processing');
   
   // Refs
@@ -133,6 +144,26 @@ function App() {
     };
   }, [incrementStreamMessages]);
 
+  // Subscribe to flow events for real-time flow tracking
+  useEffect(() => {
+    // Get initial flows
+    const initialFlows = queryEngine.listActiveFlows();
+    setActiveFlows(initialFlows);
+
+    // Subscribe to flow events
+    const unsubscribe = queryEngine.onFlowEvent((event, flowInfo) => {
+      if (event === 'created') {
+        setActiveFlows(prev => [...prev, flowInfo]);
+      } else if (event === 'deleted') {
+        setActiveFlows(prev => prev.filter(flow => flow.queryId !== flowInfo.queryId));
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   // Add console entry
   const addConsoleEntry = useCallback((command: string, response: any) => {
     const newEntry: ConsoleEntry = {
@@ -168,6 +199,7 @@ function App() {
     } else if (newTab === 'streams') {
       clearUnreadCounts('streams');
     }
+    // No unread counts for flows tab currently
   }, [clearUnreadCounts]);
 
   // Handle stream filter toggle
@@ -303,7 +335,9 @@ function App() {
       
       try {
         await handleStatementExecute(statement, i);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Longer delay for flow-related statements to ensure proper completion
+        const delay = statement.text.includes('create flow') ? 300 : 100;
+        await new Promise(resolve => setTimeout(resolve, delay));
       } catch (error: any) {
         const errorResponse = {
           success: false,
@@ -315,6 +349,10 @@ function App() {
         addConsoleEntry(`// Error in statement ${i + 1}`, errorResponse);
       }
     }
+    
+    // Refresh flows after batch execution to catch any missed events
+    const finalFlows = queryEngine.listActiveFlows();
+    setActiveFlows(finalFlows);
   }, [statements, handleStatementExecute, addConsoleEntry]);
 
   return (
@@ -351,6 +389,7 @@ function App() {
               unreadConsoleEntries={unreadConsoleEntries}
               fadingOutConsole={fadingOut.console}
               maxConsoleEntries={MAX_CONSOLE_ENTRIES}
+              activeFlows={activeFlows}
             />
           }
         />
