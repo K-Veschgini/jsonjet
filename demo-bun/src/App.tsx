@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import './App.css';
@@ -34,20 +34,22 @@ interface StreamMessage {
   data: any;
 }
 
-interface LogMessage {
+interface ConsoleEntry {
   id: string;
   timestamp: Date;
-  level: 'info' | 'success' | 'error' | 'warning';
-  message: string;
+  command: string;
+  response: any;
 }
 
 function App() {
   // Core state
   const [statements, setStatements] = useState<Statement[]>([]);
   const [messages, setMessages] = useState<StreamMessage[]>([]);
-  const [streamFilters, setStreamFilters] = useState<Record<string, { enabled: boolean; count: number }>>({});
-  const [logs, setLogs] = useState<LogMessage[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('streams');
+  const [streamFilters, setStreamFilters] = useState<Record<string, { enabled: boolean; count: number }>>({
+    '_log': { enabled: false, count: 0 } // Add _log stream with default unchecked state
+  });
+  const [consoleEntries, setConsoleEntries] = useState<ConsoleEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('console');
   const [selectedDemo, setSelectedDemo] = useState<string>('flow-processing');
   
   // Refs
@@ -57,16 +59,17 @@ function App() {
   const {
     unreadCounts,
     unreadStreamMessages,
+    unreadConsoleEntries,
     fadingOut,
     activeTabRef,
     clearUnreadCounts,
-    incrementLogCount,
+    incrementConsoleEntries,
     incrementStreamMessages
   } = useUnreadCounts();
 
   // Configuration
   const MAX_MESSAGES_PER_STREAM = 100;
-  const MAX_LOGS = 100;
+  const MAX_CONSOLE_ENTRIES = 100;
 
   // Demo options
   const demoOptions = [
@@ -78,7 +81,7 @@ function App() {
   ];
 
   // Demo content
-  const getDemoContent = (demoType: string) => {
+  const getDemoContent = useCallback((demoType: string) => {
     switch (demoType) {
       case 'summarize-demo':
         return summarizeDemo;
@@ -93,7 +96,7 @@ function App() {
       default:
         return flowProcessingDemo;
     }
-  };
+  }, []);
 
   // Subscribe to all streams on component mount
   useEffect(() => {
@@ -107,19 +110,18 @@ function App() {
         data
       };
       
+      // Batch state updates to reduce re-renders
       setMessages(prev => [newMessage, ...prev].slice(0, MAX_MESSAGES_PER_STREAM));
-      
-      // Track unread stream messages
-      incrementStreamMessages();
-      
-      // Update stream filters
       setStreamFilters(prev => ({
         ...prev,
         [streamName]: {
-          enabled: prev[streamName]?.enabled ?? true,
+          enabled: prev[streamName]?.enabled ?? !streamName.startsWith('_'),
           count: (prev[streamName]?.count ?? 0) + 1
         }
       }));
+      
+      // Track unread stream messages
+      incrementStreamMessages();
     });
     
     globalSubscriptionRef.current = subscriptionId;
@@ -131,52 +133,45 @@ function App() {
     };
   }, [incrementStreamMessages]);
 
-  // Add log message
-  const addLog = (level: LogMessage['level'], message: string) => {
-    const newLog: LogMessage = {
+  // Add console entry
+  const addConsoleEntry = useCallback((command: string, response: any) => {
+    const newEntry: ConsoleEntry = {
       id: Date.now().toString() + Math.random().toString(36),
       timestamp: new Date(),
-      level,
-      message
+      command,
+      response
     };
     
-    setLogs(prev => [newLog, ...prev].slice(0, MAX_LOGS));
+    setConsoleEntries(prev => [newEntry, ...prev].slice(0, MAX_CONSOLE_ENTRIES));
     
-    // Track unread logs by type
-    incrementLogCount(level);
+    // Track unread console entries
+    incrementConsoleEntries();
     
-    // Also log to console
-    switch (level) {
-      case 'error':
-        console.error(message);
-        break;
-      case 'warning':
-        console.warn(message);
-        break;
-      case 'success':
-        console.log(`✅ ${message}`);
-        break;
-      default:
-        console.log(message);
+    // Also log to browser console
+    if (response?.success === false) {
+      console.error(`[JSDB] Command failed:`, command, response);
+    } else {
+      console.log(`[JSDB] Command executed:`, command, response);
     }
-  };
+  }, [incrementConsoleEntries]);
+
 
   // Handle tab change
-  const handleTabChange = (value: string | null) => {
+  const handleTabChange = useCallback((value: string | null) => {
     const newTab = value || 'streams';
     setActiveTab(newTab);
     activeTabRef.current = newTab;
     
     // Clear unread counts for the selected tab
-    if (newTab === 'logs') {
-      clearUnreadCounts('logs');
+    if (newTab === 'console') {
+      clearUnreadCounts('console');
     } else if (newTab === 'streams') {
       clearUnreadCounts('streams');
     }
-  };
+  }, [clearUnreadCounts]);
 
   // Handle stream filter toggle
-  const handleStreamToggle = (streamName: string) => {
+  const handleStreamToggle = useCallback((streamName: string) => {
     setStreamFilters(prev => ({
       ...prev,
       [streamName]: {
@@ -184,39 +179,47 @@ function App() {
         enabled: !prev[streamName]?.enabled
       }
     }));
-  };
+  }, []);
 
   // Handle flush all streams
-  const handleFlushAllStreams = async () => {
+  const handleFlushAllStreams = useCallback(async () => {
     try {
       const streamNames = streamManager.listStreams();
       if (streamNames.length === 0) {
-        addLog('info', 'No streams to flush');
+        addConsoleEntry(
+          'flush // all streams',
+          { success: true, type: 'system', message: 'No streams to flush' }
+        );
         return;
       }
       
-      addLog('info', `Flushing ${streamNames.length} streams...`);
+      addConsoleEntry(
+        `flush // ${streamNames.join(', ')}`,
+        { success: true, type: 'system', message: `✅ Flushed all ${streamNames.length} streams` }
+      );
       
       for (const streamName of streamNames) {
         await streamManager.flushStream(streamName);
       }
-      
-      addLog('success', `✅ Flushed all ${streamNames.length} streams`);
     } catch (error: any) {
-      addLog('error', `Error flushing streams: ${error.message}`);
+      addConsoleEntry(
+        'flush // all streams',
+        { success: false, error: { code: 'FLUSH_ERROR', message: `Error flushing streams: ${error.message}` } }
+      );
     }
-  };
+  }, [addConsoleEntry]);
 
   // Handle delete all streams
-  const handleDeleteAllStreams = async () => {
+  const handleDeleteAllStreams = useCallback(async () => {
     try {
       const streamNames = streamManager.listStreams();
       if (streamNames.length === 0) {
-        addLog('info', 'No streams to delete');
+        addConsoleEntry(
+          'delete // all streams',
+          { success: true, type: 'system', message: 'No streams to delete' }
+        );
         return;
       }
-      
-      addLog('info', `Deleting ${streamNames.length} streams...`);
       
       // Stop all active flows first
       const activeFlows = queryEngine.getActiveFlows();
@@ -232,26 +235,36 @@ function App() {
       // Clear messages since all streams are gone
       setMessages([]);
       
-      addLog('success', `✅ Deleted all ${streamNames.length} streams and ${activeFlows.length} flows`);
+      addConsoleEntry(
+        `delete // ${streamNames.join(', ')}`,
+        { success: true, type: 'system', message: `✅ Deleted all ${streamNames.length} streams and ${activeFlows.length} flows` }
+      );
     } catch (error: any) {
-      addLog('error', `Error deleting streams: ${error.message}`);
+      addConsoleEntry(
+        'delete // all streams',
+        { success: false, error: { code: 'DELETE_ERROR', message: `Error deleting streams: ${error.message}` } }
+      );
     }
-  };
+  }, [addConsoleEntry]);
 
   // Handle statement execution
-  const handleStatementExecute = async (statement: Statement, index: number) => {
+  const handleStatementExecute = useCallback(async (statement: Statement, index: number) => {
     try {
       if (statement.isCommand) {
         const result = await CommandParser.executeCommand(statement.text);
         
+        // Add to console
+        addConsoleEntry(statement.text, result);
+        
         if (result.success) {
-          addLog('success', result.message);
-          
           // Handle stream creation
           if (result.result?.streamName && /create\s+(?:or\s+replace\s+)?stream/.test(statement.text)) {
             setStreamFilters(prev => ({
               ...prev,
-              [result.result.streamName]: { enabled: true, count: 0 }
+              [result.result.streamName]: { 
+                enabled: !result.result.streamName.startsWith('_'), // Default off for system streams
+                count: 0 
+              }
             }));
           }
           
@@ -263,28 +276,28 @@ function App() {
               return newFilters;
             });
           }
-        } else {
-          addLog('error', result.message);
         }
         
       } else if (statement.isQuery) {
         const result = await queryEngine.executeStatement(statement.text);
         
-        if (result.success) {
-          addLog('success', result.message);
-        } else {
-          addLog('error', result.message);
-        }
+        // Add to console
+        addConsoleEntry(statement.text, result);
       }
     } catch (error: any) {
-      addLog('error', error.message);
+      const errorResponse = {
+        success: false,
+        error: {
+          code: 'EXECUTION_ERROR',
+          message: error.message
+        }
+      };
+      addConsoleEntry(statement.text, errorResponse);
     }
-  };
+  }, [addConsoleEntry, setStreamFilters]);
 
   // Handle run all
-  const handleRunAll = async () => {
-    addLog('info', `🚀 Running ${statements.length} statements...`);
-    
+  const handleRunAll = useCallback(async () => {
     for (let i = 0; i < statements.length; i++) {
       const statement = statements[i];
       
@@ -292,12 +305,17 @@ function App() {
         await handleStatementExecute(statement, i);
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error: any) {
-        addLog('error', `Error in statement ${i + 1}: ${error.message}`);
+        const errorResponse = {
+          success: false,
+          error: {
+            code: 'BATCH_EXECUTION_ERROR',
+            message: `Error in statement ${i + 1}: ${error.message}`
+          }
+        };
+        addConsoleEntry(`// Error in statement ${i + 1}`, errorResponse);
       }
     }
-    
-    addLog('success', `✅ Completed ${statements.length} statements`);
-  };
+  }, [statements, handleStatementExecute, addConsoleEntry]);
 
   return (
     <MantineProvider>
@@ -329,10 +347,10 @@ function App() {
               maxMessagesPerStream={MAX_MESSAGES_PER_STREAM}
               onFlushAllStreams={handleFlushAllStreams}
               onDeleteAllStreams={handleDeleteAllStreams}
-              logs={logs}
-              unreadCounts={unreadCounts}
-              fadingOutLogs={fadingOut.logs}
-              maxLogs={MAX_LOGS}
+              consoleEntries={consoleEntries}
+              unreadConsoleEntries={unreadConsoleEntries}
+              fadingOutConsole={fadingOut.console}
+              maxConsoleEntries={MAX_CONSOLE_ENTRIES}
             />
           }
         />

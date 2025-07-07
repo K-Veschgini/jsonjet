@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Tabs, Text, Stack, Checkbox, Paper, Badge, Button, Group } from '@mantine/core';
 import { JsonDisplay } from './JsonDisplay';
 import { BadgeWithAnimation } from './BadgeWithAnimation';
@@ -17,6 +17,13 @@ interface LogMessage {
   message: string;
 }
 
+interface ConsoleEntry {
+  id: string;
+  timestamp: Date;
+  command: string;
+  response: any;
+}
+
 interface DataTabsProps {
   activeTab: string;
   onTabChange: (value: string | null) => void;
@@ -31,19 +38,14 @@ interface DataTabsProps {
   onFlushAllStreams: () => void;
   onDeleteAllStreams: () => void;
   
-  // Log data
-  logs: LogMessage[];
-  unreadCounts: {
-    error: number;
-    warning: number;
-    success: number;
-    info: number;
-  };
-  fadingOutLogs: boolean;
-  maxLogs: number;
+  // Console data  
+  consoleEntries: ConsoleEntry[];
+  unreadConsoleEntries: number;
+  fadingOutConsole: boolean;
+  maxConsoleEntries: number;
 }
 
-export function DataTabs({
+export const DataTabs = memo(function DataTabs({
   activeTab,
   onTabChange,
   messages,
@@ -54,15 +56,15 @@ export function DataTabs({
   maxMessagesPerStream,
   onFlushAllStreams,
   onDeleteAllStreams,
-  logs,
-  unreadCounts,
-  fadingOutLogs,
-  maxLogs
+  consoleEntries,
+  unreadConsoleEntries,
+  fadingOutConsole,
+  maxConsoleEntries
 }: DataTabsProps) {
-  const availableStreams = Object.keys(streamFilters).sort();
+  const availableStreams = useMemo(() => Object.keys(streamFilters).sort(), [streamFilters]);
   
   // Filter messages based on enabled streams and limit per stream
-  const filteredMessages = (() => {
+  const filteredMessages = useMemo(() => {
     const messagesByStream: Record<string, StreamMessage[]> = {};
     
     messages.forEach(msg => {
@@ -80,10 +82,9 @@ export function DataTabs({
     });
     
     return limitedMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  })();
+  }, [messages, streamFilters, maxMessagesPerStream]);
 
-  const hasUnreadLogs = unreadCounts.error > 0 || unreadCounts.warning > 0 || 
-                       unreadCounts.success > 0 || unreadCounts.info > 0;
+  const hasUnreadConsole = unreadConsoleEntries > 0;
 
   return (
     <Tabs value={activeTab} onChange={onTabChange} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -102,20 +103,19 @@ export function DataTabs({
           Streams
         </Tabs.Tab>
         <Tabs.Tab 
-          value="logs"
+          value="console"
           style={{ minWidth: '120px' }}
           rightSection={
-            hasUnreadLogs ? (
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <BadgeWithAnimation count={unreadCounts.error} color="red" isAnimating={fadingOutLogs} />
-                <BadgeWithAnimation count={unreadCounts.warning} color="yellow" isAnimating={fadingOutLogs} />
-                <BadgeWithAnimation count={unreadCounts.success} color="green" isAnimating={fadingOutLogs} />
-                <BadgeWithAnimation count={unreadCounts.info} color="blue" isAnimating={fadingOutLogs} />
-              </div>
+            hasUnreadConsole ? (
+              <BadgeWithAnimation 
+                count={unreadConsoleEntries} 
+                color="blue" 
+                isAnimating={fadingOutConsole} 
+              />
             ) : undefined
           }
         >
-          Logs
+          Console
         </Tabs.Tab>
       </Tabs.List>
 
@@ -171,14 +171,16 @@ export function DataTabs({
             Top {maxMessagesPerStream} recent messages per stream
           </div>
           
-          <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px' }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px', minHeight: '200px', contain: 'layout' }}>
             {filteredMessages.length === 0 ? (
-              <Text c="dimmed" ta="center" mt="xl">
-                No messages yet. Execute some commands to see data flowing through streams.
-              </Text>
+              <div style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Text c="dimmed" ta="center">
+                  No messages yet. Execute some commands to see data flowing through streams.
+                </Text>
+              </div>
             ) : (
               filteredMessages.map((message) => (
-                <Paper key={message.id} p="xs" mb="xs" withBorder style={{ backgroundColor: '#fafafa' }}>
+                <Paper key={message.id} p="xs" mb="xs" withBorder style={{ backgroundColor: '#fafafa', minHeight: '60px', willChange: 'auto' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <Text size="sm" fw={600} c="blue">
                       {message.streamName}
@@ -187,7 +189,9 @@ export function DataTabs({
                       {message.timestamp.toLocaleTimeString()}
                     </Text>
                   </div>
-                  <JsonDisplay data={message.data} compact />
+                  <div style={{ minHeight: '30px' }}>
+                    <JsonDisplay data={message.data} compact />
+                  </div>
                 </Paper>
               ))
             )}
@@ -195,7 +199,7 @@ export function DataTabs({
         </div>
       </Tabs.Panel>
 
-      <Tabs.Panel value="logs" style={{ flex: 1, overflow: 'hidden' }}>
+      <Tabs.Panel value="console" style={{ flex: 1, overflow: 'hidden' }}>
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <div style={{ 
             padding: '8px 16px', 
@@ -204,42 +208,54 @@ export function DataTabs({
             color: '#666',
             flexShrink: 0
           }}>
-            Top {maxLogs} recent log entries
+            Top {maxConsoleEntries} recent console entries
           </div>
           
-          <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px' }}>
-            {logs.length === 0 ? (
-              <Text c="dimmed" ta="center" mt="xl">
-                No logs yet. Execute some commands to see logs.
-              </Text>
+          <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px', paddingRight: '24px', minHeight: '200px', contain: 'layout' }}>
+            {consoleEntries.length === 0 ? (
+              <div style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Text c="dimmed" ta="center">
+                  No console entries yet. Execute some commands to see the console.
+                </Text>
+              </div>
             ) : (
-              logs.map((log) => (
-                <Paper key={log.id} p="xs" mb="xs" withBorder style={{ backgroundColor: '#fafafa' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <Badge 
-                      size="sm" 
-                      color={
-                        log.level === 'error' ? 'red' : 
-                        log.level === 'warning' ? 'yellow' : 
-                        log.level === 'success' ? 'green' : 'blue'
-                      }
-                    >
-                      {log.level.toUpperCase()}
+              consoleEntries.map((entry) => (
+                <Paper key={entry.id} p="md" mb="md" withBorder style={{ backgroundColor: '#fafafa', minHeight: '120px', willChange: 'auto' }}>
+                  {/* Command Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <Badge size="sm" color="blue">
+                      COMMAND
                     </Badge>
                     <Text size="xs" c="dimmed">
-                      {log.timestamp.toLocaleTimeString()}
+                      {entry.timestamp.toLocaleTimeString()}
                     </Text>
                   </div>
-                  <Text size="sm" style={{ 
-                    fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',
-                    wordWrap: 'break-word',
-                    whiteSpace: 'pre-wrap',
-                    overflowWrap: 'anywhere',
-                    fontSize: '11px',
-                    lineHeight: '1.4'
-                  }}>
-                    {log.message}
-                  </Text>
+                  
+                  {/* Command */}
+                  <Paper p="xs" mb="sm" style={{ backgroundColor: '#2a2a2a', border: '1px solid #444', minHeight: '32px' }}>
+                    <Text size="sm" style={{ 
+                      fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',
+                      color: '#7dd3fc',
+                      fontSize: '12px',
+                      fontWeight: 500
+                    }}>
+                      {entry.command}
+                    </Text>
+                  </Paper>
+                  
+                  {/* Response Header */}
+                  <Badge 
+                    size="sm" 
+                    color={entry.response?.success === false ? 'red' : 'green'}
+                    mb="xs"
+                  >
+                    RESPONSE
+                  </Badge>
+                  
+                  {/* Response */}
+                  <div style={{ minHeight: '40px' }}>
+                    <JsonDisplay data={entry.response} />
+                  </div>
                 </Paper>
               ))
             )}
@@ -248,4 +264,4 @@ export function DataTabs({
       </Tabs.Panel>
     </Tabs>
   );
-}
+});

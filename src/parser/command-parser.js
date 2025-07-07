@@ -53,12 +53,13 @@ export class CommandParser {
                     throw new Error(`Unknown command: ${action}`);
             }
         } catch (error) {
-            return {
-                type: 'command',
-                success: false,
-                error: error.message,
-                message: `Command failed: ${error.message}`
-            };
+            sm.initializeLogger();
+            const errorCode = error.code || 'COMMAND_FAILED';
+            return sm.logger.createErrorResponse(
+                errorCode,
+                error.message,
+                trimmed
+            );
         }
     }
 
@@ -126,12 +127,12 @@ export class CommandParser {
                 } else {
                     // Stream doesn't exist, create it
                     sm.createStream(streamName);
-                    return {
-                        type: 'command',
-                        success: true,
-                        result: { streamName },
-                        message: `Stream '${streamName}' created successfully`
-                    };
+                    sm.initializeLogger();
+                    return sm.logger.createSuccessResponse(
+                        'stream',
+                        `Stream '${streamName}' created successfully`,
+                        { streamName }
+                    );
                 }
             } catch (error) {
                 throw error; // Re-throw any errors from stream manager

@@ -47,10 +47,17 @@ export class QueryEngine {
             // Otherwise, it's a simple query - execute as continuous stream query
             return await this.executeQuery(trimmed);
         } catch (error) {
-            return {
-                type: 'error',
-                error: error.message,
-                message: `Execution failed: ${error.message}`
+            this.streamManager?.initializeLogger();
+            return this.streamManager?.logger?.createErrorResponse(
+                'EXECUTION_FAILED',
+                `Execution failed: ${error.message}`,
+                trimmed
+            ) || {
+                success: false,
+                error: {
+                    code: 'EXECUTION_FAILED',
+                    message: `Execution failed: ${error.message}`
+                }
             };
         }
     }
@@ -191,6 +198,10 @@ export class QueryEngine {
                 success: true
             };
         } catch (error) {
+            // Log the error to _log stream
+            this.streamManager?.initializeLogger();
+            this.streamManager?.logger?.error('QUERY_FAILED', error.message, queryText);
+            
             return {
                 type: 'query',
                 success: false,

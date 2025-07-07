@@ -1,4 +1,6 @@
 import { Stream } from './stream.js';
+import { Logger } from './logger.js';
+import { JSDBError, ErrorCodes } from './jsdb-error.js';
 
 /**
  * StreamManager - Manages named streams as pure data pipes
@@ -11,6 +13,19 @@ export class StreamManager {
         this.nextSubscriptionId = 1;
         this.userSubscriptions = new Map(); // subscriptionId -> { streamName, callback }
         this.globalSubscribers = new Map(); // subscriptionId -> callback - for all-streams subscriptions
+        this.logger = null; // Will be initialized lazily
+        
+        // Create the _log stream at startup
+        this.createStreamInternal('_log');
+    }
+
+    /**
+     * Initialize logger (delayed to avoid circular dependency)
+     */
+    initializeLogger() {
+        if (!this.logger) {
+            this.logger = new Logger(this);
+        }
     }
 
     /**
@@ -18,9 +33,18 @@ export class StreamManager {
      */
     createStream(name) {
         if (this.streams.has(name)) {
-            throw new Error(`Stream '${name}' already exists`);
+            this.initializeLogger();
+            this.logger.error(ErrorCodes.STREAM_ALREADY_EXISTS, `Stream '${name}' already exists`);
+            throw new JSDBError(ErrorCodes.STREAM_ALREADY_EXISTS, `Stream '${name}' already exists`);
         }
 
+        return this.createStreamInternal(name);
+    }
+
+    /**
+     * Internal method to create stream without validation (for system streams like _log)
+     */
+    createStreamInternal(name) {
         const streamContainer = {
             name,
             stream: new Stream(),
@@ -39,7 +63,9 @@ export class StreamManager {
     deleteStream(name) {
         const container = this.streams.get(name);
         if (!container) {
-            throw new Error(`Stream '${name}' does not exist`);
+            this.initializeLogger();
+            this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         // Stop all active flows on this stream
@@ -93,7 +119,9 @@ export class StreamManager {
     async insertIntoStream(name, data) {
         const container = this.streams.get(name);
         if (!container) {
-            throw new Error(`Stream '${name}' does not exist`);
+            this.initializeLogger();
+            this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         // Handle bulk insert (array) or single insert
@@ -152,7 +180,9 @@ export class StreamManager {
     async flushStream(name) {
         const container = this.streams.get(name);
         if (!container) {
-            throw new Error(`Stream '${name}' does not exist`);
+            this.initializeLogger();
+            this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         // Call flushAll on all flow pipelines subscribed to this stream
@@ -178,7 +208,9 @@ export class StreamManager {
     subscribeFlowToStream(name, pipeline, callback) {
         const container = this.streams.get(name);
         if (!container) {
-            throw new Error(`Stream '${name}' does not exist`);
+            this.initializeLogger();
+            this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         const queryId = this.nextSubscriptionId++;
@@ -197,7 +229,9 @@ export class StreamManager {
     subscribeToStream(streamName, callback) {
         const container = this.streams.get(streamName);
         if (!container) {
-            throw new Error(`Stream '${streamName}' does not exist`);
+            this.initializeLogger();
+            this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${streamName}' does not exist`);
+            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${streamName}' does not exist`);
         }
 
         const subscriptionId = this.nextSubscriptionId++;

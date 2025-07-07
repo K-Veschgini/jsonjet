@@ -9,7 +9,7 @@ export interface UnreadCounts {
 
 export interface FadingState {
   streams: boolean;
-  logs: boolean;
+  console: boolean;
 }
 
 export function useUnreadCounts() {
@@ -21,15 +21,16 @@ export function useUnreadCounts() {
   });
   
   const [unreadStreamMessages, setUnreadStreamMessages] = useState<number>(0);
-  const [fadingOut, setFadingOut] = useState<FadingState>({ streams: false, logs: false });
-  const activeTabRef = useRef<string>('streams');
+  const [unreadConsoleEntries, setUnreadConsoleEntries] = useState<number>(0);
+  const [fadingOut, setFadingOut] = useState<FadingState>({ streams: false, console: false });
+  const activeTabRef = useRef<string>('console');
 
-  const clearUnreadCounts = (tab: 'streams' | 'logs') => {
-    if (tab === 'logs') {
-      setFadingOut(prev => ({ ...prev, logs: true }));
+  const clearUnreadCounts = (tab: 'streams' | 'console') => {
+    if (tab === 'console') {
+      setFadingOut(prev => ({ ...prev, console: true }));
       setTimeout(() => {
-        setUnreadCounts({ error: 0, warning: 0, success: 0, info: 0 });
-        setFadingOut(prev => ({ ...prev, logs: false }));
+        setUnreadConsoleEntries(0);
+        setFadingOut(prev => ({ ...prev, console: false }));
       }, 300);
     } else if (tab === 'streams') {
       setFadingOut(prev => ({ ...prev, streams: true }));
@@ -40,12 +41,9 @@ export function useUnreadCounts() {
     }
   };
 
-  const incrementLogCount = (level: keyof UnreadCounts) => {
-    if (activeTabRef.current !== 'logs') {
-      setUnreadCounts(prev => ({
-        ...prev,
-        [level]: prev[level] + 1
-      }));
+  const incrementConsoleEntries = () => {
+    if (activeTabRef.current !== 'console') {
+      setUnreadConsoleEntries(prev => prev + 1);
     }
   };
 
@@ -58,10 +56,11 @@ export function useUnreadCounts() {
   return {
     unreadCounts,
     unreadStreamMessages,
+    unreadConsoleEntries,
     fadingOut,
     activeTabRef,
     clearUnreadCounts,
-    incrementLogCount,
+    incrementConsoleEntries,
     incrementStreamMessages
   };
 }

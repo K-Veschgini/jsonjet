@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import JsonView from '@microlink/react-json-view';
 
 interface JsonDisplayProps {
@@ -6,7 +6,7 @@ interface JsonDisplayProps {
   compact?: boolean;
 }
 
-export function JsonDisplay({ data, compact = false }: JsonDisplayProps) {
+export const JsonDisplay = memo(function JsonDisplay({ data, compact = false }: JsonDisplayProps) {
   return (
     <div style={{ 
       fontSize: compact ? '11px' : '12px', 
@@ -27,4 +27,4 @@ export function JsonDisplay({ data, compact = false }: JsonDisplayProps) {
       />
     </div>
   );
-}
+});
