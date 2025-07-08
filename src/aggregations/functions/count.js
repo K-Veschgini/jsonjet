@@ -17,4 +17,8 @@ export class Count extends Aggregation {
     reset() {
         this.count = 0;
     }
+    
+    clone() {
+        return new Count();
+    }
 } 

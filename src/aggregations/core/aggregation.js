@@ -17,4 +17,9 @@ export class Aggregation {
         // Reset aggregation state to start fresh
         throw new Error('Must implement reset method');
     }
+    
+    clone() {
+        // Create a copy of this aggregation
+        throw new Error('Must implement clone method');
+    }
 } 
