@@ -5,7 +5,7 @@ async function runAllTests() {
         {
             name: 'Basic Transpiler Import',
             test: async () => {
-                const { transpileQuery } = await import('./src/parser/query-transpiler.js');
+                const { transpileQuery } = await import('../src/parser/query-transpiler.js');
                 const result = transpileQuery('data | where age > 18');
                 return result.javascript.length > 0;
             }
@@ -13,7 +13,7 @@ async function runAllTests() {
         {
             name: 'New Transpiler Architecture Import',
             test: async () => {
-                const { transpileQuery } = await import('./src/parser/transpiler/index.js');
+                const { transpileQuery } = await import('../src/parser/transpiler/index.js');
                 const result = transpileQuery('data | where age > 18');
                 return result.javascript.length > 0;
             }
@@ -21,21 +21,23 @@ async function runAllTests() {
         {
             name: 'JavaScript Generation Validity',
             test: async () => {
-                const { transpileQuery } = await import('./src/parser/query-transpiler.js');
+                const { transpileQuery } = await import('../src/parser/query-transpiler.js');
                 const result = transpileQuery('data | select { name: name, age: age }');
                 
                 // Try to parse as JavaScript
                 const selectCode = result.javascript.match(/\(item\) => \((.+)\)\)/)?.[1];
                 if (!selectCode) throw new Error('No select code found');
                 
-                new Function('item', 'safeGet', `return ${selectCode}`);
+                // Remove trailing parenthesis if present
+                const cleanSelectCode = selectCode.replace(/\)$/, '');
+                new Function('item', 'safeGet', `return ${cleanSelectCode}`);
                 return true;
             }
         },
         {
             name: 'Safe Property Access',
             test: async () => {
-                const { safeGet } = await import('./src/utils/safe-access.js');
+                const { safeGet } = await import('../src/utils/safe-access.js');
                 
                 const testObj = { name: 'test', nested: { value: 42 } };
                 
@@ -57,7 +59,7 @@ async function runAllTests() {
         {
             name: 'Stream Manager Basic Operations',
             test: async () => {
-                const { StreamManager } = await import('./src/core/stream-manager.js');
+                const { StreamManager } = await import('../src/core/stream-manager.js');
                 const streamManager = new StreamManager();
                 
                 // Create stream
@@ -74,8 +76,8 @@ async function runAllTests() {
         {
             name: 'Query Engine Basic Flow Creation',
             test: async () => {
-                const { StreamManager } = await import('./src/core/stream-manager.js');
-                const { QueryEngine } = await import('./src/core/query-engine.js');
+                const { StreamManager } = await import('../src/core/stream-manager.js');
+                const { QueryEngine } = await import('../src/core/query-engine.js');
                 
                 const streamManager = new StreamManager();
                 const queryEngine = new QueryEngine(streamManager);
@@ -93,8 +95,8 @@ async function runAllTests() {
         {
             name: 'End-to-End Data Flow',
             test: async () => {
-                const { StreamManager } = await import('./src/core/stream-manager.js');
-                const { QueryEngine } = await import('./src/core/query-engine.js');
+                const { StreamManager } = await import('../src/core/stream-manager.js');
+                const { QueryEngine } = await import('../src/core/query-engine.js');
                 
                 const streamManager = new StreamManager();
                 const queryEngine = new QueryEngine(streamManager);
@@ -136,8 +138,8 @@ async function runAllTests() {
         {
             name: 'Select Operation with Field Filtering',
             test: async () => {
-                const { StreamManager } = await import('./src/core/stream-manager.js');
-                const { QueryEngine } = await import('./src/core/query-engine.js');
+                const { StreamManager } = await import('../src/core/stream-manager.js');
+                const { QueryEngine } = await import('../src/core/query-engine.js');
                 
                 const streamManager = new StreamManager();
                 const queryEngine = new QueryEngine(streamManager);
@@ -184,8 +186,8 @@ async function runAllTests() {
         {
             name: 'Logical Operators in Select',
             test: async () => {
-                const { StreamManager } = await import('./src/core/stream-manager.js');
-                const { QueryEngine } = await import('./src/core/query-engine.js');
+                const { StreamManager } = await import('../src/core/stream-manager.js');
+                const { QueryEngine } = await import('../src/core/query-engine.js');
                 
                 const streamManager = new StreamManager();
                 const queryEngine = new QueryEngine(streamManager);
