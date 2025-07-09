@@ -205,10 +205,16 @@ export const ExpressionVisitorMixin = {
         if (ctx.variableName) {
             // stepName.variableName - access from state
             const variableName = VisitorUtils.getTokenImage(ctx.variableName);
-            return VisitorUtils.createSafeAccess('state', `${stepOrVariable}.${variableName}`);
+            return `state.${stepOrVariable}.${variableName}`;
         } else {
-            // just variableName - access from current item
-            return VisitorUtils.createSafeAccess('item', stepOrVariable);
+            // Check if this is a step name in a scan context
+            if (this._currentStepNames && this._currentStepNames.includes(stepOrVariable)) {
+                // This is a step name - access from state
+                return `state.${stepOrVariable}`;
+            } else {
+                // This is a variable - access from current item using safeGet
+                return VisitorUtils.createSafeAccess('item', stepOrVariable);
+            }
         }
     }
 };

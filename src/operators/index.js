@@ -6,9 +6,12 @@ export { Select } from './select.js';
 export { Sorter } from './sorter.js';
 export { SummarizeOperator, createSummarizeOperator } from './summarize.js';
 
-// Re-export aggregation functions
-export { Count as count } from '../aggregations/functions/count.js';
-export { Sum as sum } from '../aggregations/functions/sum.js';
+// Re-export aggregation functions as factory functions
+import { Count } from '../aggregations/functions/count.js';
+import { Sum } from '../aggregations/functions/sum.js';
+
+export const count = (...args) => new Count(...args);
+export const sum = (...args) => new Sum(...args);
 
 // Re-export window functions
 export { 

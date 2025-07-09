@@ -1,7 +1,7 @@
 // Literal rules - objects, arrays, functions, properties
 import { 
     LeftBrace, RightBrace, LeftBracket, RightBracket, LeftParen, RightParen,
-    Comma, Colon, Spread, Identifier, StringLiteral, Minus,
+    Comma, Colon, Spread, Identifier, StringLiteral, Minus, Multiply,
     Iff, Emit, 
     Where, Scan, Step, InsertInto, Collect,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
@@ -31,9 +31,14 @@ export function defineLiteralRules() {
 
     this.property = this.RULE("property", () => {
         this.OR([
-            // Spread syntax: ...expr
+            // Spread all: ...*
             { ALT: () => {
                 this.CONSUME(Spread);
+                this.CONSUME(Multiply, { LABEL: "spreadAll" });
+            }},
+            // Spread syntax: ...expr
+            { ALT: () => {
+                this.CONSUME2(Spread);
                 this.SUBRULE(this.expression, { LABEL: "spreadExpression" });
             }},
             // Exclusion syntax: -field

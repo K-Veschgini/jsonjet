@@ -1,6 +1,12 @@
 import { parseQuery } from '../../grammar/query-parser.js';
 import { QueryTranspiler } from './query-transpiler.js';
 import { ParseError, TranspilerError } from '../errors/transpiler-errors.js';
+import { Stream } from '../../../core/stream.js';
+import * as Operators from '../../../operators/index.js';
+import { safeGet } from '../../../utils/safe-access.js';
+import { functionRegistry } from '../../../functions/index.js';
+import { AggregationObject } from '../../../aggregations/core/aggregation-object.js';
+import { AggregationExpression } from '../../../aggregations/core/aggregation-expression.js';
 
 // =============================================================================
 // TRANSPILATION API
@@ -66,15 +72,7 @@ export function createQueryFunction(queryText) {
     
     return {
         execute: async function(data) {
-            // Import modules dynamically
-            const { Stream } = await import('../../../core/stream.js');
-            const Operators = await import('../../../operators/index.js');
-            const { safeGet } = await import('../../../utils/safe-access.js');
-            const { functionRegistry } = await import('../../../functions/index.js');
-            const { AggregationObject } = await import('../../../aggregations/core/aggregation-object.js');
-            const { AggregationExpression } = await import('../../../aggregations/core/aggregation-expression.js');
-            
-            // Create execution context with imports available
+            // Create execution context with static imports
             const createPipeline = new Function('Stream', 'Operators', 'safeGet', 'functionRegistry', 'AggregationObject', 'AggregationExpression', `
                 return new Stream()${result.javascript};
             `);
@@ -187,9 +185,12 @@ export function getTranspilationInfo(queryText) {
 // =============================================================================
 
 function generateImports() {
-    return `import * as Operators from './src/operators/index.js';
+    return `import { Stream } from './src/core/stream.js';
+import * as Operators from './src/operators/index.js';
 import { safeGet } from './src/utils/safe-access.js';
-import { functionRegistry } from './src/functions/index.js';`;
+import { functionRegistry } from './src/functions/index.js';
+import { AggregationObject } from './src/aggregations/core/aggregation-object.js';
+import { AggregationExpression } from './src/aggregations/core/aggregation-expression.js';`;
 }
 
 function estimateComplexity(cst) {

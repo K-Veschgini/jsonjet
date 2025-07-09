@@ -137,15 +137,6 @@ export class CommandParser {
             } catch (error) {
                 throw error; // Re-throw any errors from stream manager
             }
-        } else if (subcommand === 'flow') {
-            // This is a flow creation, which is actually a query
-            // Return a special type to indicate it should be handled as a query
-            return {
-                type: 'flow',
-                success: true,
-                flowCommand: true,
-                message: 'Flow creation should be handled as a query'
-            };
         } else {
             throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
         }
@@ -526,8 +517,8 @@ export class CommandParser {
      */
     static isCommand(line) {
         const trimmed = line.trim();
-        // Commands start with these keywords
-        return /^(create\s+stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
+        // Commands start with these keywords (but exclude flow creation)
+        return /^(create\s+(?:or\s+replace\s+|if\s+not\s+exists\s+)?stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
     }
 
     /**

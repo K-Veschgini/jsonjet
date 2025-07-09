@@ -13,37 +13,63 @@ export const LiteralVisitorMixin = {
     // =============================================================================
 
     objectLiteral(ctx) {
+        const properties = [];
+        
+        // Handle spread syntax (...*) - same as select
+        if (ctx.spreadAll) {
+            properties.push('...item');
+        }
+
+        // Handle spread expression (...expr) - same as select
+        if (ctx.spreadExpression) {
+            const spreadExpressions = ctx.spreadExpression.map(expr => `...${this.visit(expr)}`);
+            properties.push(...spreadExpressions);
+        }
+
+        // Handle regular properties
         if (ctx.propertyList) {
-            const properties = this.visit(ctx.propertyList);
+            const regularProperties = this.visit(ctx.propertyList);
+            
+            // Flatten if it's an array of arrays
+            const flattenedProperties = Array.isArray(regularProperties) && Array.isArray(regularProperties[0]) ? regularProperties[0] : regularProperties;
             
             // Check if we have any exclusions
-            const hasExclusions = properties.some(prop => prop && prop.includes('__EXCLUDE_'));
+            const hasExclusions = flattenedProperties.some(prop => prop && prop.includes('__EXCLUDE_'));
             
             if (hasExclusions) {
                 // Extract exclusions and regular properties
-                const exclusions = properties.filter(prop => prop && prop.includes('__EXCLUDE_'))
+                const exclusions = flattenedProperties.filter(prop => prop && prop.includes('__EXCLUDE_'))
                     .map(prop => prop.match(/__EXCLUDE_(.+)__/)[1]);
-                const regularProps = properties.filter(prop => prop && !prop.includes('__EXCLUDE_') && typeof prop === 'string' && prop.trim() !== '');
+                const regularProps = flattenedProperties.filter(prop => prop && !prop.includes('__EXCLUDE_') && typeof prop === 'string' && prop.trim() !== '');
+                
+                // Add regular properties
+                properties.push(...regularProps);
                 
                 // Create object with exclusions handled
-                const objStr = regularProps.length > 0 ? `{ ${regularProps.join(', ')} }` : '{}';
+                const objStr = properties.length > 0 ? `{ ${properties.join(', ')} }` : '{}';
                 const exclusionStr = exclusions.map(field => `'${field}'`).join(', ');
                 return `((() => { const obj = ${objStr}; [${exclusionStr}].forEach(key => delete obj[key]); return obj; })())`;
             }
             
-            return VisitorUtils.createObjectLiteral(properties.filter(prop => prop && typeof prop === 'string' && prop.trim() !== ''));
+            const filtered = flattenedProperties.filter(prop => prop && typeof prop === 'string' && prop.trim() !== '');
+            properties.push(...filtered);
         }
-        return VisitorUtils.createObjectLiteral([]);
+        
+        return VisitorUtils.createObjectLiteral(properties.filter(p => p));
     },
 
     propertyList(ctx) {
         // Visit each property individually and filter out empty ones
-        const properties = ctx.property.map(propertyCtx => this.visit(propertyCtx)).filter(prop => prop && typeof prop === 'string' && prop.trim() !== '');
-        return properties;
+        const properties = ctx.property.map(propertyCtx => this.visit(propertyCtx));
+        const filtered = properties.filter(prop => prop && typeof prop === 'string' && prop.trim() !== '');
+        return filtered;
     },
 
     property(ctx) {
-        if (ctx.spreadExpression) {
+        if (ctx.spreadAll) {
+            // Spread all: ...*
+            return `...item`;
+        } else if (ctx.spreadExpression) {
             // Spread syntax: ...expr
             const expression = this.visit(ctx.spreadExpression);
             return `...${expression}`;
@@ -57,7 +83,7 @@ export const LiteralVisitorMixin = {
             const value = this.visit(ctx.propertyValue);
             return `${key}: ${value}`;
         } else if (ctx.shorthandProperty) {
-            // Shorthand: identifier becomes key: safeGet(item, identifier)
+            // Shorthand: identifier becomes key: safeGet(item, 'identifier') (like select does)
             const identifier = VisitorUtils.getTokenImage(ctx.shorthandProperty);
             return `${identifier}: ${VisitorUtils.createSafeAccess('item', identifier)}`;
         }
@@ -156,10 +182,51 @@ export const LiteralVisitorMixin = {
 
     emitFunction(ctx) {
         if (ctx.argumentList) {
+            // Process arguments - should be a single object literal
             const args = this.visit(ctx.argumentList);
             return `return ${args}`;
         }
         return 'return null';
+    },
+    
+    // Process emit object using the same logic as select
+    processEmitObject(ctx) {
+        const properties = [];
+        
+        // Handle spread syntax (...*)
+        if (ctx.spreadAll) {
+            properties.push('...item');
+        }
+
+        // Handle spread expression (...expr)
+        if (ctx.spreadExpression) {
+            const spreadExpressions = ctx.spreadExpression.map(expr => `...${this.visit(expr)}`);
+            properties.push(...spreadExpressions);
+        }
+
+        // Handle regular properties
+        if (ctx.propertyList && ctx.propertyList[0] && ctx.propertyList[0].property) {
+            const regularProperties = ctx.propertyList[0].property.map(prop => this.processEmitProperty(prop));
+            properties.push(...regularProperties.filter(p => p));
+        }
+
+        // Return object literal
+        return VisitorUtils.createObjectLiteral(properties.filter(p => p));
+    },
+    
+    // Process individual emit property using the same logic as selectProperty
+    processEmitProperty(ctx) {
+        if (ctx.propertyKey && ctx.propertyValue) {
+            // Key-value pair: key: value
+            const keyValue = this.visit(ctx.propertyKey);
+            const value = this.visit(ctx.propertyValue);
+            return `${keyValue}: ${value}`;
+        } else if (ctx.shorthandProperty) {
+            // Shorthand property: identifier -> identifier: item.identifier
+            const identifier = VisitorUtils.getTokenImage(ctx.shorthandProperty);
+            return `${identifier}: item.${identifier}`;
+        }
+        return '';
     },
 
     scalarFunction(ctx) {

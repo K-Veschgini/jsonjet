@@ -33,13 +33,7 @@ export class QueryEngine {
             // Check if it's a regular command
             if (CommandParser.isCommand(trimmed)) {
                 const command = CommandParser.extractCommand(trimmed);
-                const result = await CommandParser.executeCommand(command);
-                
-                // Handle special case where command is actually a flow
-                if (result.type === 'flow' && result.flowCommand) {
-                    return await this.executeFlow(trimmed);
-                }
-                
+                const result = await CommandParser.executeCommand(command, this.streamManager);
                 return result;
             }
 

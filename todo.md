@@ -14,35 +14,53 @@ large number of streams, no space for docs view
 
 make sure functions (aggs and sclaras dont have same name and not called like a built in operator)
 
-// Control flow functions
-export const Iff = createToken({ name: "Iff", pattern: /iff/i });
-export const Emit = createToken({ name: "Emit", pattern: /emit/i });
 
-
-return {
-                type: 'flow',
-                success: true,
-                flowCommand: true,
-                message: 'Flow creation should be handled as a query'
-            };
-
-
-export function createQueryFunction(queryText) {
-    const result = transpileQuery(queryText);
-    
-    return {
-        execute: async function(data) {
-            // Import modules dynamically
-            const { Stream } = await import('../../../core/stream.js');
-            const Operators = await import('../../../operators/index.js');
-            const { safeGet } = await import('../../../utils/safe-access.js');
-            const { functionRegistry } = await import('../../../functions/index.js');
-            const { AggregationObject } = await import('../../../aggregations/core/aggregation-object.js');
-            const { AggregationExpression } = await import('../../../aggregations/core/aggregation-expression.js');
-
-
-yes and get rid of non sclaing statements. sum and such should not be part of grammar. but dont forget that only in      │
-│   summarize the expressions needs to transpile to an aggregation expression.
 
 
 command parser is weird. why not use grammar?
+
+when i misspell a stage in pipe there is no error
+
+
+// Simple Scan Operator Demo - Cumulative Sum
+// Equivalent to: range x from 1 to 5 | scan declare (cumulative_x:long=0) with (step s1: true => cumulative_x = x + s1.cumulative_x;)
+
+// 1. Create streams
+create or replace stream numbers;
+create or replace stream cumulative_results;
+
+// 2. Create cumulative sum flow
+create flow cumulative_sum from numbers
+  | insert_into(cumulative_results)
+  | scan(
+      step s1: true => 
+        s1.cumulative_x = x + iff(s1.cumulative_x, s1.cumulative_x, 0),
+        emit({
+          x: x,
+          cumulative_x: s1.cumulative_x
+        });
+    )
+  | insert_into(cumulative_results);
+
+// 3. Insert test data (simulating range x from 1 to 5)
+insert into numbers { x: 1 };
+insert into numbers { x: 2 };
+insert into numbers { x: 3 };
+insert into numbers { x: 4 };
+insert into numbers { x: 5 };
+
+// 4. Check results
+flush numbers;
+
+
+this.command = this.RULE("command", () => {
+        this.OR([
+            { ALT: () => this.SUBRULE(this.printCommand) }
+        ]);
+    });
+
+    this.printCommand = this.RULE("printCommand", () => {
+        this.CONSUME(Print);
+        this.SUBRULE(this.expression);
+    });
+}

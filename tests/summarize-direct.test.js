@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { SummarizeOperator } from '../src/operators/summarize.js';
-import { sum, count } from '../src/aggregations/core/aggregation-object.js';
+import { sum, count } from '../src/operators/index.js';
 
 describe('Summarize Operations - Direct Testing', () => {
   it('should summarize data without window when flushed', async () => {

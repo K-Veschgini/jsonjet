@@ -497,8 +497,15 @@ export const QueryOperationVisitorMixin = {
 
     stepDefinition(ctx) {
         const stepName = VisitorUtils.getTokenImage(ctx.stepName);
+        
+        // Set step name context for this step
+        this._currentStepNames = [stepName];
+        
         const condition = this.visit(ctx.stepCondition);
         const statements = this.visit(ctx.statementList);
+        
+        // Clear context
+        this._currentStepNames = null;
         
         // Check if there's an emit() call in the statements
         const statementsStr = typeof statements === 'string' ? statements : String(statements);
@@ -512,7 +519,7 @@ export const QueryOperationVisitorMixin = {
             const otherStatements = statementLines.filter(s => !s.includes('return '));
             
             assignmentCode = `
-            (state, row) => {
+            (state, item) => {
                 if (!state.${stepName}) state.${stepName} = {};
                 ${otherStatements.join('\n                ')}
                 ${emitStatement || 'return null;'}
@@ -521,7 +528,7 @@ export const QueryOperationVisitorMixin = {
             // No emit, just condition and assignments
             assignmentCode = statementsStr.trim() 
                 ? `
-            (state, row) => {
+            (state, item) => {
                 if (!state.${stepName}) state.${stepName} = {};
                 ${statementsStr}
                 return null;
@@ -531,7 +538,7 @@ export const QueryOperationVisitorMixin = {
         
         return `
         .addStep('${stepName}', 
-            (state, row) => ${condition},${assignmentCode}
+            (state, item) => ${condition},${assignmentCode}
         )`;
     },
 

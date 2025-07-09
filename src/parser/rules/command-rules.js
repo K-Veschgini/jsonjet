@@ -37,7 +37,6 @@ export function defineCommandRules() {
     this.command = this.RULE("command", () => {
         this.OR([
             { ALT: () => this.SUBRULE(this.printCommand) }
-            // Future commands: .help, .describe, .schema, etc.
         ]);
     });
 

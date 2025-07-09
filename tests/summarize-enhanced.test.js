@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { SummarizeOperator } from '../src/operators/summarize.js';
-import { sum, count } from '../src/aggregations/core/aggregation-object.js';
+import { sum, count } from '../src/operators/index.js';
 import { tumbling_window, hopping_window, sliding_window, count_window } from '../src/core/window-functions.js';
 import { emit_every_count, emit_on_change } from '../src/core/emit-functions.js';
 

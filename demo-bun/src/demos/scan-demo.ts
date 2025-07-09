@@ -1,32 +1,73 @@
-export const scanDemo = `// JSDB Stream Scanning Demo
-// Learn how to scan and filter data streams in real-time
+export const scanDemo = `// JSDB Scan Operator Demo
+// Learn how to use the scan operator for stateful stream processing
 
-// 1. Create monitoring streams (using or replace to handle existing streams)
-create or replace stream server_logs;
-create or replace stream alerts;
-create or replace stream metrics;
+// 1. Create streams for our demo
+create or replace stream events;
+create or replace stream sessions;
+create or replace stream analytics;
 
-// 2. Create scanning flows for monitoring FIRST
-// Scan for errors and create alerts
-create flow error_scanner from server_logs 
-  | where level == "error" 
-  | select { alert_type: "ERROR", service: service, message: message, time: timestamp }
-  | insert_into(alerts);
+// 2. Session Tracking with Scan Operator
+// Track user sessions from login to logout events
+create flow session_tracker from events 
+  | scan(
+      step start_session: event_type == "login" => 
+        user_id = user_id, 
+        session_start = timestamp,
+        session_id = matchId;
+      step track_activity: event_type == "action" => 
+        action_count = action_count + 1,
+        last_activity = timestamp;
+      step end_session: event_type == "logout" => 
+        session_duration = timestamp - session_start,
+        user_id = user_id,
+        session_id = session_id,
+        total_actions = action_count,
+        emit({
+          user_id: user_id,
+          session_id: session_id,
+          session_duration: session_duration,
+          total_actions: total_actions,
+          session_start: session_start,
+          last_activity: last_activity
+        });
+    )
+  | insert_into(sessions);
 
-// Scan for slow responses and create performance metrics
-create flow performance_scanner from server_logs 
-  | where response_time > 1000 
-  | select { metric_type: "SLOW_RESPONSE", service: service, response_time: response_time }
-  | insert_into(metrics);
+// 3. Running Analytics with Scan Operator
+// Calculate running totals and averages
+create flow running_analytics from events 
+  | scan(
+      step accumulate: value > 0 => 
+        total = total + value,
+        count = count + 1,
+        avg = total / count,
+        max_value = value > max_value ? value : max_value,
+        emit({
+          total: total,
+          count: count,
+          avg: avg,
+          max_value: max_value,
+          current_value: value
+        });
+    )
+  | insert_into(analytics);
 
-// 3. Insert various log entries (flows will process these immediately)
-insert into server_logs { timestamp: "2024-01-15T10:00:00Z", level: "info", service: "api", message: "Request processed", response_time: 45 };
-insert into server_logs { timestamp: "2024-01-15T10:01:00Z", level: "warning", service: "db", message: "Slow query detected", response_time: 2500 };
-insert into server_logs { timestamp: "2024-01-15T10:02:00Z", level: "error", service: "api", message: "Connection timeout", response_time: 5000 };
+// 4. Insert session events (flows will process these immediately)
+insert into events { timestamp: 1000, event_type: "login", user_id: "alice", value: null };
+insert into events { timestamp: 1010, event_type: "action", user_id: "alice", value: 5 };
+insert into events { timestamp: 1020, event_type: "action", user_id: "alice", value: 10 };
+insert into events { timestamp: 1030, event_type: "logout", user_id: "alice", value: null };
 
-// 4. Insert more log data to trigger scans
-insert into server_logs { timestamp: "2024-01-15T10:03:00Z", level: "error", service: "auth", message: "Authentication failed", response_time: 200 };
-insert into server_logs { timestamp: "2024-01-15T10:04:00Z", level: "info", service: "api", message: "Health check", response_time: 15 };
+// 5. Insert more events for different user
+insert into events { timestamp: 1040, event_type: "login", user_id: "bob", value: null };
+insert into events { timestamp: 1050, event_type: "action", user_id: "bob", value: 15 };
+insert into events { timestamp: 1060, event_type: "action", user_id: "bob", value: 20 };
+insert into events { timestamp: 1070, event_type: "logout", user_id: "bob", value: null };
 
-// 5. Check what was detected
+// 6. Insert some analytics events
+insert into events { timestamp: 2000, event_type: "metric", user_id: null, value: 100 };
+insert into events { timestamp: 2010, event_type: "metric", user_id: null, value: 200 };
+insert into events { timestamp: 2020, event_type: "metric", user_id: null, value: 150 };
+
+// 7. Check results
 list flows;`;
