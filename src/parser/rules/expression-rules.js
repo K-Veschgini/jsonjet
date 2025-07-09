@@ -4,7 +4,7 @@ import {
     LessEquals, GreaterEquals, Plus, Minus, Multiply, Divide,
     LeftParen, RightParen, LeftBracket, RightBracket, Dot,
     StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier,
-    Count, Sum, Where, Select
+    Where, Select
 } from '../tokens/token-registry.js';
 
 export function defineExpressionRules() {
@@ -127,8 +127,6 @@ export function defineExpressionRules() {
         // Allow both identifiers and keywords as variable names
         this.OR([
             { ALT: () => this.CONSUME(Identifier, { LABEL: "stepOrVariable" }) },
-            { ALT: () => this.CONSUME(Count, { LABEL: "stepOrVariable" }) },
-            { ALT: () => this.CONSUME(Sum, { LABEL: "stepOrVariable" }) },
             { ALT: () => this.CONSUME(Where, { LABEL: "stepOrVariable" }) },
             { ALT: () => this.CONSUME(Select, { LABEL: "stepOrVariable" }) },
         ]);
@@ -137,8 +135,6 @@ export function defineExpressionRules() {
             // Also allow keywords after the dot
             this.OR2([
                 { ALT: () => this.CONSUME2(Identifier, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(Count, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(Sum, { LABEL: "variableName" }) },
                 { ALT: () => this.CONSUME2(Where, { LABEL: "variableName" }) },
                 { ALT: () => this.CONSUME2(Select, { LABEL: "variableName" }) }
             ]);

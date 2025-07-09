@@ -2,7 +2,7 @@
 import { 
     LeftBrace, RightBrace, LeftBracket, RightBracket, LeftParen, RightParen,
     Comma, Colon, Spread, Identifier, StringLiteral, Minus,
-    Iff, Emit, Count, Sum, 
+    Iff, Emit, 
     Where, Scan, Step, InsertInto, Collect,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Assign
@@ -66,9 +66,7 @@ export function defineLiteralRules() {
             { ALT: () => this.CONSUME(InsertInto) },
             { ALT: () => this.CONSUME(Iff) },
             { ALT: () => this.CONSUME(Emit) },
-            { ALT: () => this.CONSUME(Collect) },
-            { ALT: () => this.CONSUME(Count) },
-            { ALT: () => this.CONSUME(Sum) }
+            { ALT: () => this.CONSUME(Collect) }
         ]);
     });
 

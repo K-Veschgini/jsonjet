@@ -34,9 +34,7 @@ export const Group = createToken({ name: "Group", pattern: /group/i });
 export const Update = createToken({ name: "Update", pattern: /update/i });
 export const Using = createToken({ name: "Using", pattern: /using/i });
 
-// Aggregation functions
-export const Count = createToken({ name: "Count", pattern: /count\b/i });
-export const Sum = createToken({ name: "Sum", pattern: /sum\b/i });
+// Aggregation functions - removed Count and Sum to allow them as regular function calls
 
 // Window functions - count-based
 export const HoppingWindow = createToken({ name: "HoppingWindow", pattern: /hopping_window/i });

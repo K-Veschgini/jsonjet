@@ -4,7 +4,7 @@ import { Lexer } from 'chevrotain';
 import { WhiteSpace, Comment, Identifier } from './core-tokens.js';
 import { 
     Where, Select, Scan, Summarize, InsertInto, Collect,
-    By, Over, Step, Iff, Emit, Count, Sum,
+    By, Over, Step, Iff, Emit,
     Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
@@ -36,9 +36,6 @@ export const allTokens = [
     // Query operation keywords
     Where, Select, Scan, Step, Summarize, InsertInto, By, Over, 
     Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print,
-    
-    // Function keywords
-    Count, Sum,
     
     // Logical keywords (deprecated but supported for compatibility)
     
@@ -82,7 +79,7 @@ export {
     
     // Keywords
     Where, Select, Scan, Summarize, InsertInto, Collect,
-    By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using, Count, Sum,
+    By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
     

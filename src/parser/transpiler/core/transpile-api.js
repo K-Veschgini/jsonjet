@@ -71,13 +71,21 @@ export function createQueryFunction(queryText) {
             const Operators = await import('../../../operators/index.js');
             const { safeGet } = await import('../../../utils/safe-access.js');
             const { functionRegistry } = await import('../../../functions/index.js');
+            const { AggregationObject } = await import('../../../aggregations/core/aggregation-object.js');
+            const { AggregationExpression } = await import('../../../aggregations/core/aggregation-expression.js');
             
             // Create execution context with imports available
-            const createPipeline = new Function('Stream', 'Operators', 'safeGet', 'functionRegistry', `
+            const createPipeline = new Function('Stream', 'Operators', 'safeGet', 'functionRegistry', 'AggregationObject', 'AggregationExpression', `
                 return new Stream()${result.javascript};
             `);
             
-            const stream = createPipeline(Stream, Operators, safeGet, functionRegistry);
+            const stream = createPipeline(Stream, Operators, safeGet, functionRegistry, AggregationObject, AggregationExpression);
+            
+            // Collect results
+            const results = [];
+            stream.collect((result) => {
+                results.push(result);
+            });
             
             // Push data through the stream
             for (const item of data) {
@@ -86,6 +94,8 @@ export function createQueryFunction(queryText) {
             
             // Wait for all processing to complete
             await stream.finish();
+            
+            return results;
         },
         javascript: result.javascript,
         originalQuery: queryText,

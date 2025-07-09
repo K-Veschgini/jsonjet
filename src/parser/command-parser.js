@@ -2,7 +2,7 @@ import { streamManager } from '../core/stream-manager.js';
 import DurationParser from '../utils/duration-parser.js';
 
 /**
- * Command Parser - Handles unified command syntax (no dots)
+ * Command Parser - Handles unified command syntax
  * Supports: create stream, insert into, delete flow, list flows, etc.
  */
 export class CommandParser {

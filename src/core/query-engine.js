@@ -4,6 +4,8 @@ import CommandParser from '../parser/command-parser.js';
 import * as Operators from '../operators/index.js';
 import { safeGet } from '../utils/safe-access.js';
 import { functionRegistry } from '../functions/index.js';
+import { AggregationObject } from '../aggregations/core/aggregation-object.js';
+import { AggregationExpression } from '../aggregations/core/aggregation-expression.js';
 
 /**
  * QueryEngine - Handles both commands and continuous queries
@@ -427,12 +429,12 @@ export class QueryEngine {
                 });
             };
             
-            const createPipeline = new Function('Stream', 'Operators', 'insertIntoFactory', 'safeGet', 'functionRegistry', `
+            const createPipeline = new Function('Stream', 'Operators', 'insertIntoFactory', 'safeGet', 'functionRegistry', 'AggregationObject', 'AggregationExpression', `
                 const stream = new Stream();
                 return stream${jsCode};
             `);
             
-            const pipeline = createPipeline(Stream, Operators, insertIntoFactory, safeGet, functionRegistry);
+            const pipeline = createPipeline(Stream, Operators, insertIntoFactory, safeGet, functionRegistry, AggregationObject, AggregationExpression);
             
             // No result callback needed - flows use insert_into to write results
             

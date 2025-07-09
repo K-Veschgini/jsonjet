@@ -224,7 +224,6 @@ export function CodeEditor({
           [/\binto\b/, 'keyword.into'],
           [/\b(where|project|select|summarize|insert_into|by|over|not)\b/, 'keyword.query'],
           [/\b(and|or)\b/, 'keyword.query.deprecated'],
-          [/\b(count|sum|avg|min|max)\b/, 'keyword.function'],
           [/\b\d+[nμmshwd]+\b/, 'number.duration'],
           [/[|]/, 'operator.pipe'],
           [/[=><!=]+/, 'operator.comparison'],

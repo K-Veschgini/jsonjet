@@ -142,35 +142,14 @@ export const QueryOperationVisitorMixin = {
             // Flatten the properties array if it's nested
             const propArray = Array.isArray(properties) && Array.isArray(properties[0]) ? properties[0] : properties;
             
-            // Separate exclusions from regular properties
-            const exclusions = propArray.filter(prop => typeof prop === 'string' && prop.startsWith('__EXCLUDE_'));
+            // Filter out exclusions for now (not supported in AggregationExpression yet)
             const regularProperties = propArray.filter(prop => typeof prop === 'string' && !prop.startsWith('__EXCLUDE_'));
             
-            // Check if any property uses context variables
-            const hasContextVars = regularProperties.some(prop => 
-                prop.includes('safeGet(context,') || prop.includes('...safeGet(context,')
-            );
-            
-            if (exclusions.length > 0) {
-                // Handle exclusions with object deletion
-                const excludeFields = exclusions.map(exc => `'${exc.replace('__EXCLUDE_', '')}'`);
-                
-                if (hasContextVars) {
-                    // Create object first, then delete excluded fields
-                    const objStr = regularProperties.length > 0 ? VisitorUtils.createObjectLiteral(regularProperties) : '{}';
-                    return `(context) => { const obj = ${objStr}; [${excludeFields.join(', ')}].forEach(key => delete obj[key]); return obj; }`;
-                } else {
-                    const objStr = regularProperties.length > 0 ? VisitorUtils.createObjectLiteral(regularProperties) : '{}';
-                    return `((() => { const obj = ${objStr}; [${excludeFields.join(', ')}].forEach(key => delete obj[key]); return obj; })())`;
-                }
-            } else if (hasContextVars) {
-                // Generate a function that evaluates with context
-                return `(context) => (${VisitorUtils.createObjectLiteral(regularProperties)})`;
-            } else {
-                return VisitorUtils.createObjectLiteral(regularProperties);
-            }
+            // Return the spec object directly, not wrapped in AggregationObject
+            const objectSpec = VisitorUtils.createObjectLiteral(regularProperties);
+            return objectSpec;
         }
-        return VisitorUtils.createObjectLiteral([]);
+        return '{}';
     },
 
     aggregationPropertyList(ctx) {
@@ -196,18 +175,208 @@ export const QueryOperationVisitorMixin = {
             return `${key}: ${value}`;
         } else if (ctx.shorthandProperty) {
             const identifier = VisitorUtils.getTokenImage(ctx.shorthandProperty);
-            return `${identifier}: ${identifier}`;
+            return `${identifier}: new AggregationExpression('safeGet', ['${identifier}'])`;
         }
         return '';
     },
 
     aggregationExpression(ctx) {
+        // Convert any expression to AggregationExpression
         if (ctx.aggregationFunctionCall) {
             return this.visit(ctx.aggregationFunctionCall);
         } else if (ctx.expression) {
-            return this.visitWithStateContext(ctx.expression);
+            return this.buildAggregationExpression(ctx.expression);
         }
         return '';
+    },
+
+    /**
+     * Build an AggregationExpression from any expression context
+     */
+    buildAggregationExpression(ctx) {
+        // Handle case where ctx is an array (common in CST)
+        if (Array.isArray(ctx)) {
+            ctx = ctx[0];
+        }
+        
+        return this._convertExpressionToAggregationExpression(ctx);
+    },
+
+    /**
+     * Recursively convert expression context to AggregationExpression constructor call
+     */
+    _convertExpressionToAggregationExpression(ctx) {
+        if (!ctx) return 'null';
+
+        // Handle case where ctx is a token (has image property but no children)
+        if (ctx.image && !ctx.children) {
+            return `new AggregationExpression('safeGet', ['${ctx.image}'])`;
+        }
+
+        // Navigate directly through the CST to properly handle binary operations
+        return this._convertCSTToAggregationExpression(ctx);
+    },
+
+    _convertCSTToAggregationExpression(ctx) {
+        if (!ctx || !ctx.children) return 'null';
+
+        // Handle binary operations FIRST before navigating down
+        if (ctx.name === 'arithmeticExpression' && ctx.children.termExpression && ctx.children.termExpression.length > 1) {
+            return this._handleArithmeticBinaryOp(ctx);
+        }
+
+        // Handle binary operations at term level  
+        if (ctx.name === 'termExpression' && ctx.children.primaryExpression && ctx.children.primaryExpression.length > 1) {
+            return this._handleTermBinaryOp(ctx);
+        }
+
+        // Navigate through expression hierarchy
+        if (ctx.children.andExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.andExpression[0]);
+        }
+        if (ctx.children.comparisonExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.comparisonExpression[0]);
+        }
+        if (ctx.children.arithmeticExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.arithmeticExpression[0]);
+        }
+        if (ctx.children.termExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.termExpression[0]);
+        }
+
+        if (ctx.children.primaryExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.primaryExpression[0]);
+        }
+        if (ctx.children.atomicExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.atomicExpression[0]);
+        }
+
+        // Handle literals directly from atomic expressions
+        if (ctx.children.NumberLiteral) {
+            return ctx.children.NumberLiteral[0].image;
+        }
+        if (ctx.children.BooleanLiteral) {
+            return ctx.children.BooleanLiteral[0].image.toLowerCase();
+        }
+        if (ctx.children.StringLiteral) {
+            return ctx.children.StringLiteral[0].image;
+        }
+        if (ctx.children.NullLiteral) {
+            return 'null';
+        }
+
+        // Handle function calls
+        if (ctx.children.functionCall) {
+            const funcCall = ctx.children.functionCall[0];
+            if (funcCall.children && funcCall.children.scalarFunction) {
+                const scalarFunc = funcCall.children.scalarFunction[0];
+                const funcName = this._getFunctionName(scalarFunc);
+                
+                const args = [];
+                if (scalarFunc.children && scalarFunc.children.argumentList) {
+                    const argList = scalarFunc.children.argumentList[0];
+                    if (argList.children && argList.children.expression) {
+                        for (const argCtx of argList.children.expression) {
+                            args.push(this._convertCSTToAggregationExpression(argCtx));
+                        }
+                    }
+                }
+                
+                return `new AggregationExpression('${funcName}', [${args.join(', ')}])`;
+            }
+        }
+
+        // Handle stepVariable -> stepOrVariable -> identifier  
+        if (ctx.children.stepVariable) {
+            return this._convertCSTToAggregationExpression(ctx.children.stepVariable[0]);
+        }
+        if (ctx.children.stepOrVariable) {
+            // stepOrVariable is actually the token itself, not a CST node
+            const token = ctx.children.stepOrVariable[0];
+            if (token && token.image) {
+                return `new AggregationExpression('safeGet', ['${token.image}'])`;
+            }
+            return this._convertCSTToAggregationExpression(token);
+        }
+        if (ctx.children.identifier) {
+            const fieldName = ctx.children.identifier[0].image;
+            return `new AggregationExpression('safeGet', ['${fieldName}'])`;
+        }
+
+        // Handle literals
+        if (ctx.children.literal) {
+            const literalValue = this.visit(ctx.children.literal[0]);
+            return literalValue;
+        }
+
+        return 'null';
+    },
+
+    _handleArithmeticBinaryOp(ctx) {
+        // Handle + and - operations
+        const terms = ctx.children.termExpression || [];
+        const operators = [];
+        
+        // Collect operators
+        if (ctx.children.Plus) operators.push(...ctx.children.Plus.map(() => 'add'));
+        if (ctx.children.Minus) operators.push(...ctx.children.Minus.map(() => 'sub'));
+
+        if (terms.length === 1) {
+            return this._convertCSTToAggregationExpression(terms[0]);
+        }
+
+        // Build nested binary operations
+        let result = this._convertCSTToAggregationExpression(terms[0]);
+        for (let i = 1; i < terms.length; i++) {
+            const operator = operators[i - 1] || 'add';
+            const nextTerm = this._convertCSTToAggregationExpression(terms[i]);
+            result = `new AggregationExpression('${operator}', [${result}, ${nextTerm}])`;
+        }
+        
+        return result;
+    },
+
+    _handleTermBinaryOp(ctx) {
+        // Handle * and / operations
+        const primaries = ctx.children.primaryExpression || [];
+        const operators = [];
+        
+        // Collect operators
+        if (ctx.children.Multiply) operators.push(...ctx.children.Multiply.map(() => 'mul'));
+        if (ctx.children.Divide) operators.push(...ctx.children.Divide.map(() => 'div'));
+
+        if (primaries.length === 1) {
+            return this._convertCSTToAggregationExpression(primaries[0]);
+        }
+
+        // Build nested binary operations
+        let result = this._convertCSTToAggregationExpression(primaries[0]);
+        for (let i = 1; i < primaries.length; i++) {
+            const operator = operators[i - 1] || 'mul';
+            const nextTerm = this._convertCSTToAggregationExpression(primaries[i]);
+            result = `new AggregationExpression('${operator}', [${result}, ${nextTerm}])`;
+        }
+        
+        return result;
+    },
+
+    /**
+     * Handle binary operations like +, -, *, /
+     */
+    _handleBinaryOperation(ctx) {
+        // This is a simplified handler - you'd need to implement proper binary operation parsing
+        // For now, return a placeholder
+        return 'new AggregationExpression("add", [])'; // placeholder
+    },
+
+    /**
+     * Get function name from scalar function context
+     */
+    _getFunctionName(scalarFuncCtx) {
+        if (scalarFuncCtx.children && scalarFuncCtx.children.functionName) {
+            return scalarFuncCtx.children.functionName[0].image;
+        }
+        return 'unknown';
     },
 
     aggregationFunctionCall(ctx) {
@@ -220,16 +389,12 @@ export const QueryOperationVisitorMixin = {
     },
 
     countFunction(ctx) {
-        return 'Operators.count()';
+        return 'new AggregationExpression("count", [])';
     },
 
     sumFunction(ctx) {
-        const valueExpression = this.visit(ctx.valueExpression);
-        let options = '{}';
-        if (ctx.options) {
-            options = this.visit(ctx.options);
-        }
-        return `Operators.sum((item) => ${valueExpression}, ${options})`;
+        const valueExpression = this._convertExpressionToAggregationExpression(ctx.valueExpression[0]);
+        return `new AggregationExpression("sum", [${valueExpression}])`;
     },
 
     byExpressionList(ctx) {

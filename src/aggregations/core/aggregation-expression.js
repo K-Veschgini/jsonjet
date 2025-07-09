@@ -122,7 +122,7 @@ export class AggregationExpression extends Aggregation {
             }
         });
         
-        return functionRegistry.execute(this.functionName, ...argValues);
+        return functionRegistry.execute(this.functionName, argValues);
     }
     
     /**
@@ -153,6 +153,10 @@ export class AggregationExpression extends Aggregation {
                 case 'scalar':
                     // Evaluate scalar with object context
                     return arg._evaluateScalarWithObject(object);
+                case 'aggregation':
+                    // For aggregation in object context, return current result
+                    // This allows scalar functions to access intermediate aggregation results
+                    return arg.getResult();
                 default:
                     throw new Error(`Cannot evaluate ${arg.action} in object context`);
             }
@@ -168,7 +172,7 @@ export class AggregationExpression extends Aggregation {
         // Get values from all args with object context
         const argValues = this.args.map(arg => this._evaluateArgWithObject(arg, object));
         
-        return functionRegistry.execute(this.functionName, ...argValues);
+        return functionRegistry.execute(this.functionName, argValues);
     }
     
     /**

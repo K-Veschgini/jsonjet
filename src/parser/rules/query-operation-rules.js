@@ -1,7 +1,7 @@
 // Query operation rules - WHERE, SELECT, PROJECT, SUMMARIZE, etc.
 import { 
     Where, Select, Scan, Summarize, InsertInto, Collect,
-    By, Over, Step, Count, Sum, Emit, Every, When, On, Change, Group, Update, Using,
+    By, Over, Step, Emit, Every, When, On, Change, Group, Update, Using,
     Assign, Arrow, Comma, Colon, Semicolon,
     LeftParen, RightParen, LeftBrace, RightBrace,
     Spread, Multiply, Minus, Identifier
@@ -146,34 +146,7 @@ export function defineQueryOperationRules() {
     });
 
     this.aggregationExpression = this.RULE("aggregationExpression", () => {
-        this.OR([
-            { ALT: () => this.SUBRULE(this.aggregationFunctionCall) },
-            { ALT: () => this.SUBRULE(this.expression) }
-        ]);
-    });
-
-    this.aggregationFunctionCall = this.RULE("aggregationFunctionCall", () => {
-        this.OR([
-            { ALT: () => this.SUBRULE(this.countFunction) },
-            { ALT: () => this.SUBRULE(this.sumFunction) }
-        ]);
-    });
-
-    this.countFunction = this.RULE("countFunction", () => {
-        this.CONSUME(Count);
-        this.CONSUME(LeftParen);
-        this.CONSUME(RightParen);
-    });
-
-    this.sumFunction = this.RULE("sumFunction", () => {
-        this.CONSUME(Sum);
-        this.CONSUME(LeftParen);
-        this.SUBRULE(this.expression, { LABEL: "valueExpression" });
-        this.OPTION(() => {
-            this.CONSUME(Comma);
-            this.SUBRULE(this.objectLiteral, { LABEL: "options" });
-        });
-        this.CONSUME(RightParen);
+        this.SUBRULE(this.expression);
     });
 
     this.byExpressionList = this.RULE("byExpressionList", () => {
@@ -258,8 +231,6 @@ export function defineQueryOperationRules() {
         this.OR([
             { ALT: () => this.CONSUME(Identifier, { LABEL: "stepName" }) },
             // Allow keywords as step names
-            { ALT: () => this.CONSUME(Count, { LABEL: "stepName" }) },
-            { ALT: () => this.CONSUME(Sum, { LABEL: "stepName" }) },
             { ALT: () => this.CONSUME(Where, { LABEL: "stepName" }) },
             { ALT: () => this.CONSUME(Scan, { LABEL: "stepName" }) },
         ]);

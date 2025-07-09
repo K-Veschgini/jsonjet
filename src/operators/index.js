@@ -7,7 +7,8 @@ export { Sorter } from './sorter.js';
 export { SummarizeOperator, createSummarizeOperator } from './summarize.js';
 
 // Re-export aggregation functions
-export { count, sum } from '../aggregations/core/aggregation-object.js';
+export { Count as count } from '../aggregations/functions/count.js';
+export { Sum as sum } from '../aggregations/functions/sum.js';
 
 // Re-export window functions
 export { 
