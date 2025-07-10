@@ -13,6 +13,22 @@ export const ExpressionVisitorMixin = {
     // =============================================================================
     
     expression(ctx) {
+        return this.visit(ctx.ternaryExpression[0]);
+    },
+
+    ternaryExpression(ctx) {
+        const condition = this.visit(ctx.orExpression[0]);
+        
+        if (ctx.QuestionMark && ctx.trueExpression && ctx.falseExpression) {
+            const trueExpr = this.visit(ctx.trueExpression[0]);
+            const falseExpr = this.visit(ctx.falseExpression[0]);
+            return `(${condition}) ? (${trueExpr}) : (${falseExpr})`;
+        }
+        
+        return condition;
+    },
+
+    orExpression(ctx) {
         let result = this.visit(ctx.andExpression[0]);
         
         if (ctx.andExpression.length > 1) {
@@ -160,9 +176,9 @@ export const ExpressionVisitorMixin = {
             
             for (let i = 0; i < accessCount; i++) {
                 if (ctx.index && ctx.index[i]) {
-                    // Array/object access: expr[index]
+                    // Array/object access: expr[index] - make it safe
                     const index = this.visit(ctx.index[i]);
-                    result = `${result}[${index}]`;
+                    result = `safeGet(${result}, ${index})`;
                 } else if (ctx.property && ctx.property[i]) {
                     // Property access: expr.property
                     const property = VisitorUtils.getTokenImage(ctx.property[i]);
@@ -175,6 +191,13 @@ export const ExpressionVisitorMixin = {
     },
 
     atomicExpression(ctx) {
+        // Handle unary expressions first
+        if (ctx.unaryOperator && ctx.unaryExpression) {
+            const operator = ctx.unaryOperator[0].image; // Get the actual operator symbol
+            const expression = this.visit(ctx.unaryExpression);
+            return `${operator}${expression}`;
+        }
+
         // Use a lookup table for cleaner dispatch
         const handlers = {
             functionCall: () => this.visit(ctx.functionCall),
@@ -203,9 +226,16 @@ export const ExpressionVisitorMixin = {
         const stepOrVariable = VisitorUtils.getTokenImage(ctx.stepOrVariable);
         
         if (ctx.variableName) {
-            // stepName.variableName - access from state
             const variableName = VisitorUtils.getTokenImage(ctx.variableName);
-            return `state.${stepOrVariable}.${variableName}`;
+            
+            // Check if this is in scan context and stepOrVariable is a known step name
+            if (this._currentStepNames && this._currentStepNames.includes(stepOrVariable)) {
+                // This is a step name in scan context - access from state
+                return `state.${stepOrVariable}.${variableName}`;
+            } else {
+                // This is a regular property access - use nested safeGet
+                return VisitorUtils.createSafeAccess('item', `${stepOrVariable}.${variableName}`);
+            }
         } else {
             // Check if this is a step name in a scan context
             if (this._currentStepNames && this._currentStepNames.includes(stepOrVariable)) {

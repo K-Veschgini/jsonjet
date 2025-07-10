@@ -18,7 +18,7 @@ import { DataTabs } from './components/DataTabs';
 import { useUnreadCounts } from './hooks/useUnreadCounts';
 
 // Import demos
-import { flowProcessingDemo, summarizeDemo, scanSimpleDemo, scanDemo, scanAdvancedDemo, selectDemo, runArrayIndexingDemo, expDemo } from './demos';
+import { flowProcessingDemo, summarizeDemo, scanSimpleDemo, scanDemo, scanAdvancedDemo, selectDemo, runArrayIndexingDemo } from './demos';
 
 interface Statement {
   text: string;
@@ -92,7 +92,6 @@ function App() {
     { value: 'scan-advanced-demo', label: 'Scan Advanced (Patterns)' },
     { value: 'select-demo', label: 'Select Operator' },
     { value: 'array-indexing-demo', label: 'Array Indexing' },
-    { value: 'exp-demo', label: 'Exp Function' }
   ];
 
   // Demo content
@@ -110,8 +109,6 @@ function App() {
         return selectDemo;
       case 'array-indexing-demo':
         return runArrayIndexingDemo;
-      case 'exp-demo':
-        return expDemo;
       case 'flow-processing':
         return flowProcessingDemo;
       default:

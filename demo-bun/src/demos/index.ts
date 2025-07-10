@@ -5,4 +5,3 @@ export { scanDemo } from './scan-demo';
 export { scanAdvancedDemo } from './scan-advanced-demo';
 export { selectDemo } from './select-demo';
 export { runArrayIndexingDemo } from './array-indexing-demo';
-export { expDemo } from './exp-demo';

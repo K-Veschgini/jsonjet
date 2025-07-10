@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { StreamManager } from '../src/core/stream-manager.js';
-import { QueryEngine } from '../src/core/query-engine.js';
+import { BatchQueryEngine } from '../src/core/batch-query-engine.js';
 
 /**
  * RDB Test Runner - Discovers and runs all .rdb query files in specified directories
@@ -46,106 +46,7 @@ class RdbTestRunner {
         return rdbFiles;
     }
 
-    /**
-     * Parse statements from .rdb file content (similar to demo format)
-     */
-    parseStatements(content) {
-        const lines = content.split('\n');
-        const statements = [];
-        
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            
-            // Skip empty lines and comments
-            if (!line || line.startsWith('//')) {
-                continue;
-            }
-            
-            // Check if this looks like a statement
-            if (/^(create|insert|delete|flush|list|info|subscribe|unsubscribe|[a-zA-Z_][a-zA-Z0-9_]*\s*\|)/.test(line)) {
-                let currentStatement = line;
-                let currentLine = i;
-                
-                // Handle multi-line statements
-                if (!line.endsWith(';')) {
-                    for (let j = i + 1; j < lines.length; j++) {
-                        const nextLine = lines[j].trim();
-                        
-                        if (!nextLine || nextLine.startsWith('//')) {
-                            break;
-                        }
-                        
-                        currentStatement += ' ' + nextLine;
-                        
-                        if (nextLine.endsWith(';') || this.isCompleteStatement(currentStatement)) {
-                            i = j;
-                            break;
-                        }
-                    }
-                }
-                
-                if (this.isCompleteStatement(currentStatement)) {
-                    const trimmed = currentStatement.replace(/;$/, '').trim();
-                    statements.push(trimmed);
-                }
-            }
-        }
-        
-        return statements;
-    }
-
-    /**
-     * Check if a statement is complete (similar logic to CodeEditor)
-     */
-    isCompleteStatement(stmt) {
-        const trimmed = stmt.trim();
-        if (!trimmed) return false;
-        
-        let braceCount = 0;
-        let bracketCount = 0; 
-        let parenCount = 0;
-        let inDoubleQuote = false;
-        let inSingleQuote = false;
-        let escapeNext = false;
-        
-        for (let i = 0; i < trimmed.length; i++) {
-            const char = trimmed[i];
-            
-            if (escapeNext) {
-                escapeNext = false;
-                continue;
-            }
-            
-            if (char === '\\') {
-                escapeNext = true;
-                continue;
-            }
-            
-            if (char === '"' && !inSingleQuote) {
-                inDoubleQuote = !inDoubleQuote;
-                continue;
-            }
-            
-            if (char === "'" && !inDoubleQuote) {
-                inSingleQuote = !inSingleQuote;
-                continue;
-            }
-            
-            if (inDoubleQuote || inSingleQuote) continue;
-            
-            if (char === '{') braceCount++;
-            if (char === '}') braceCount--;
-            if (char === '[') bracketCount++;
-            if (char === ']') bracketCount--;
-            if (char === '(') parenCount++;
-            if (char === ')') parenCount--;
-        }
-        
-        return trimmed.endsWith(';') && 
-               braceCount === 0 && 
-               bracketCount === 0 && 
-               parenCount === 0;
-    }
+    // Remove manual statement parsing - now handled by unified parser
 
     /**
      * Execute a single .rdb test file
@@ -164,10 +65,16 @@ class RdbTestRunner {
         };
         
         try {
-            // Read and parse the .rdb file
+            // Read the .rdb file
             const content = fs.readFileSync(filePath, 'utf8');
-            const statements = this.parseStatements(content);
-            testResult.statements = statements;
+            
+            // Create fresh StreamManager and BatchQueryEngine for this test
+            const streamManager = new StreamManager();
+            const batchEngine = new BatchQueryEngine(streamManager);
+            
+            // Parse statements using unified parser
+            const statements = batchEngine.parseStatements(content);
+            testResult.statements = statements.map(s => s.text);
             
             if (statements.length === 0) {
                 testResult.error = 'No valid statements found in file';
@@ -175,10 +82,6 @@ class RdbTestRunner {
             }
             
             console.log(`   Found ${statements.length} statements`);
-            
-            // Create fresh StreamManager and QueryEngine for this test
-            const streamManager = new StreamManager();
-            const queryEngine = new QueryEngine(streamManager);
             
             // Subscribe to _log stream to capture errors
             const logErrors = [];
@@ -193,35 +96,42 @@ class RdbTestRunner {
             
             const startTime = Date.now();
             
-            // Execute all statements
-            for (let i = 0; i < statements.length; i++) {
-                const statement = statements[i];
-                console.log(`   Executing [${i + 1}/${statements.length}]: ${statement.substring(0, 60)}${statement.length > 60 ? '...' : ''}`);
-                
-                try {
-                    await queryEngine.executeStatement(statement);
-                    // Small delay to allow async processing
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                } catch (error) {
-                    throw new Error(`Statement ${i + 1} failed: ${error.message}`);
-                }
-            }
+            // Execute all statements using unified engine
+            const results = await batchEngine.executeStatements(statements);
             
-            // Wait a bit more for any async operations to complete
+            // Log execution progress
+            results.forEach((result, i) => {
+                const stmt = result.statement;
+                console.log(`   Executing [${i + 1}/${statements.length}]: ${stmt.text.substring(0, 60)}${stmt.text.length > 60 ? '...' : ''}`);
+                if (!result.success) {
+                    console.log(`      Error: ${result.error}`);
+                }
+            });
+            
+            // Wait a bit for any async operations to complete
             await new Promise(resolve => setTimeout(resolve, 200));
             
             testResult.executionTime = Date.now() - startTime;
             testResult.logErrors = logErrors;
             
-            // Test passes if no errors were logged
-            if (logErrors.length === 0) {
+            // Test passes if no errors were logged AND all statements executed successfully
+            const hasExecutionErrors = results.some(r => !r.success);
+            if (logErrors.length === 0 && !hasExecutionErrors) {
                 testResult.passed = true;
                 console.log(`   ✅ PASSED (${testResult.executionTime}ms)`);
             } else {
                 testResult.passed = false;
-                console.log(`   ❌ FAILED: ${logErrors.length} error(s) logged`);
+                const errorCount = logErrors.length + results.filter(r => !r.success).length;
+                console.log(`   ❌ FAILED: ${errorCount} error(s)`);
+                
+                // Log execution errors
+                results.filter(r => !r.success).forEach(result => {
+                    console.log(`      - Statement failed: ${result.error}`);
+                });
+                
+                // Log stream errors
                 logErrors.forEach(error => {
-                    console.log(`      - ${error.message || error.code || 'Unknown error'}`);
+                    console.log(`      - Stream error: ${error.message || error.code || 'Unknown error'}`);
                 });
             }
             

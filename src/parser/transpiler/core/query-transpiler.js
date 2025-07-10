@@ -65,16 +65,113 @@ export class QueryTranspiler {
      * Add core visitor methods that coordinate the transpilation process
      */
     _addCoreVisitorMethods() {
-        // Main entry point for transpilation
+        // Add unified grammar support
+        this._visitor.program = ErrorUtils.wrapVisitorMethod('program', function(ctx) {
+            if (ctx.programStatementList) {
+                return this.visit(ctx.programStatementList);
+            }
+            return '';
+        }, this._visitor);
+
+        this._visitor.programStatementList = ErrorUtils.wrapVisitorMethod('programStatementList', function(ctx) {
+            if (ctx.programStatement && ctx.programStatement.length > 0) {
+                // For pipeline queries, just visit the first (and should be only) statement
+                const result = this.visit(ctx.programStatement[0]);
+                // Ensure we return a string, not an array
+                return Array.isArray(result) ? result.join('') : result;
+            }
+            return '';
+        }, this._visitor);
+
+        this._visitor.programStatement = ErrorUtils.wrapVisitorMethod('programStatement', function(ctx) {
+            // Delegate to existing handlers
+            let result = '';
+            if (ctx.createStatement) {
+                result = this.visit(ctx.createStatement);
+            } else if (ctx.deleteStatement) {
+                result = this.visit(ctx.deleteStatement);
+            } else if (ctx.insertStatement) {
+                result = this.visit(ctx.insertStatement);
+            } else if (ctx.pipelineQuery) {
+                result = this.visit(ctx.pipelineQuery);
+            } else if (ctx.dotCommand) {
+                result = this.visit(ctx.dotCommand);
+            } else if (ctx.command) {
+                result = this.visit(ctx.command);
+            }
+            // Ensure we return a string, not an array
+            return Array.isArray(result) ? result.join('') : result;
+        }, this._visitor);
+
+        this._visitor.pipelineQuery = ErrorUtils.wrapVisitorMethod('pipelineQuery', function(ctx) {
+            let jsCode = '';
+            
+            // Start with the source (we don't use the source name in pipeline code)
+            if (ctx.source) {
+                const sourceName = this.visit(ctx.source);
+            }
+            
+            // Add pipe operations
+            if (ctx.operation) {
+                for (const operation of ctx.operation) {
+                    const operationCode = this.visit(operation);
+                    jsCode += operationCode;
+                }
+            }
+            
+            return jsCode;
+        }, this._visitor);
+
+        // Add placeholder methods for command statements (they shouldn't be used in pipeline transpilation)
+        this._visitor.createStatement = ErrorUtils.wrapVisitorMethod('createStatement', function(ctx) {
+            throw new Error('Create statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        this._visitor.deleteStatement = ErrorUtils.wrapVisitorMethod('deleteStatement', function(ctx) {
+            throw new Error('Delete statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        this._visitor.insertStatement = ErrorUtils.wrapVisitorMethod('insertStatement', function(ctx) {
+            throw new Error('Insert statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        this._visitor.flushStatement = ErrorUtils.wrapVisitorMethod('flushStatement', function(ctx) {
+            throw new Error('Flush statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        this._visitor.listStatement = ErrorUtils.wrapVisitorMethod('listStatement', function(ctx) {
+            throw new Error('List statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        this._visitor.infoStatement = ErrorUtils.wrapVisitorMethod('infoStatement', function(ctx) {
+            throw new Error('Info statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        this._visitor.subscribeStatement = ErrorUtils.wrapVisitorMethod('subscribeStatement', function(ctx) {
+            throw new Error('Subscribe statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        this._visitor.unsubscribeStatement = ErrorUtils.wrapVisitorMethod('unsubscribeStatement', function(ctx) {
+            throw new Error('Unsubscribe statements should not be transpiled through pipeline transpiler');
+        }, this._visitor);
+
+        // Main entry point for transpilation (legacy compatibility)
         this._visitor.query = ErrorUtils.wrapVisitorMethod('query', function(ctx) {
-            if (ctx.dotCommand) {
+            // Handle unified grammar structure
+            if (ctx.programStatement) {
+                const result = this.visit(ctx.programStatement);
+                // Ensure we return a string, not an array
+                return Array.isArray(result) ? result.join('') : result;
+            }
+            // Legacy structure for backward compatibility
+            else if (ctx.dotCommand) {
                 // Handle dot commands (.create, .insert, etc.)
                 return this.visit(ctx.dotCommand);
             } else if (ctx.command) {
                 // Handle print commands (.print expression)
                 return this.visit(ctx.command);
             } else {
-                // Handle regular query pipeline
+                // Handle regular query pipeline (old structure)
                 let jsCode = '';
                 
                 // Start with the source (we don't use the source name in pipeline code)
@@ -94,7 +191,11 @@ export class QueryTranspiler {
 
         // Source handling
         this._visitor.source = ErrorUtils.wrapVisitorMethod('source', function(ctx) {
-            return VisitorUtils.getTokenImage(ctx.sourceName);
+            // Handle both Identifier and keyword tokens as source names
+            if (ctx.sourceName) {
+                return VisitorUtils.getTokenImage(ctx.sourceName);
+            }
+            return '';
         }, this._visitor);
 
         // Delegate visitor calls to the internal visitor

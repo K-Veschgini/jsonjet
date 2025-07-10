@@ -562,9 +562,35 @@ export const QueryOperationVisitorMixin = {
     },
 
     assignmentStatement(ctx) {
-        const variable = this.visit(ctx.stepVariable);
+        // For assignments, we need to handle the left side differently
+        // We can't assign to a function call like safeGet(item, 'field')
+        const stepOrVariable = VisitorUtils.getTokenImage(ctx.stepVariable[0].stepOrVariable);
+        const variableName = ctx.stepVariable[0].variableName ? 
+            VisitorUtils.getTokenImage(ctx.stepVariable[0].variableName) : null;
+        
+        let assignmentTarget;
+        if (variableName) {
+            // Check if this is a step name in scan context
+            if (this._currentStepNames && this._currentStepNames.includes(stepOrVariable)) {
+                // This is a step name - assign to state
+                assignmentTarget = `state.${stepOrVariable}.${variableName}`;
+            } else {
+                // This is a field assignment - set on current item
+                assignmentTarget = `item['${stepOrVariable}.${variableName}']`;
+            }
+        } else {
+            // Check if this is a step name in scan context
+            if (this._currentStepNames && this._currentStepNames.includes(stepOrVariable)) {
+                // This is a step name - assign to state
+                assignmentTarget = `state.${stepOrVariable}`;
+            } else {
+                // This is a simple field assignment
+                assignmentTarget = `item['${stepOrVariable}']`;
+            }
+        }
+        
         const value = this.visit(ctx.expression);
-        return `${variable} = ${value};`;
+        return `${assignmentTarget} = ${value};`;
     },
 
     functionCallStatement(ctx) {

@@ -1,5 +1,6 @@
 import { CstParser } from 'chevrotain';
-import { allTokens, QueryLexer } from '../tokens/token-registry.js';
+import { allTokens } from '../tokens/token-registry.js';
+import { createQueryLexer } from '../lexer/lexer-factory.js';
 
 // Import rule definition functions
 import { defineCoreCrules } from '../rules/core-rules.js';
@@ -32,8 +33,9 @@ export class QueryParser extends CstParser {
 // MAIN PARSE FUNCTION
 // =============================================================================
 export function parseQuery(queryText) {
-    // Tokenize the input
-    const lexingResult = QueryLexer.tokenize(queryText);
+    // Tokenize the input using context-sensitive lexer
+    const contextSensitiveLexer = createQueryLexer();
+    const lexingResult = contextSensitiveLexer.tokenize(queryText);
     
     if (lexingResult.errors.length > 0) {
         throw new Error(`Lexing errors: ${lexingResult.errors.map(e => e.message).join(', ')}`);
@@ -61,4 +63,4 @@ export function parseQuery(queryText) {
 // =============================================================================
 // EXPORTS
 // =============================================================================
-export { QueryLexer, allTokens };
+export { allTokens };

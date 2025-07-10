@@ -96,33 +96,12 @@ export const LiteralVisitorMixin = {
     // =============================================================================
 
     propertyKey(ctx) {
-        // Use a lookup table instead of giant if/else chain
-        const tokenToKeyword = {
-            'Identifier': () => VisitorUtils.getTokenImage(ctx.Identifier),
-            'StringLiteral': () => VisitorUtils.getTokenImage(ctx.StringLiteral),
-            'Where': () => 'where',
-            'Project': () => 'project', 
-            'Scan': () => 'scan',
-            'Step': () => 'step',
-            'InsertInto': () => 'insert_into',
-            'And': () => 'and',
-            'Or': () => 'or',
-            'Iff': () => 'iff',
-            'Emit': () => 'emit',
-            'Collect': () => 'collect',
-            'Count': () => 'count',
-            'Sum': () => 'sum'
-        };
-
-        for (const [tokenName, keywordFunc] of Object.entries(tokenToKeyword)) {
-            if (ctx[tokenName]) {
-                const keyName = keywordFunc();
-                if (tokenName === 'StringLiteral') {
-                    return keyName; // Already quoted
-                }
-                // Check if valid JS identifier, quote if needed
-                return this._formatPropertyKey(keyName);
-            }
+        // Now beautifully simple! Context-sensitive lexer converts keywords to identifiers
+        if (ctx.Identifier) {
+            const keyName = VisitorUtils.getTokenImage(ctx.Identifier);
+            return this._formatPropertyKey(keyName);
+        } else if (ctx.StringLiteral) {
+            return VisitorUtils.getTokenImage(ctx.StringLiteral); // Already quoted
         }
         
         return '';

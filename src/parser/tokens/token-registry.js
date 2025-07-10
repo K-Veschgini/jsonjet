@@ -8,11 +8,13 @@ import {
     Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
+    Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
+    Flush, List, Info, Subscribe, Unsubscribe, Ttl
 } from './keyword-tokens.js';
 import {
     LogicalOr, LogicalAnd, Equals, NotEquals, LessEquals, GreaterEquals,
     LessThan, GreaterThan, Plus, Minus, Multiply, Divide,
-    Arrow, Assign, Pipe, Spread
+    Arrow, Assign, Pipe, Spread, QuestionMark
 } from './operator-tokens.js';
 import { StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral } from './literal-tokens.js';
 import { 
@@ -32,10 +34,15 @@ export const allTokens = [
     // Complex keywords first (longest patterns)
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow, SessionWindow,
+    Subscribe, Unsubscribe, WriteToFile, AssertOrSaveExpected, InsertInto,
     
     // Query operation keywords
-    Where, Select, Scan, Step, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, By, Over, 
+    Where, Select, Scan, Step, Summarize, By, Over, 
     Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print, As,
+    
+    // Statement keywords
+    Create, Delete, Insert, Into, Flush, List, Info, Stream, Flow, 
+    Replace, Exists, Or, If, Not, Ttl,
     
     // Logical keywords (deprecated but supported for compatibility)
     
@@ -53,6 +60,7 @@ export const allTokens = [
     Pipe,           // |
     Plus, Minus, Multiply, Divide,
     Spread,         // ... must come before .
+    QuestionMark,   // ?
     
     // Literals
     StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
@@ -66,7 +74,7 @@ export const allTokens = [
 ];
 
 // =============================================================================
-// LEXER INSTANCE
+// LEXER INSTANCE - Standard (Context-sensitive lexer created separately)
 // =============================================================================
 export const QueryLexer = new Lexer(allTokens);
 
@@ -81,12 +89,16 @@ export {
     Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
+    
+    // Statement keywords
+    Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
+    Flush, List, Info, Subscribe, Unsubscribe, Ttl,
     
     // Operators
     LogicalOr, LogicalAnd, Equals, NotEquals, LessEquals, GreaterEquals,
     LessThan, GreaterThan, Plus, Minus, Multiply, Divide,
-    Arrow, Assign, Pipe, Spread,
+    Arrow, Assign, Pipe, Spread, QuestionMark,
     
     // Literals
     StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral,

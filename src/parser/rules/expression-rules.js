@@ -4,7 +4,14 @@ import {
     LessEquals, GreaterEquals, Plus, Minus, Multiply, Divide,
     LeftParen, RightParen, LeftBracket, RightBracket, Dot,
     StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier,
-    Where, Select
+    QuestionMark, Colon,
+    // Import all keywords for use as identifiers
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
+    HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
+    Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
+    Flush, List, Info, Subscribe, Unsubscribe, Ttl, As
 } from '../tokens/token-registry.js';
 
 export function defineExpressionRules() {
@@ -13,6 +20,20 @@ export function defineExpressionRules() {
     // =============================================================================
     
     this.expression = this.RULE("expression", () => {
+        this.SUBRULE(this.ternaryExpression);
+    });
+
+    this.ternaryExpression = this.RULE("ternaryExpression", () => {
+        this.SUBRULE(this.orExpression);
+        this.OPTION(() => {
+            this.CONSUME(QuestionMark);
+            this.SUBRULE2(this.orExpression, { LABEL: "trueExpression" });
+            this.CONSUME(Colon);
+            this.SUBRULE3(this.orExpression, { LABEL: "falseExpression" });
+        });
+    });
+
+    this.orExpression = this.RULE("orExpression", () => {
         this.SUBRULE(this.andExpression);
         this.MANY(() => {
             this.CONSUME(LogicalOr);
@@ -102,6 +123,14 @@ export function defineExpressionRules() {
     
     this.atomicExpression = this.RULE("atomicExpression", () => {
         this.OR([
+            // Unary expressions: -expr, +expr
+            { ALT: () => {
+                this.OR2([
+                    { ALT: () => this.CONSUME(Minus, { LABEL: "unaryOperator" }) },
+                    { ALT: () => this.CONSUME(Plus, { LABEL: "unaryOperator" }) }
+                ]);
+                this.SUBRULE(this.atomicExpression, { LABEL: "unaryExpression" });
+            }},
             { ALT: () => this.SUBRULE(this.functionCall) },
             { ALT: () => this.SUBRULE(this.objectLiteral) },
             { ALT: () => this.SUBRULE(this.arrayLiteral) },
@@ -124,20 +153,11 @@ export function defineExpressionRules() {
     // =============================================================================
     
     this.stepVariable = this.RULE("stepVariable", () => {
-        // Allow both identifiers and keywords as variable names
-        this.OR([
-            { ALT: () => this.CONSUME(Identifier, { LABEL: "stepOrVariable" }) },
-            { ALT: () => this.CONSUME(Where, { LABEL: "stepOrVariable" }) },
-            { ALT: () => this.CONSUME(Select, { LABEL: "stepOrVariable" }) },
-        ]);
+        // Now elegant: any identifier works! Context-sensitive lexer handles keyword conversion
+        this.CONSUME(Identifier, { LABEL: "stepOrVariable" });
         this.OPTION(() => {
             this.CONSUME(Dot);
-            // Also allow keywords after the dot
-            this.OR2([
-                { ALT: () => this.CONSUME2(Identifier, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(Where, { LABEL: "variableName" }) },
-                { ALT: () => this.CONSUME2(Select, { LABEL: "variableName" }) }
-            ]);
+            this.CONSUME2(Identifier, { LABEL: "variableName" });
         });
     });
 }

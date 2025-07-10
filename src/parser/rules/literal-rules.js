@@ -2,10 +2,14 @@
 import { 
     LeftBrace, RightBrace, LeftBracket, RightBracket, LeftParen, RightParen,
     Comma, Colon, Spread, Identifier, StringLiteral, Minus, Multiply,
-    Iff, Emit, 
-    Where, Scan, Step, InsertInto, Collect,
+    Iff, Emit, Assign,
+    // Import all keywords for use as property keys
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    By, Over, Step, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Assign
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
+    Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
+    Flush, List, Info, Subscribe, Unsubscribe, Ttl, As
 } from '../tokens/token-registry.js';
 
 export function defineLiteralRules() {
@@ -59,19 +63,12 @@ export function defineLiteralRules() {
         ]);
     });
 
-    // Property key: identifier, string literal, or keywords
+    // Property key: identifier or string literal - now elegant!
+    // Context-sensitive lexer automatically converts keywords to identifiers in object context
     this.propertyKey = this.RULE("propertyKey", () => {
         this.OR([
             { ALT: () => this.CONSUME(Identifier) },
-            { ALT: () => this.CONSUME(StringLiteral) },
-            // Allow keywords as property names
-            { ALT: () => this.CONSUME(Where) },
-            { ALT: () => this.CONSUME(Scan) },
-            { ALT: () => this.CONSUME(Step) },
-            { ALT: () => this.CONSUME(InsertInto) },
-            { ALT: () => this.CONSUME(Iff) },
-            { ALT: () => this.CONSUME(Emit) },
-            { ALT: () => this.CONSUME(Collect) }
+            { ALT: () => this.CONSUME(StringLiteral) }
         ]);
     });
 

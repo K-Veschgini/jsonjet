@@ -37,3 +37,8 @@ export const Pipe = createToken({ name: "Pipe", pattern: /\|/ });
 // SPECIAL OPERATORS
 // =============================================================================
 export const Spread = createToken({ name: "Spread", pattern: /\.\.\./ });
+
+// =============================================================================
+// TERNARY OPERATORS
+// =============================================================================
+export const QuestionMark = createToken({ name: "QuestionMark", pattern: /\?/ });

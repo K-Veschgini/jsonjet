@@ -7,7 +7,7 @@ export { Sorter } from './operators/sorter.js';
 
 // Summarize functionality
 export { SummarizeOperator, createSummarizeOperator } from './operators/summarize.js';
-export { AggregationObject, count, sum } from './aggregations/core/aggregation-object.js';
+export { AggregationObject } from './aggregations/core/aggregation-object.js';
 export { 
     tumbling_window, hopping_window, sliding_window, count_window,
     tumbling_window_by, hopping_window_by, sliding_window_by, session_window 

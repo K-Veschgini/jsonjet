@@ -49,7 +49,7 @@ export function CodeEditor({
         continue;
       }
       
-      if (/^(create|insert|delete|flush|list|info|subscribe|unsubscribe|[a-zA-Z_][a-zA-Z0-9_]*\s*\|)/.test(line)) {
+      if (/^(create\s+(flow|stream|or\s+replace|if\s+not\s+exists)|insert|delete|flush|list|info|subscribe|unsubscribe|[a-zA-Z_][a-zA-Z0-9_]*\s*\|)/.test(line)) {
         let currentStatement = line;
         let currentLine = i;
         
@@ -58,20 +58,17 @@ export function CodeEditor({
             const nextLine = lines[j].trim();
             
             if (!nextLine || nextLine.startsWith('//')) {
-              break;
+              continue; // Skip empty lines and comments but keep looking
             }
             
             currentStatement += ' ' + nextLine;
             
-            if (nextLine.endsWith(';')) {
-              i = j;
-              break;
-            }
-            
+            // Only stop if we have a complete statement AND it ends properly
             if (isCompleteStatement(currentStatement)) {
               i = j;
               break;
             }
+            
           }
         }
         
@@ -108,6 +105,7 @@ export function CodeEditor({
     // 1. It ends with a semicolon, AND
     // 2. All braces/brackets/parens are balanced, AND  
     // 3. The semicolon is not inside a string literal
+    // 4. For flow statements, it should end with a complete pipeline
     
     let braceCount = 0;
     let bracketCount = 0; 
@@ -152,13 +150,21 @@ export function CodeEditor({
       if (char === ')') parenCount--;
     }
     
-    // Statement is complete if:
-    // 1. Ends with semicolon
-    // 2. All braces/brackets/parens are balanced
-    return trimmed.endsWith(';') && 
-           braceCount === 0 && 
-           bracketCount === 0 && 
-           parenCount === 0;
+    // Basic completion check
+    const isBasicallyComplete = trimmed.endsWith(';') && 
+                               braceCount === 0 && 
+                               bracketCount === 0 && 
+                               parenCount === 0;
+    
+    if (!isBasicallyComplete) return false;
+    
+    // Special check for flow statements - they should end with a pipeline operation
+    if (trimmed.startsWith('create flow')) {
+      // Flow statements should end with | insert_into(...) or similar pipeline operation
+      return /\|\s*(insert_into|write_to_file|assert_or_save_expected|collect)\s*\([^)]*\)\s*;?\s*$/.test(trimmed);
+    }
+    
+    return true;
   };
 
   const updatePlayButtonDecorations = (statements: Statement[]) => {
