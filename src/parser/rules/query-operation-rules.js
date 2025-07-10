@@ -1,6 +1,6 @@
 // Query operation rules - WHERE, SELECT, PROJECT, SUMMARIZE, etc.
 import { 
-    Where, Select, Scan, Summarize, InsertInto, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, Collect,
     By, Over, Step, Emit, Every, When, On, Change, Group, Update, Using,
     Assign, Arrow, Comma, Colon, Semicolon,
     LeftParen, RightParen, LeftBrace, RightBrace,
@@ -278,6 +278,17 @@ export function defineQueryOperationRules() {
         this.CONSUME(InsertInto);
         this.CONSUME(LeftParen);
         this.CONSUME(Identifier, { LABEL: "targetStream" });
+        this.CONSUME(RightParen);
+    });
+
+    this.writeToFileClause = this.RULE("writeToFileClause", () => {
+        this.CONSUME(WriteToFile);
+        this.CONSUME(LeftParen);
+        this.SUBRULE(this.expression, { LABEL: "filePath" });
+        this.OPTION(() => {
+            this.CONSUME(Comma);
+            this.SUBRULE(this.objectLiteral, { LABEL: "options" });
+        });
         this.CONSUME(RightParen);
     });
 

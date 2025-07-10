@@ -5,6 +5,7 @@ export { ScanOperator } from './scan.js';
 export { Select } from './select.js';
 export { Sorter } from './sorter.js';
 export { SummarizeOperator, createSummarizeOperator } from './summarize.js';
+export { WriteToFile } from './write-to-file.js';
 
 // Re-export aggregation functions as factory functions
 import { Count } from '../aggregations/functions/count.js';

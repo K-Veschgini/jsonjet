@@ -39,6 +39,7 @@ export function defineCoreCrules() {
             { ALT: () => this.SUBRULE(this.scanClause) },
             { ALT: () => this.SUBRULE(this.summarizeClause) },
             { ALT: () => this.SUBRULE(this.insertIntoClause) },
+            { ALT: () => this.SUBRULE(this.writeToFileClause) },
             { ALT: () => this.SUBRULE(this.collectClause) }
         ]);
     });

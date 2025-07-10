@@ -19,6 +19,7 @@ export const QueryOperationVisitorMixin = {
             scanClause: () => this.visit(ctx.scanClause),
             summarizeClause: () => this.visit(ctx.summarizeClause),
             insertIntoClause: () => this.visit(ctx.insertIntoClause),
+            writeToFileClause: () => this.visit(ctx.writeToFileClause),
             collectClause: () => this.visit(ctx.collectClause)
         };
 
@@ -577,6 +578,12 @@ export const QueryOperationVisitorMixin = {
     insertIntoClause(ctx) {
         const targetStream = VisitorUtils.getTokenImage(ctx.targetStream);
         return `.pipe(insertIntoFactory('${targetStream}'))`;
+    },
+
+    writeToFileClause(ctx) {
+        const filePath = this.visit(ctx.filePath);
+        const options = ctx.options ? this.visit(ctx.options) : '{}';
+        return `.pipe(new Operators.WriteToFile(${filePath}, ${options}))`;
     },
 
     collectClause(ctx) {

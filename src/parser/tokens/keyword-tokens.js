@@ -10,6 +10,7 @@ export const Select = createToken({ name: "Select", pattern: /select/i });
 export const Scan = createToken({ name: "Scan", pattern: /scan/i });
 export const Summarize = createToken({ name: "Summarize", pattern: /summarize/i });
 export const InsertInto = createToken({ name: "InsertInto", pattern: /insert_into/i });
+export const WriteToFile = createToken({ name: "WriteToFile", pattern: /write_to_file/i });
 export const Collect = createToken({ name: "Collect", pattern: /collect/i });
 
 // Grouping and windowing
