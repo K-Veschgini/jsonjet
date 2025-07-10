@@ -20,7 +20,8 @@ create or replace stream results;
 // ====================================================
 
 // Create flow to access first, second, and third elements of arrays
-create or replace flow basic_indexing from users 
+create or replace flow basic_indexing as
+users 
 | select { 
     id: id, 
     name: name, 
@@ -81,7 +82,8 @@ insert into users {
 // ====================================================
 
 // Create flow to access arrays inside nested objects
-create or replace flow nested_indexing from users 
+create or replace flow nested_indexing as
+users 
 | select { 
     id: id, 
     name: name, 
@@ -98,7 +100,8 @@ create or replace flow nested_indexing from users
 // ====================================================
 
 // Create flow to access properties of objects within arrays
-create or replace flow complex_indexing from users 
+create or replace flow complex_indexing as
+users 
 | select { 
     id: id, 
     name: name, 
@@ -116,7 +119,8 @@ create or replace flow complex_indexing from users
 // ====================================================
 
 // Create flow to test what happens with invalid indices
-create or replace flow edge_cases from users 
+create or replace flow edge_cases as
+users 
 | select { 
     id: id, 
     name: name, 
@@ -131,7 +135,8 @@ create or replace flow edge_cases from users
 // ====================================================
 
 // Create flow that uses variables as array indices
-create or replace flow variable_indexing from users 
+create or replace flow variable_indexing as
+users 
 | select { 
     id: id, 
     name: name, 

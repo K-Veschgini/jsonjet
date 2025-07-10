@@ -22,7 +22,7 @@ describe('Summarize Window Integration', () => {
     try {
       // Create summarization flow with 2-item window
       const flowResult = await queryEngine.executeStatement(
-        'create flow test_summary from sales | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(2) | insert_into(summary_results)'
+        'create flow test_summary as\nsales | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(2) | insert_into(summary_results)'
       );
       
       expect(flowResult.success).toBe(true);

@@ -7,7 +7,7 @@ import {
     By, Over, Step, Iff, Emit,
     Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
 } from './keyword-tokens.js';
 import {
     LogicalOr, LogicalAnd, Equals, NotEquals, LessEquals, GreaterEquals,
@@ -35,7 +35,7 @@ export const allTokens = [
     
     // Query operation keywords
     Where, Select, Scan, Step, Summarize, InsertInto, By, Over, 
-    Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print,
+    Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print, As,
     
     // Logical keywords (deprecated but supported for compatibility)
     

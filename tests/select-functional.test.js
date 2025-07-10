@@ -30,7 +30,7 @@ describe('Select Functional Tests', () => {
       // Step 3: Create the select flow
       console.log('2. Creating select flow...');
       const flowResult = await queryEngine.executeStatement(
-        'create flow basic_select from user_data | select { name: name, age: age, email: email } | insert_into(clean_output)'
+        'create flow basic_select as\nuser_data | select { name: name, age: age, email: email } | insert_into(clean_output)'
       );
       
       console.log('Flow creation result:', flowResult);
@@ -87,7 +87,7 @@ describe('Select Functional Tests', () => {
     try {
       // Create flow that expects fields that might be missing
       const flowResult = await queryEngine.executeStatement(
-        'create flow safe_select from input_stream | select { name: name, age: age, email: email } | insert_into(output_stream)'
+        'create flow safe_select as\ninput_stream | select { name: name, age: age, email: email } | insert_into(output_stream)'
       );
       
       expect(flowResult.success).toBe(true);
@@ -129,7 +129,7 @@ describe('Select Functional Tests', () => {
     try {
       // Test the || operator that was failing
       const flowResult = await queryEngine.executeStatement(
-        'create flow logical_test from test_input | select { name: name, safe_age: age || 0, has_email: email && true } | insert_into(test_output)'
+        'create flow logical_test as\ntest_input | select { name: name, safe_age: age || 0, has_email: email && true } | insert_into(test_output)'
       );
       
       console.log('Logical operators flow result:', flowResult);
@@ -178,7 +178,7 @@ describe('Select Functional Tests', () => {
       // Step by step debugging
       console.log('\n--- Creating select flow ---');
       const flowResult = await queryEngine.executeStatement(
-        'create flow basic_select from user_data | select { name: name, age: age, email: email } | insert_into(clean_output)'
+        'create flow basic_select as\nuser_data | select { name: name, age: age, email: email } | insert_into(clean_output)'
       );
       
       console.log('Flow creation result:', flowResult);

@@ -30,7 +30,8 @@ create or replace stream numbers;
 create or replace stream cumulative_results;
 
 // 2. Create cumulative sum flow
-create flow cumulative_sum from numbers
+create flow cumulative_sum as
+numbers
   | insert_into(cumulative_results)
   | scan(
       step s1: true => 

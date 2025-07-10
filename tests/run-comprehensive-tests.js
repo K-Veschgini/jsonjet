@@ -86,7 +86,7 @@ async function runAllTests() {
                 streamManager.createStream('output');
                 
                 const result = await queryEngine.executeStatement(
-                    'create flow test from input | where age > 18 | insert_into(output)'
+                    'create flow test as\ninput | where age > 18 | insert_into(output)'
                 );
                 
                 return result.success;
@@ -113,7 +113,7 @@ async function runAllTests() {
                 try {
                     // Create flow
                     const flowResult = await queryEngine.executeStatement(
-                        'create flow test from input | where age > 18 | insert_into(output)'
+                        'create flow test as\ninput | where age > 18 | insert_into(output)'
                     );
                     
                     if (!flowResult.success) {
@@ -154,7 +154,7 @@ async function runAllTests() {
                 
                 try {
                     const flowResult = await queryEngine.executeStatement(
-                        'create flow test from input | select { name: name, age: age } | insert_into(output)'
+                        'create flow test as\ninput | select { name: name, age: age } | insert_into(output)'
                     );
                     
                     if (!flowResult.success) {
@@ -202,7 +202,7 @@ async function runAllTests() {
                 
                 try {
                     const flowResult = await queryEngine.executeStatement(
-                        'create flow test from input | select { name: name, safe_age: age || 0 } | insert_into(output)'
+                        'create flow test as\ninput | select { name: name, safe_age: age || 0 } | insert_into(output)'
                     );
                     
                     if (!flowResult.success) {

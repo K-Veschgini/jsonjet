@@ -8,7 +8,8 @@ create or replace stream daily_summary;
 // 2. Create summarization flows FIRST
 // Summarize total sales by product using a 2-item tumbling window
 // Window ensures results are emitted every 2 items automatically
-create flow product_summary from sales 
+create flow product_summary as
+sales 
   | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(2)
   | insert_into(daily_summary);
 

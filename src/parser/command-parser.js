@@ -64,11 +64,11 @@ export class CommandParser {
     }
 
     /**
-     * Handle create [or replace | if not exists] stream <name> or create flow <name> [ttl(<duration>)] from <stream> | ...
+     * Handle create [or replace | if not exists] stream <name> or create flow <name> [ttl(<duration>)] as\n<stream> | ...
      */
     static async handleCreateCommand(args, sm) {
         if (args.length === 0) {
-            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
+            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] as\\n<stream> | ...');
         }
 
         // Parse optional modifiers: "or replace" or "if not exists"
@@ -138,7 +138,7 @@ export class CommandParser {
                 throw error; // Re-throw any errors from stream manager
             }
         } else {
-            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] from <stream> | ...');
+            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] as\\n<stream> | ...');
         }
     }
 
@@ -545,26 +545,26 @@ export class CommandParser {
      * Returns { ttlSeconds: number | null, flowName: string, queryPart: string, modifier: string | null }
      */
     static parseFlowCommand(flowCommand) {
-        // Normalize whitespace to handle multi-line flow definitions
-        const trimmed = flowCommand.trim().replace(/\s+/g, ' ');
+        // Normalize whitespace but preserve line breaks for new syntax
+        const trimmed = flowCommand.trim();
         
-        // Match: create [or replace | if not exists] flow <name> [ttl(<duration>)] from <stream> | ...
-        let match = trimmed.match(/^create\s+or\s+replace\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);
+        // Match: create [or replace | if not exists] flow <name> [ttl(<duration>)] as\n<stream> | ...
+        let match = trimmed.match(/^create\s+or\s+replace\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+as\s+(.+)$/is);
         let modifier = null;
         
         if (match) {
             modifier = 'or_replace';
         } else {
-            match = trimmed.match(/^create\s+if\s+not\s+exists\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);
+            match = trimmed.match(/^create\s+if\s+not\s+exists\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+as\s+(.+)$/is);
             if (match) {
                 modifier = 'if_not_exists';
             } else {
-                match = trimmed.match(/^create\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+from\s+(.+)$/i);
+                match = trimmed.match(/^create\s+flow\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+ttl\(([^)]+)\))?\s+as\s+(.+)$/is);
             }
         }
         
         if (!match) {
-            throw new Error('Invalid flow syntax. Use: create [or replace | if not exists] flow <name> [ttl(<duration>)] from <stream> | ...');
+            throw new Error('Invalid flow syntax. Use: create [or replace | if not exists] flow <name> [ttl(<duration>)] as\\n<stream> | ...');
         }
         
         const [, flowName, ttlStr, queryPart] = match;

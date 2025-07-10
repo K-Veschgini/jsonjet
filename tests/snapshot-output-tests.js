@@ -23,7 +23,7 @@ class OutputSnapshotTester {
             
             // Create flow
             const flowResult = await queryEngine.executeStatement(
-                `create flow ${name} from input ${query} | insert_into(output)`
+                `create flow ${name} as\ninput ${query} | insert_into(output)`
             );
             
             if (!flowResult.success) {

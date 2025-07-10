@@ -52,6 +52,9 @@ export const SessionWindow = createToken({ name: "SessionWindow", pattern: /sess
 // COMMAND KEYWORDS
 // =============================================================================
 
+// Flow creation keywords
+export const As = createToken({ name: "As", pattern: /as/i });
+
 // Dot commands
 export const Print = createToken({ name: "Print", pattern: /\.print/i });
 

@@ -11,13 +11,16 @@ create or replace stream monitor_results;
 
 // 3. Create flows that process and route data
 // High value sales flow - writes results to a dedicated stream
-create flow high_sales from events | where amount > 100 | insert_into(high_sales_results);
+create flow high_sales as
+events | where amount > 100 | insert_into(high_sales_results);
 
 // Also archive high value sales to archive stream
-create flow archiver from events | where amount > 100 | insert_into(archive);
+create flow archiver as
+events | where amount > 100 | insert_into(archive);
 
 // Temporary monitoring flow with TTL (auto-deletes after 2 minutes)
-create flow temp_monitor ttl(2m) from events | select { id: id, doubled: amount * 2 } | insert_into(monitor_results);
+create flow temp_monitor ttl(2m) as
+events | select { id: id, doubled: amount * 2 } | insert_into(monitor_results);
 
 // 4. Insert data to see it flow through the system
 insert into events { id: 1, amount: 150, type: "sale" };

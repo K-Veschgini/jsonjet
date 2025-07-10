@@ -17,7 +17,7 @@ test('exp function > should work within select operation', async () => {
     });
     
     // Create flow using exp function
-    const query = 'create flow test_exp from test_input | select { value: value, exp_value: exp(value) } | insert_into(test_output)';
+    const query = 'create flow test_exp as\ntest_input | select { value: value, exp_value: exp(value) } | insert_into(test_output)';
     await queryEngine.executeStatement(query);
     
     // Insert test data

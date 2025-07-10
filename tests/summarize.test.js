@@ -26,7 +26,7 @@ describe('Summarize Operations', () => {
     try {
       // Create summarization flow without window
       const flowResult = await queryEngine.executeStatement(
-        'create flow test_summary from sales | summarize { total_amount: sum(amount), count: count() } by product | insert_into(summary_results)'
+        'create flow test_summary as\nsales | summarize { total_amount: sum(amount), count: count() } by product | insert_into(summary_results)'
       );
       
       console.log('Flow creation result:', JSON.stringify(flowResult, null, 2));

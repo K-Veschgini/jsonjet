@@ -8,7 +8,8 @@ create or replace stream anomalies;
 
 // 2. Trading Pattern Detection
 // Detect "buy-dip" patterns: price drops then recovers
-create flow trading_pattern from trading_events 
+create flow trading_pattern as
+trading_events 
   | scan(
       step detect_drop: price_change < -5 => 
         drop_start = timestamp,
@@ -37,7 +38,8 @@ create flow trading_pattern from trading_events
 
 // 3. Anomaly Detection with Scan
 // Detect unusual activity patterns
-create flow anomaly_detector from trading_events 
+create flow anomaly_detector as
+trading_events 
   | scan(
       step baseline: true => 
         volume_sum = volume_sum + volume,

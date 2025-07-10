@@ -219,10 +219,10 @@ export function CodeEditor({
         root: [
           [/\/\/.*$/, 'comment'],
           [/\b(create|or|replace|delete|insert|flush|list|info|subscribe|unsubscribe)\b/, 'keyword.command'],
-          [/\b(flow|from|ttl)\b/, 'keyword.flow'],
+          [/\b(flow|as|ttl)\b/, 'keyword.flow'],
           [/\bstream\b/, 'keyword.stream'],
           [/\binto\b/, 'keyword.into'],
-          [/\b(where|project|select|summarize|insert_into|by|over|not)\b/, 'keyword.query'],
+          [/\b(where|project|select|scan|step|summarize|insert_into|by|over|not|emit)\b/, 'keyword.query'],
           [/\b(and|or)\b/, 'keyword.query.deprecated'],
           [/\b\d+[nμmshwd]+\b/, 'number.duration'],
           [/[|]/, 'operator.pipe'],

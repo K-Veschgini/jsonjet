@@ -25,7 +25,7 @@ describe('Safe Access Integration', () => {
     try {
       // Create a flow that accesses potentially missing fields
       const flowResult = await queryEngine.executeStatement(
-        'create flow safe_test from test_input | select { name: name, missing: missing_field } | insert_into(test_output)'
+        'create flow safe_test as\ntest_input | select { name: name, missing: missing_field } | insert_into(test_output)'
       );
       
       expect(flowResult.success).toBe(true);
@@ -85,7 +85,7 @@ describe('Safe Access Integration', () => {
     try {
       // Create a flow that accesses potentially null fields
       const flowResult = await queryEngine.executeStatement(
-        'create flow null_test from null_input | select { name: name } | insert_into(null_output)'
+        'create flow null_test as\nnull_input | select { name: name } | insert_into(null_output)'
       );
       
       expect(flowResult.success).toBe(true);

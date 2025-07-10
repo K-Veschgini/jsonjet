@@ -34,7 +34,7 @@ describe('Scan Emit Features', () => {
 
     it('should handle spread all (...*)', async () => {
         const testCase = {
-            query: `create flow test1 from input | scan(step s1: true => emit({ ...*, extra: "added" });) | insert_into(output);`,
+            query: `create flow test1 as\ninput | scan(step s1: true => emit({ ...*, extra: "added" });) | insert_into(output);`,
             input: { x: 1, name: "test" },
             expected: { x: 1, name: "test", extra: "added" }
         };
@@ -45,7 +45,7 @@ describe('Scan Emit Features', () => {
 
     it('should handle spread expression (...s1)', async () => {
         const testCase = {
-            query: `create flow test2 from input | scan(step s1: true => s1.count = (s1.count || 0) + 1, emit({ ...s1, input: x });) | insert_into(output);`,
+            query: `create flow test2 as\ninput | scan(step s1: true => s1.count = (s1.count || 0) + 1, emit({ ...s1, input: x });) | insert_into(output);`,
             input: { x: 5 },
             expected: { count: 1, input: 5 }
         };
@@ -56,7 +56,7 @@ describe('Scan Emit Features', () => {
 
     it('should handle field deletion (-name)', async () => {
         const testCase = {
-            query: `create flow test3 from input | scan(step s1: true => emit({ ...*, -name });) | insert_into(output);`,
+            query: `create flow test3 as\ninput | scan(step s1: true => emit({ ...*, -name });) | insert_into(output);`,
             input: { x: 1, name: "test", value: 42 },
             expected: { x: 1, value: 42 }
         };
@@ -67,7 +67,7 @@ describe('Scan Emit Features', () => {
 
     it('should handle scalar functions', async () => {
         const testCase = {
-            query: `create flow test4 from input | scan(step s1: true => emit({ result: abs(x), input: x });) | insert_into(output);`,
+            query: `create flow test4 as\ninput | scan(step s1: true => emit({ result: abs(x), input: x });) | insert_into(output);`,
             input: { x: -10 },
             expected: { result: 10, input: -10 }
         };
@@ -78,7 +78,7 @@ describe('Scan Emit Features', () => {
 
     it('should handle shorthand properties', async () => {
         const testCase = {
-            query: `create flow test5 from input | scan(step s1: true => s1.total = (s1.total || 0) + x, emit({ x, total: s1.total });) | insert_into(output);`,
+            query: `create flow test5 as\ninput | scan(step s1: true => s1.total = (s1.total || 0) + x, emit({ x, total: s1.total });) | insert_into(output);`,
             input: { x: 7 },
             expected: { x: 7, total: 7 }
         };
@@ -89,7 +89,7 @@ describe('Scan Emit Features', () => {
 
     it('should handle complex emit scenarios', async () => {
         const testCase = {
-            query: `create flow complex from input | scan(step s1: true => 
+            query: `create flow complex as\ninput | scan(step s1: true => 
                 s1.count = (s1.count || 0) + 1,
                 s1.sum = (s1.sum || 0) + x,
                 emit({ 

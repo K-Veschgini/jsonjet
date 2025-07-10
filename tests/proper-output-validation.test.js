@@ -37,7 +37,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('output');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow age_filter from input | where age >= 21 | insert_into(output)'
+        'create flow age_filter as\ninput | where age >= 21 | insert_into(output)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -73,7 +73,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('filtered');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow complex_filter from users | where (age >= 18 && status == "active") || role == "admin" | insert_into(filtered)'
+        'create flow complex_filter as\nusers | where (age >= 18 && status == "active") || role == "admin" | insert_into(filtered)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -109,7 +109,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('clean_users');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow field_select from raw_users | select { name: name, age: age, email: email } | insert_into(clean_users)'
+        'create flow field_select as\nraw_users | select { name: name, age: age, email: email } | insert_into(clean_users)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -153,7 +153,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('transformed_data');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow logical_transform from input_data | select { name: name, safe_age: age || 0, has_both: active && verified, either_flag: flag1 || flag2 } | insert_into(transformed_data)'
+        'create flow logical_transform as\ninput_data | select { name: name, safe_age: age || 0, has_both: active && verified, either_flag: flag1 || flag2 } | insert_into(transformed_data)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -203,7 +203,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('computed_sales');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow compute_sales from sales_data | select { product: product, quantity: quantity, price: price, total: quantity * price, tax: quantity * price * 0.1 } | insert_into(computed_sales)'
+        'create flow compute_sales as\nsales_data | select { product: product, quantity: quantity, price: price, total: quantity * price, tax: quantity * price * 0.1 } | insert_into(computed_sales)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -236,7 +236,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('formatted_names');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow format_names from person_data | select { id: id, full_name: first_name + " " + last_name, email_domain: "@" + domain, display: first_name + " (" + role + ")" } | insert_into(formatted_names)'
+        'create flow format_names as\nperson_data | select { id: id, full_name: first_name + " " + last_name, email_domain: "@" + domain, display: first_name + " (" + role + ")" } | insert_into(formatted_names)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -269,7 +269,8 @@ describe('PROPER Output Validation Tests', () => {
       
       // Complex multi-stage pipeline
       const flowResult = await queryEngine.executeStatement(`
-        create flow process_orders from raw_orders
+        create flow process_orders as
+        raw_orders
         | where status == "pending" && amount > 100
         | select { order_id: order_id, customer: customer_name, amount: amount, priority: urgent || false }
         | select { order_id: order_id, customer: customer, amount: amount, priority: priority, fee: amount * 0.03, total: amount + (amount * 0.03) }
@@ -313,7 +314,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('edge_output');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow edge_cases from edge_input | select { id: id, safe_value: value || "default", zero_check: count || 1, both_check: flag1 && flag2 } | insert_into(edge_output)'
+        'create flow edge_cases as\nedge_input | select { id: id, safe_value: value || "default", zero_check: count || 1, both_check: flag1 && flag2 } | insert_into(edge_output)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -368,7 +369,7 @@ describe('PROPER Output Validation Tests', () => {
       streamManager.createStream('archive');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow process_users from user_data | where age > 18 | select { name: name, age: age, status: "processed" } | insert_into(archive)'
+        'create flow process_users as\nuser_data | where age > 18 | select { name: name, age: age, status: "processed" } | insert_into(archive)'
       );
       
       if (!flowResult.success) {

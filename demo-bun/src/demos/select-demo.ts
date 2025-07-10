@@ -9,17 +9,20 @@ create or replace stream excluded_output;
 
 // 2. Demo 1: Basic field selection (like project but safer)
 // Select only specific fields - missing fields return undefined safely
-create flow basic_select from user_data 
+create flow basic_select as
+user_data 
   | select { name: name, age: age, email: email } 
   | insert_into(clean_output);
 
 // 3. Demo 2: Spread and transform - include all fields plus computed ones
-create flow spread_transform from user_data 
+create flow spread_transform as
+user_data 
   | select { ...*, full_name: name + " " + surname, is_adult: age && age >= 18 } 
   | insert_into(transformed_output);
 
 // 4. Demo 3: Spread with exclusions - all fields except sensitive ones
-create flow spread_exclude from user_data 
+create flow spread_exclude as
+user_data 
   | select { ...*, -password, -ssn, safe_age: age || 0 } 
   | insert_into(excluded_output);
 

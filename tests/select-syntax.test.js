@@ -25,7 +25,7 @@ describe('Select Syntax Integration', () => {
     try {
       // Create a flow using new select syntax
       const flowResult = await queryEngine.executeStatement(
-        'create flow test_select from test_input | select { name: name, age: age } | insert_into(test_output)'
+        'create flow test_select as\ntest_input | select { name: name, age: age } | insert_into(test_output)'
       );
       
       if (!flowResult.success) {
@@ -61,7 +61,7 @@ describe('Select Syntax Integration', () => {
     try {
       // This should parse but might not execute correctly yet
       const result = await queryEngine.executeStatement(
-        'create flow spread_test from test_input | select { ...*, computed: age * 2, -password } | insert_into(test_output)'
+        'create flow spread_test as\ntest_input | select { ...*, computed: age * 2, -password } | insert_into(test_output)'
       );
       
       // For now, we just check it doesn't crash the parser

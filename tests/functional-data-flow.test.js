@@ -38,7 +38,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Create flow
       const flowResult = await queryEngine.executeStatement(
-        'create flow filter_test from input | where age > 18 | insert_into(output)'
+        'create flow filter_test as\ninput | where age > 18 | insert_into(output)'
       );
       expect(flowResult.success).toBe(true);
       
@@ -69,7 +69,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Create flow with SELECT
       const flowResult = await queryEngine.executeStatement(
-        'create flow select_test from users | select { name: name, age: age, email: email } | insert_into(transformed)'
+        'create flow select_test as\nusers | select { name: name, age: age, email: email } | insert_into(transformed)'
       );
       
       if (!flowResult.success) {
@@ -110,7 +110,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Create flow with logical operators
       const flowResult = await queryEngine.executeStatement(
-        'create flow logical_test from data | select { name: name, safe_age: age || 0, is_valid: active && verified } | insert_into(processed)'
+        'create flow logical_test as\ndata | select { name: name, safe_age: age || 0, is_valid: active && verified } | insert_into(processed)'
       );
       
       if (!flowResult.success) {
@@ -165,7 +165,8 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Create complex pipeline: filter -> transform -> filter again
       const flowResult = await queryEngine.executeStatement(`
-        create flow complex_pipeline from raw_data 
+        create flow complex_pipeline as
+        raw_data 
         | where age >= 18 
         | select { name: name, adult_age: age, status: "adult" }
         | where adult_age <= 65
@@ -215,7 +216,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Create flow that expects fields that might be missing
       const flowResult = await queryEngine.executeStatement(
-        'create flow safe_select from sparse_data | select { name: name, age: age, email: email } | insert_into(safe_output)'
+        'create flow safe_select as\nsparse_data | select { name: name, age: age, email: email } | insert_into(safe_output)'
       );
       
       expect(flowResult.success).toBe(true);
@@ -258,7 +259,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Create flow with logical operators that handle null
       const flowResult = await queryEngine.executeStatement(
-        'create flow null_test from null_data | select { name: name, safe_value: value || "default", has_flag: flag && true } | insert_into(null_output)'
+        'create flow null_test as\nnull_data | select { name: name, safe_value: value || "default", has_flag: flag && true } | insert_into(null_output)'
       );
       
       expect(flowResult.success).toBe(true);
@@ -304,7 +305,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       
       // Test the exact flow from flow-processing demo
       const flowResult = await queryEngine.executeStatement(
-        'create flow process_users from user_data | where age > 18 | select { name: name, age: age, status: "processed" } | insert_into(archive)'
+        'create flow process_users as\nuser_data | where age > 18 | select { name: name, age: age, status: "processed" } | insert_into(archive)'
       );
       
       if (!flowResult.success) {
@@ -342,7 +343,7 @@ describe('Functional Data Flow Tests - Real Pipeline Validation', () => {
       streamManager.createStream('clean_output');
       
       const flowResult = await queryEngine.executeStatement(
-        'create flow basic_select from user_data | select { name: name, age: age, email: email } | insert_into(clean_output)'
+        'create flow basic_select as\nuser_data | select { name: name, age: age, email: email } | insert_into(clean_output)'
       );
       
       if (!flowResult.success) {

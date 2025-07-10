@@ -8,7 +8,8 @@ create or replace stream analytics;
 
 // 2. Session Tracking with Scan Operator
 // Track user sessions from login to logout events
-create flow session_tracker from events 
+create flow session_tracker as
+events 
   | scan(
       step start_session: event_type == "login" => 
         user_id = user_id, 
@@ -35,7 +36,8 @@ create flow session_tracker from events
 
 // 3. Running Analytics with Scan Operator
 // Calculate running totals and averages
-create flow running_analytics from events 
+create flow running_analytics as
+events 
   | scan(
       step accumulate: value > 0 => 
         total = total + value,
