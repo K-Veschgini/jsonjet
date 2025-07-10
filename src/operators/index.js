@@ -6,6 +6,7 @@ export { Select } from './select.js';
 export { Sorter } from './sorter.js';
 export { SummarizeOperator, createSummarizeOperator } from './summarize.js';
 export { WriteToFile } from './write-to-file.js';
+export { AssertOrSaveExpected } from './assert-or-save-expected.js';
 
 // Re-export aggregation functions as factory functions
 import { Count } from '../aggregations/functions/count.js';

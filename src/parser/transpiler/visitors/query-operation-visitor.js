@@ -20,6 +20,7 @@ export const QueryOperationVisitorMixin = {
             summarizeClause: () => this.visit(ctx.summarizeClause),
             insertIntoClause: () => this.visit(ctx.insertIntoClause),
             writeToFileClause: () => this.visit(ctx.writeToFileClause),
+            assertOrSaveExpectedClause: () => this.visit(ctx.assertOrSaveExpectedClause),
             collectClause: () => this.visit(ctx.collectClause)
         };
 
@@ -584,6 +585,11 @@ export const QueryOperationVisitorMixin = {
         const filePath = this.visit(ctx.filePath);
         const options = ctx.options ? this.visit(ctx.options) : '{}';
         return `.pipe(new Operators.WriteToFile(${filePath}, ${options}))`;
+    },
+
+    assertOrSaveExpectedClause(ctx) {
+        const filePath = this.visit(ctx.filePath);
+        return `.pipe(new Operators.AssertOrSaveExpected(${filePath}))`;
     },
 
     collectClause(ctx) {

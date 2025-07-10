@@ -3,7 +3,7 @@ import { Lexer } from 'chevrotain';
 // Import all token categories
 import { WhiteSpace, Comment, Identifier } from './core-tokens.js';
 import { 
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Iff, Emit,
     Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
@@ -34,7 +34,7 @@ export const allTokens = [
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow, SessionWindow,
     
     // Query operation keywords
-    Where, Select, Scan, Step, Summarize, InsertInto, WriteToFile, By, Over, 
+    Where, Select, Scan, Step, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, By, Over, 
     Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print, As,
     
     // Logical keywords (deprecated but supported for compatibility)
@@ -78,7 +78,7 @@ export {
     WhiteSpace, Comment, Identifier,
     
     // Keywords
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
