@@ -23,7 +23,7 @@ async function buildSingle() {
         format: 'esm',
         minify: true,
         sourcemap: 'external',
-        naming: 'jsdb.js'
+        naming: 'resonancedb.js'
     });
     
     if (!result.success) {
@@ -53,22 +53,22 @@ async function buildExamples() {
     await mkdir(join(RELEASE_DIR, 'examples'), { recursive: true });
     await cp('examples', join(RELEASE_DIR, 'examples'), { recursive: true });
     
-    // Fix import paths in copied examples
+    // Fix import paths in copied examples (only process files that exist)
     const exampleFiles = [
-        'examples/simple-pipeline.js',
-        'examples/sorter-pipeline.js', 
-        'examples/scan/cumulative-example.js',
-        'examples/scan/session-tracking-example.js'
+        'examples/flow-demo.js'
     ];
     
     for (const file of exampleFiles) {
-        const content = await Bun.file(join(RELEASE_DIR, file)).text();
-        let updatedContent = content
-            // Fix relative imports to use lib structure
-            .replace(/from '\.\.\/src\//g, "from '../lib/src/")
-            .replace(/from '\.\.\/\.\./g, "from '../../lib")
-            .replace(/from '\.\.\/\.\.\//g, "from '../../lib/");
-        await Bun.write(join(RELEASE_DIR, file), updatedContent);
+        const filePath = join(RELEASE_DIR, file);
+        if (existsSync(filePath)) {
+            const content = await Bun.file(filePath).text();
+            let updatedContent = content
+                // Fix relative imports to use lib structure
+                .replace(/from '\.\.\/src\//g, "from '../lib/src/")
+                .replace(/from '\.\.\/\.\./g, "from '../../lib")
+                .replace(/from '\.\.\/\.\.\//g, "from '../../lib/");
+            await Bun.write(filePath, updatedContent);
+        }
     }
     
     console.log('✅ Examples copied and paths fixed');
@@ -77,15 +77,15 @@ async function buildExamples() {
 async function createDocs() {
     console.log('📖 Creating documentation...');
     
-    const releaseReadme = `# JSDB - Streaming Data Processing Library
+    const releaseReadme = `# ResonanceDB - Stream Processing Database
 
-A high-performance JavaScript library for real-time data processing with chainable operators.
+A high-performance stream processing database with flow-based architecture for real-time data processing.
 
 ## Quick Start
 
  ### Single File Bundle
  \`\`\`bash
- bun jsdb.js
+ bun resonancedb.js
  \`\`\`
  
  ### Modular Version
@@ -136,7 +136,7 @@ async function main() {
         
         console.log('\n🎉 Build complete! Release ready in ./release/');
         console.log('📁 Contents:');
-        console.log('  - jsdb.js          (single file bundle)');
+        console.log('  - resonancedb.js   (single file bundle)');
         console.log('  - lib/             (modular source)');
         console.log('  - examples/        (usage examples)');
         console.log('  - README.md        (documentation)');

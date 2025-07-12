@@ -1,4 +1,4 @@
-export const scanDemo = `// JSDB Scan Operator Demo
+export const scanDemo = `// ResonanceDB Scan Operator Demo
 // Learn how to use the scan operator for stateful stream processing
 
 // 1. Create streams for our demo

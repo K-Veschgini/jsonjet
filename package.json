@@ -1,13 +1,13 @@
 {
-  "name": "jsdb",
+  "name": "resonancedb",
   "version": "1.0.0",
-  "description": "JavaScript streaming data processing library",
+  "description": "ResonanceDB - A stream processing database with flow-based architecture",
   "main": "main.js",
   "type": "module",
   "scripts": {
     "dev": "bun run main.js",
     "build": "bun run build.js",
-    "build:single": "bun build main.js --outfile=release/jsdb.js --target=node",
+    "build:single": "bun build main.js --outfile=release/resonancedb.js --target=node",
     "build:bundle": "bun build main.js --outdir=release --target=node --splitting --minify",
     "test": "bun test tests/",
     "test:summarize": "bun test tests/summarize.test.js",
@@ -16,7 +16,7 @@
     "release": "bun run clean && bun run build && bun run test-release",
     "clean": "rm -rf release"
   },
-  "keywords": ["streaming", "data-processing", "operators", "scan", "filter", "pipeline"],
+  "keywords": ["resonancedb", "streaming", "flow-based", "data-processing", "operators", "scan", "filter", "pipeline"],
   "author": "",
   "license": "MIT",
   "devDependencies": {},

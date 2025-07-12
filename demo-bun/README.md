@@ -1,4 +1,16 @@
-# bun-react-template
+# ResonanceDB Demo
+
+Interactive demo application for ResonanceDB - a stream processing database with flow-based architecture.
+
+## Features
+
+- Real-time stream processing with reactive flows
+- Advanced scan operators for pattern matching
+- Windowed aggregations and summarizations
+- Interactive Monaco editor with syntax highlighting
+- Live data visualization and query results
+
+## Getting Started
 
 To install dependencies:
 

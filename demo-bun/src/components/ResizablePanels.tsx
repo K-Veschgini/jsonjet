@@ -13,7 +13,7 @@ export function ResizablePanels({
   rightPanel, 
   defaultLeftWidth = 65,
   minWidth = 25,
-  maxWidth = 75
+  maxWidth = 70
 }: ResizablePanelsProps) {
   const [leftPanelWidth, setLeftPanelWidth] = useState<number>(defaultLeftWidth);
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -91,7 +91,12 @@ export function ResizablePanels({
       </div>
       
       {/* Right Panel */}
-      <div style={{ width: `${100 - leftPanelWidth}%`, height: '100%', overflow: 'hidden' }}>
+      <div style={{ 
+        width: `${100 - leftPanelWidth}%`, 
+        height: '100%', 
+        overflow: 'hidden',
+        minWidth: '380px' // Ensure tabs don't wrap
+      }}>
         {rightPanel}
       </div>
     </div>

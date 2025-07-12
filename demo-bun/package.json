@@ -1,7 +1,8 @@
 {
-  "name": "bun-react-template",
+  "name": "resonancedb-demo",
   "version": "0.1.0",
   "private": true,
+  "description": "Interactive demo application for ResonanceDB - a stream processing database",
   "type": "module",
   "main": "src/index.tsx",
   "module": "src/index.tsx",

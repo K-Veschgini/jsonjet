@@ -1,6 +1,6 @@
-# Pipeline Processing Library
+# ResonanceDB
 
-Clean push-based data processing with chainable operators.
+A high-performance stream processing database with flow-based architecture for real-time data processing.
 
 ## Usage
 

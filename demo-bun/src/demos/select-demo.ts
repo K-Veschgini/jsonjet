@@ -1,4 +1,4 @@
-export const selectDemo = `// JSDB Select Operator Demo
+export const selectDemo = `// ResonanceDB Select Operator Demo
 // Learn the new select syntax with spread, exclusions, and transformations
 
 // 1. Create streams for testing select operations (using or replace to handle existing streams)

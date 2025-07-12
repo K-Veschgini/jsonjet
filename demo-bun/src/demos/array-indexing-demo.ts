@@ -1,11 +1,11 @@
 /**
  * Array Indexing Demo - Testing SELECT with array operations
  * 
- * This demo shows how to use array indexing in SELECT clauses with JSDB.
+ * This demo shows how to use array indexing in SELECT clauses with ResonanceDB.
  * We'll test various array access patterns and edge cases.
  */
 
-export const runArrayIndexingDemo = `// JSDB Array Indexing Demo
+export const runArrayIndexingDemo = `// ResonanceDB Array Indexing Demo
 // Learn how to access array elements in SELECT clauses
 
 // ====================================================

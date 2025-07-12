@@ -3,7 +3,7 @@ import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import './App.css';
 
-// Import JSDB library
+// Import ResonanceDB library
 import { queryEngine } from './jsdb/core/query-engine.js';
 import { streamManager } from './jsdb/core/stream-manager.js';
 import CommandParser from './jsdb/parser/command-parser.js';
@@ -56,11 +56,11 @@ function App() {
   const [statements, setStatements] = useState<Statement[]>([]);
   const [messages, setMessages] = useState<StreamMessage[]>([]);
   const [streamFilters, setStreamFilters] = useState<Record<string, { enabled: boolean; count: number }>>({
-    '_log': { enabled: false, count: 0 } // Add _log stream with default unchecked state
+    '_log': { enabled: true, count: 0 } // log stream enabled by default
   });
   const [consoleEntries, setConsoleEntries] = useState<ConsoleEntry[]>([]);
   const [activeFlows, setActiveFlows] = useState<FlowInfo[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('flows');
+  const [activeTab, setActiveTab] = useState<string>('data');
   const [selectedDemo, setSelectedDemo] = useState<string>('flow-processing');
   
   // Refs
@@ -214,16 +214,16 @@ function App() {
     
     // Also log to browser console
     if (response?.success === false) {
-      console.error(`[JSDB] Command failed:`, command, response);
+      console.error(`[ResonanceDB] Command failed:`, command, response);
     } else {
-      console.log(`[JSDB] Command executed:`, command, response);
+      console.log(`[ResonanceDB] Command executed:`, command, response);
     }
   }, [incrementConsoleEntries]);
 
 
   // Handle tab change
   const handleTabChange = useCallback((value: string | null) => {
-    const newTab = value || 'streams';
+    const newTab = value || 'data';
     setActiveTab(newTab);
     activeTabRef.current = newTab;
     
@@ -233,7 +233,7 @@ function App() {
     } else if (newTab === 'streams') {
       clearUnreadCounts('streams');
     }
-    // No unread counts for flows tab currently
+    // No unread counts for data tab currently
   }, [clearUnreadCounts]);
 
   // Handle stream filter toggle
@@ -245,6 +245,26 @@ function App() {
         enabled: !prev[streamName]?.enabled
       }
     }));
+  }, []);
+
+  // Handle multi-stream toggle for MultiSelect
+  const handleMultiStreamToggle = useCallback((selectedStreams: string[]) => {
+    setStreamFilters(prev => {
+      const updated = { ...prev };
+      // Disable all streams first
+      Object.keys(updated).forEach(stream => {
+        updated[stream] = { ...updated[stream], enabled: false };
+      });
+      // Enable selected streams (including log by default if nothing selected)
+      if (selectedStreams.length === 0 && updated['_log']) {
+        // If nothing selected and log exists, enable log by default
+        selectedStreams = ['_log'];
+      }
+      selectedStreams.forEach(stream => {
+        updated[stream] = { ...updated[stream], enabled: true };
+      });
+      return updated;
+    });
   }, []);
 
   // Handle flush all streams
@@ -297,7 +317,7 @@ function App() {
       resetAllCounts();
       
     } catch (error: any) {
-      // Reset is a UI action, so only log errors to browser console, not JSDB console
+      // Reset is a UI action, so only log errors to browser console, not ResonanceDB console
       console.error('Reset error:', error);
     }
   }, [addConsoleEntry]);
@@ -384,6 +404,7 @@ function App() {
               messages={messages}
               streamFilters={streamFilters}
               onStreamToggle={handleStreamToggle}
+              onMultiStreamToggle={handleMultiStreamToggle}
               unreadStreamMessages={unreadStreamMessages}
               fadingOutStreams={fadingOut.streams}
               maxMessagesPerStream={MAX_MESSAGES_PER_STREAM}

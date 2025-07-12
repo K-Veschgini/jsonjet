@@ -1,5 +1,6 @@
 import React, { memo, useMemo } from 'react';
-import { Tabs, Text, Stack, Checkbox, Paper, Badge, Button, Group } from '@mantine/core';
+import { Tabs, Text, Stack, Paper, Badge, Button, Group, ActionIcon, Popover, Checkbox } from '@mantine/core';
+import { GearIcon } from '@radix-ui/react-icons';
 import { JsonDisplay } from './JsonDisplay';
 import { BadgeWithAnimation } from './BadgeWithAnimation';
 
@@ -42,6 +43,7 @@ interface DataTabsProps {
   messages: StreamMessage[];
   streamFilters: Record<string, { enabled: boolean; count: number }>;
   onStreamToggle: (streamName: string) => void;
+  onMultiStreamToggle: (streamNames: string[]) => void;
   unreadStreamMessages: number;
   fadingOutStreams: boolean;
   maxMessagesPerStream: number;
@@ -63,6 +65,7 @@ export const DataTabs = memo(function DataTabs({
   messages,
   streamFilters,
   onStreamToggle,
+  onMultiStreamToggle,
   unreadStreamMessages,
   fadingOutStreams,
   maxMessagesPerStream,
@@ -74,6 +77,29 @@ export const DataTabs = memo(function DataTabs({
   activeFlows
 }: DataTabsProps) {
   const availableStreams = useMemo(() => Object.keys(streamFilters).sort(), [streamFilters]);
+  
+  // Get enabled streams for MultiSelect
+  const enabledStreams = useMemo(() => 
+    availableStreams.filter(stream => streamFilters[stream]?.enabled ?? true), 
+    [availableStreams, streamFilters]
+  );
+  
+  // Create MultiSelect data with document counts
+  const streamSelectData = useMemo(() => 
+    availableStreams.map(stream => ({
+      value: stream,
+      label: `${stream} (${streamFilters[stream]?.count ?? 0} docs)`
+    })), 
+    [availableStreams, streamFilters]
+  );
+  
+  // Total document counts for tabs
+  const totalStreamDocs = useMemo(() => 
+    Object.values(streamFilters).reduce((sum, filter) => sum + (filter?.count ?? 0), 0),
+    [streamFilters]
+  );
+  
+  const totalFlows = activeFlows.length;
   
   // Filter messages based on enabled streams and limit per stream
   const filteredMessages = useMemo(() => {
@@ -101,8 +127,8 @@ export const DataTabs = memo(function DataTabs({
   return (
     <Tabs value={activeTab} onChange={onTabChange} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Tabs.List grow style={{ height: '48px', padding: '0 16px', flexShrink: 0 }}>
-        <Tabs.Tab value="flows" style={{ minWidth: '120px' }}>
-          Flows
+        <Tabs.Tab value="data" style={{ minWidth: '120px' }}>
+          Data
         </Tabs.Tab>
         <Tabs.Tab 
           value="streams"
@@ -134,10 +160,30 @@ export const DataTabs = memo(function DataTabs({
         </Tabs.Tab>
       </Tabs.List>
 
-      <Tabs.Panel value="flows" style={{ flex: 1, overflow: 'hidden' }}>
+      <Tabs.Panel value="data" style={{ flex: 1, overflow: 'hidden' }}>
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '16px', paddingBottom: '0', flexShrink: 0 }}>
-            <Text size="lg" fw={600} mb="xs">Active Flows</Text>
+            <Text size="lg" fw={600} mb="xs">Streams</Text>
+            {availableStreams.length > 0 ? (
+              <Stack gap="xs" mb="md">
+                {availableStreams.map(stream => (
+                  <Paper key={stream} p="sm" withBorder style={{ backgroundColor: '#f8f9fa' }}>
+                    <Group justify="space-between" align="center">
+                      <Text size="sm" fw={600} c="blue">
+                        {stream}
+                      </Text>
+                      <Badge size="sm" color="gray" variant="light">
+                        {streamFilters[stream]?.count ?? 0} docs
+                      </Badge>
+                    </Group>
+                  </Paper>
+                ))}
+              </Stack>
+            ) : (
+              <Text c="dimmed" size="sm" mb="md">No streams created yet</Text>
+            )}
+            
+            <Text size="lg" fw={600} mb="xs">Flows</Text>
             {activeFlows.length > 0 ? (
               <Stack gap="xs" mb="md">
                 {activeFlows.map(flow => {
@@ -172,7 +218,7 @@ export const DataTabs = memo(function DataTabs({
                 })}
               </Stack>
             ) : (
-              <Text c="dimmed" size="sm" mb="md">No active flows</Text>
+              <Text c="dimmed" size="sm" mb="md">No flows</Text>
             )}
           </div>
         </div>
@@ -180,36 +226,57 @@ export const DataTabs = memo(function DataTabs({
 
       <Tabs.Panel value="streams" style={{ flex: 1, overflow: 'hidden' }}>
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '16px', paddingBottom: '0', flexShrink: 0 }}>
-            <Text size="lg" fw={600} mb="xs">Stream Filters</Text>
-            {availableStreams.length > 0 ? (
-              <Stack gap="xs" mb="md">
-                {availableStreams.map(streamName => (
-                  <Checkbox
-                    key={streamName}
-                    checked={streamFilters[streamName]?.enabled ?? true}
-                    onChange={() => onStreamToggle(streamName)}
-                    label={`${streamName}: ${streamFilters[streamName]?.count ?? 0} documents`}
-                    size="sm"
-                  />
-                ))}
-              </Stack>
-            ) : (
-              <Text c="dimmed" size="sm" mb="md">No streams created yet</Text>
-            )}
-            
-            {availableStreams.length > 0 && (
-              <Group gap="xs" mb="md">
+          <div style={{ padding: '16px', paddingBottom: '12px', flexShrink: 0 }}>
+            <Group gap="md" justify="space-between" mb="md">
+              <Group gap="sm" align="center">
+                <Popover width={300} position="bottom-start" shadow="md">
+                  <Popover.Target>
+                    <ActionIcon variant="filled" aria-label="Settings">
+                      <GearIcon style={{ width: '70%', height: '70%' }} />
+                    </ActionIcon>
+                  </Popover.Target>
+                  
+                  <Popover.Dropdown>
+                    <Stack gap="sm">
+                      <Text size="sm" fw={500} mb="xs">
+                        Select Streams ({enabledStreams.length}/{availableStreams.length} selected)
+                      </Text>
+                      
+                      {availableStreams.length === 0 ? (
+                        <Text size="sm" c="dimmed">No streams created yet</Text>
+                      ) : (
+                        availableStreams.map(stream => (
+                          <Checkbox
+                            key={stream}
+                            label={`${stream} (${streamFilters[stream]?.count ?? 0} docs)`}
+                            checked={streamFilters[stream]?.enabled ?? true}
+                            onChange={() => onStreamToggle(stream)}
+                          />
+                        ))
+                      )}
+                    </Stack>
+                  </Popover.Dropdown>
+                </Popover>
+                
+                {enabledStreams.length > 0 && (
+                  <Text size="xs" c="dimmed">
+                    {enabledStreams.length}/{availableStreams.length} streams selected
+                  </Text>
+                )}
+              </Group>
+              
+              {availableStreams.length > 0 && (
                 <Button 
-                  size="xs" 
+                  size="sm" 
                   variant="light" 
                   color="blue"
                   onClick={onFlushAllStreams}
+                  style={{ flexShrink: 0 }}
                 >
-                  Flush All Streams
+                  Flush All
                 </Button>
-              </Group>
-            )}
+              )}
+            </Group>
           </div>
           
           <div style={{ 

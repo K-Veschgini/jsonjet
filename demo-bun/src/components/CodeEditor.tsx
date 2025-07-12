@@ -218,9 +218,9 @@ export function CodeEditor({
   const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
     
-    monaco.languages.register({ id: 'jsdb' });
+    monaco.languages.register({ id: 'resonancedb' });
     
-    monaco.languages.setMonarchTokensProvider('jsdb', {
+    monaco.languages.setMonarchTokensProvider('resonancedb', {
       tokenizer: {
         root: [
           [/\/\/.*$/, 'comment'],
@@ -266,7 +266,7 @@ export function CodeEditor({
       }
     });
     
-    monaco.editor.defineTheme('jsdb-theme', {
+    monaco.editor.defineTheme('resonancedb-theme', {
       base: 'vs',
       inherit: true,
       rules: [
@@ -301,8 +301,8 @@ export function CodeEditor({
     });
     
     const model = editor.getModel();
-    monaco.editor.setModelLanguage(model, 'jsdb');
-    monaco.editor.setTheme('jsdb-theme');
+    monaco.editor.setModelLanguage(model, 'resonancedb');
+    monaco.editor.setTheme('resonancedb-theme');
     
     decorationsRef.current = editor.createDecorationsCollection([]);
     
@@ -365,9 +365,9 @@ export function CodeEditor({
       >
         <Editor
           height="100%"
-          defaultLanguage="jsdb"
+          defaultLanguage="resonancedb"
           value={demoContent}
-          theme="jsdb-theme"
+          theme="resonancedb-theme"
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: false },

@@ -1,4 +1,4 @@
-export const summarizeDemo = `// JSDB Data Summarization Demo
+export const summarizeDemo = `// ResonanceDB Data Summarization Demo
 // Learn how to aggregate and summarize streaming data with windows
 
 // 1. Create streams for sales data (using or replace to handle existing streams)
