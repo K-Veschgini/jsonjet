@@ -233,6 +233,12 @@ export const QueryOperationVisitorMixin = {
         }
 
         // Navigate through expression hierarchy
+        if (ctx.children.ternaryExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.ternaryExpression[0]);
+        }
+        if (ctx.children.orExpression) {
+            return this._convertCSTToAggregationExpression(ctx.children.orExpression[0]);
+        }
         if (ctx.children.andExpression) {
             return this._convertCSTToAggregationExpression(ctx.children.andExpression[0]);
         }

@@ -16,6 +16,11 @@ export class AggregationObject extends Aggregation {
         this.spec = spec; // Object structure with AggregationExpressions at leaves
         this.aggregations = []; // Flat array of all AggregationExpressions found
         this.processedSpec = null; // Spec with AggregationExpressions replaced by placeholders
+        
+        // Change tracking state
+        this._lastResult = null;
+        this._hasChanged = true; // Initially true since we haven't computed a result yet
+        
         this._findAggregations();
     }
     
@@ -61,11 +66,19 @@ export class AggregationObject extends Aggregation {
         for (const { expression } of this.aggregations) {
             expression.push(object);
         }
+        
+        // Mark that we have new data, so result may have changed
+        this._hasChanged = true;
     }
     
     getResult() {
         // Build result by replacing placeholders with actual aggregation results
-        return this._buildResultRecursively(this.processedSpec);
+        const result = this._buildResultRecursively(this.processedSpec);
+        
+        // Update change tracking
+        this._lastResult = this._deepClone(result);
+        
+        return result;
     }
     
     _buildResultRecursively(obj) {
@@ -96,6 +109,10 @@ export class AggregationObject extends Aggregation {
         for (const { expression } of this.aggregations) {
             expression.reset();
         }
+        
+        // Reset change tracking
+        this._lastResult = null;
+        this._hasChanged = true;
     }
     
     clone() {
@@ -123,5 +140,56 @@ export class AggregationObject extends Aggregation {
         
         // Primitive value, return as-is
         return obj;
+    }
+    
+    /**
+     * Check if the aggregation result has changed since last check
+     */
+    hasChanged() {
+        if (this._hasChanged) {
+            return true;
+        }
+        
+        // Check if any child aggregation has changed
+        for (const { expression } of this.aggregations) {
+            if (expression.hasChanged && expression.hasChanged()) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Mark that change check has been performed
+     */
+    markChangeChecked() {
+        this._hasChanged = false;
+        
+        // Mark change checked on all child aggregations
+        for (const { expression } of this.aggregations) {
+            if (expression.markChangeChecked) {
+                expression.markChangeChecked();
+            }
+        }
+    }
+    
+    /**
+     * Deep clone a result object for change tracking
+     */
+    _deepClone(obj) {
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+        
+        if (Array.isArray(obj)) {
+            return obj.map(item => this._deepClone(item));
+        }
+        
+        const cloned = {};
+        for (const [key, value] of Object.entries(obj)) {
+            cloned[key] = this._deepClone(value);
+        }
+        return cloned;
     }
 }
