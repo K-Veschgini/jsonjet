@@ -95,7 +95,7 @@ export class QueryEngine {
                 }
             }
             
-            // Execute the query part
+            // Execute the query part (executeQuery will handle trailing semicolons)
             const result = await this.executeQuery(queryPart);
             
             if (result.success) {
@@ -155,8 +155,12 @@ export class QueryEngine {
     async executeQuery(queryText) {
         try {
             
+            // Strip trailing semicolons from query text before transpilation
+            // Flow statements may include trailing semicolons that the transpiler doesn't expect
+            const cleanQueryText = queryText.trim().replace(/;+$/, '');
+            
             // Parse and transpile the query
-            const result = transpileQuery(queryText);
+            const result = transpileQuery(cleanQueryText);
             
             if (result.javascript.type === 'dotCommand') {
                 // This shouldn't happen as dot commands are handled above

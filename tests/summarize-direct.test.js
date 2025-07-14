@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { SummarizeOperator } from '../src/operators/summarize.js';
 import { sum, count } from '../src/operators/index.js';
+import { AggregationExpression } from '../src/aggregations/core/aggregation-expression.js';
 
 describe('Summarize Operations - Direct Testing', () => {
   it('should summarize data without window when flushed', async () => {
     // Create a summarize operator directly
     const aggregationSpec = {
-      total_amount: sum((item) => item.amount),
+      total_amount: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
       count: count()
     };
     
@@ -54,7 +55,7 @@ describe('Summarize Operations - Direct Testing', () => {
   
   it('should handle empty data gracefully', async () => {
     const aggregationSpec = {
-      total_amount: sum((item) => item.amount),
+      total_amount: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
       count: count()
     };
     
@@ -76,7 +77,7 @@ describe('Summarize Operations - Direct Testing', () => {
   
   it('should handle single group correctly', async () => {
     const aggregationSpec = {
-      total_amount: sum((item) => item.amount),
+      total_amount: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
       count: count()
     };
     

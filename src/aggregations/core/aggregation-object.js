@@ -33,11 +33,11 @@ export class AggregationObject extends Aggregation {
     
     _processRecursively(obj, path) {
         if (obj instanceof AggregationExpression) {
-            // Found an aggregation - store it and return placeholder
+            // Found an aggregation - clone it and store the clone
             const index = this.aggregations.length;
             this.aggregations.push({
                 path: [...path],
-                expression: obj,
+                expression: obj.clone(), // Clone the expression to avoid sharing state
                 placeholder: `__AGG_${index}__`
             });
             return `__AGG_${index}__`;

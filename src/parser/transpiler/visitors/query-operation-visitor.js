@@ -570,9 +570,10 @@ export const QueryOperationVisitorMixin = {
     assignmentStatement(ctx) {
         // For assignments, we need to handle the left side differently
         // We can't assign to a function call like safeGet(item, 'field')
-        const stepOrVariable = VisitorUtils.getTokenImage(ctx.stepVariable[0].stepOrVariable);
-        const variableName = ctx.stepVariable[0].variableName ? 
-            VisitorUtils.getTokenImage(ctx.stepVariable[0].variableName) : null;
+        const stepOrVariable = VisitorUtils.getTokenImage(ctx.stepVariable[0].children?.stepOrVariable || ctx.stepVariable[0].stepOrVariable);
+        const variableName = ctx.stepVariable[0].children?.variableName ? 
+            VisitorUtils.getTokenImage(ctx.stepVariable[0].children.variableName) : 
+            (ctx.stepVariable[0].variableName ? VisitorUtils.getTokenImage(ctx.stepVariable[0].variableName) : null);
         
         let assignmentTarget;
         if (variableName) {

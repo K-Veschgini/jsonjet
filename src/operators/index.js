@@ -9,11 +9,10 @@ export { WriteToFile } from './write-to-file.js';
 export { AssertOrSaveExpected } from './assert-or-save-expected.js';
 
 // Re-export aggregation functions as factory functions
-import { Count } from '../aggregations/functions/count.js';
-import { Sum } from '../aggregations/functions/sum.js';
+import { AggregationExpression } from '../aggregations/core/aggregation-expression.js';
 
-export const count = (...args) => new Count(...args);
-export const sum = (...args) => new Sum(...args);
+export const count = (...args) => new AggregationExpression('count', args);
+export const sum = (...args) => new AggregationExpression('sum', args);
 
 // Re-export window functions
 export { 

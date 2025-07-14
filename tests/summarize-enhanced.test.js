@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { SummarizeOperator } from '../src/operators/summarize.js';
 import { sum, count } from '../src/operators/index.js';
+import { AggregationExpression } from '../src/aggregations/core/aggregation-expression.js';
 import { tumbling_window, hopping_window, sliding_window, count_window } from '../src/core/window-functions.js';
 import { emit_every_count, emit_on_change } from '../src/core/emit-functions.js';
 
@@ -23,7 +24,7 @@ describe('Enhanced Summarize Operations', () => {
     describe('No Window Mode (Original Behavior)', () => {
         it('should accumulate until flush', async () => {
             const aggregationSpec = {
-                total: sum((item) => item.amount),
+                total: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
                 count: count()
             };
             
@@ -57,7 +58,7 @@ describe('Enhanced Summarize Operations', () => {
     describe('Tumbling Window Mode', () => {
         it('should emit when window fills (count-based)', async () => {
             const aggregationSpec = {
-                total: sum((item) => item.amount),
+                total: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
                 count: count()
             };
             
@@ -83,7 +84,7 @@ describe('Enhanced Summarize Operations', () => {
     describe('Hopping Window Mode', () => {
         it('should handle overlapping windows', async () => {
             const aggregationSpec = {
-                total: sum((item) => item.amount),
+                total: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
                 count: count()
             };
             
@@ -110,7 +111,7 @@ describe('Enhanced Summarize Operations', () => {
     describe('Sliding Window Mode', () => {
         it('should create new window for each item', async () => {
             const aggregationSpec = {
-                total: sum((item) => item.amount),
+                total: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
                 count: count()
             };
             
@@ -135,7 +136,7 @@ describe('Enhanced Summarize Operations', () => {
     describe('Count Window Mode', () => {
         it('should emit every N items', async () => {
             const aggregationSpec = {
-                total: sum((item) => item.amount),
+                total: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
                 count: count()
             };
             
@@ -159,7 +160,7 @@ describe('Enhanced Summarize Operations', () => {
     describe('Emit Mode - Count Based', () => {
         it('should emit every N items', async () => {
             const aggregationSpec = {
-                total: sum((item) => item.amount),
+                total: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
                 count: count()
             };
             
@@ -186,7 +187,7 @@ describe('Enhanced Summarize Operations', () => {
     describe('Emit Mode - On Change', () => {
         it('should emit when field changes', async () => {
             const aggregationSpec = {
-                total: sum((item) => item.amount),
+                total: new AggregationExpression('sum', [new AggregationExpression('safeGet', ['amount'])]),
                 count: count()
             };
             
