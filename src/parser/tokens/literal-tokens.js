@@ -9,6 +9,14 @@ export const StringLiteral = createToken({
 });
 
 // =============================================================================
+// DURATION LITERALS (for TTL expressions) - Must come before NumberLiteral
+// =============================================================================
+export const DurationLiteral = createToken({
+    name: "DurationLiteral",
+    pattern: /\d+[smhdSMHD]/
+});
+
+// =============================================================================
 // NUMERIC LITERALS
 // =============================================================================
 export const NumberLiteral = createToken({

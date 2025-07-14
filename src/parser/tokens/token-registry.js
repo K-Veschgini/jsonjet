@@ -16,7 +16,7 @@ import {
     LessThan, GreaterThan, Plus, Minus, Multiply, Divide,
     Arrow, Assign, Pipe, Spread, QuestionMark
 } from './operator-tokens.js';
-import { StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral } from './literal-tokens.js';
+import { StringLiteral, DurationLiteral, NumberLiteral, BooleanLiteral, NullLiteral } from './literal-tokens.js';
 import { 
     LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket,
     Comma, Semicolon, Colon, Dot
@@ -62,8 +62,8 @@ export const allTokens = [
     Spread,         // ... must come before .
     QuestionMark,   // ?
     
-    // Literals
-    StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
+    // Literals (longer patterns first)
+    StringLiteral, DurationLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
     
     // Identifiers (must come after keywords)
     Identifier,
@@ -101,7 +101,7 @@ export {
     Arrow, Assign, Pipe, Spread, QuestionMark,
     
     // Literals
-    StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
+    StringLiteral, DurationLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
     
     // Punctuation
     LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket,

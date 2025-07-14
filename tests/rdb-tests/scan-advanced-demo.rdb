@@ -34,7 +34,7 @@ trading_events
           total_duration: total_duration
         });
     )
-  | insert_into(pattern_matches);
+  | assert_or_save_expected("tests/expected/scan-advanced-pattern-matches.ndjson");
 
 // 3. Anomaly Detection with Scan
 // Detect unusual activity patterns
@@ -65,7 +65,7 @@ trading_events
           severity: severity
         });
     )
-  | insert_into(anomalies);
+  | assert_or_save_expected("tests/expected/scan-advanced-anomalies.ndjson");
 
 // 4. Insert trading events for pattern detection
 insert into trading_events { timestamp: 1000, symbol: "AAPL", price: 150, volume: 1000, price_change: 0 };

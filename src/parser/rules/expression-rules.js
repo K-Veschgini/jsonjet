@@ -3,7 +3,7 @@ import {
     LogicalOr, LogicalAnd, Equals, NotEquals, LessThan, GreaterThan, 
     LessEquals, GreaterEquals, Plus, Minus, Multiply, Divide,
     LeftParen, RightParen, LeftBracket, RightBracket, Dot,
-    StringLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier,
+    StringLiteral, DurationLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier,
     QuestionMark, Colon,
     // Import all keywords for use as identifiers
     Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
@@ -136,6 +136,7 @@ export function defineExpressionRules() {
             { ALT: () => this.SUBRULE(this.arrayLiteral) },
             { ALT: () => this.SUBRULE(this.stepVariable) },
             { ALT: () => this.CONSUME(StringLiteral) },
+            { ALT: () => this.CONSUME(DurationLiteral) },
             { ALT: () => this.CONSUME(NumberLiteral) },
             { ALT: () => this.CONSUME(BooleanLiteral) },
             { ALT: () => this.CONSUME(NullLiteral) },

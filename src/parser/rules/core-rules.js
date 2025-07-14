@@ -133,7 +133,8 @@ export function defineCoreCrules() {
         this.OPTION(() => {
             this.OR([
                 { ALT: () => this.CONSUME(Stream, { LABEL: "target" }) },
-                { ALT: () => this.CONSUME(Flow, { LABEL: "target" }) }
+                { ALT: () => this.CONSUME(Flow, { LABEL: "target" }) },
+                { ALT: () => this.CONSUME(Identifier, { LABEL: "target" }) } // Allow plurals like "flows", "streams"
             ]);
         });
     });

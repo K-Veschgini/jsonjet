@@ -23,7 +23,7 @@ users
     thirdScore: scores[2],
     firstHobby: hobbies[0]
   } 
-| insert_into(results);
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
 
 // Now insert test data to see the flow in action
 // User 1 - Alice with multiple arrays
@@ -84,7 +84,7 @@ users
     secondPhone: contacts.phones[1],
     thirdPhone: contacts.phones[2]
   } 
-| insert_into(results);
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
 
 // ====================================================
 // TEST 3: Complex Object Array Access
@@ -101,7 +101,7 @@ users
     firstTeamMember: projects[0].team[0],
     secondTeamMember: projects[0].team[1]
   } 
-| insert_into(results);
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
 
 // ====================================================
 // TEST 4: Edge Cases (Out of Bounds, Empty Arrays)
@@ -118,7 +118,7 @@ users
     emptyHobby: hobbies[0],
     emptyEmail: contacts.emails[0]
   } 
-| insert_into(results);
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
 
 // ====================================================
 // TEST 5: Variable/Dynamic Indexing
@@ -133,7 +133,7 @@ users
     scoreAtIndex: scores[scoreIndex],
     hobbyAtIndex: hobbies[hobbyIndex]
   } 
-| insert_into(results);
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
 
 // Now insert test data with index variables
 insert into users {

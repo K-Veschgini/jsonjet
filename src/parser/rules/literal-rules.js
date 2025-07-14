@@ -68,7 +68,23 @@ export function defineLiteralRules() {
     this.propertyKey = this.RULE("propertyKey", () => {
         this.OR([
             { ALT: () => this.CONSUME(Identifier) },
-            { ALT: () => this.CONSUME(StringLiteral) }
+            { ALT: () => this.CONSUME(StringLiteral) },
+            // Allow keywords as property names
+            { ALT: () => this.CONSUME(Step) },
+            { ALT: () => this.CONSUME(Where) },
+            { ALT: () => this.CONSUME(Select) },
+            { ALT: () => this.CONSUME(Scan) },
+            { ALT: () => this.CONSUME(Summarize) },
+            { ALT: () => this.CONSUME(By) },
+            { ALT: () => this.CONSUME(Over) },
+            { ALT: () => this.CONSUME(Emit) },
+            { ALT: () => this.CONSUME(Every) },
+            { ALT: () => this.CONSUME(When) },
+            { ALT: () => this.CONSUME(On) },
+            { ALT: () => this.CONSUME(Change) },
+            { ALT: () => this.CONSUME(Group) },
+            { ALT: () => this.CONSUME(Update) },
+            { ALT: () => this.CONSUME(Using) }
         ]);
     });
 

@@ -205,6 +205,7 @@ class RdbTestRunner {
 // Export for use as a module
 export { RdbTestRunner };
 
+
 // If run directly, execute with default directories
 if (import.meta.url === `file://${process.argv[1]}`) {
     const runner = new RdbTestRunner();

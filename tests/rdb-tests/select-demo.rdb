@@ -12,19 +12,19 @@ create or replace stream excluded_output;
 create flow basic_select as
 user_data 
   | select { name: name, age: age, email: email } 
-  | insert_into(clean_output);
+  | assert_or_save_expected("tests/expected/select-demo-clean.ndjson");
 
 // 3. Demo 2: Spread and transform - include all fields plus computed ones
 create flow spread_transform as
 user_data 
   | select { ...*, full_name: name + " " + surname, is_adult: age && age >= 18 } 
-  | insert_into(transformed_output);
+  | assert_or_save_expected("tests/expected/select-demo-transformed.ndjson");
 
 // 4. Demo 3: Spread with exclusions - all fields except sensitive ones
 create flow spread_exclude as
 user_data 
   | select { ...*, -password, -ssn, safe_age: age || 0 } 
-  | insert_into(excluded_output);
+  | assert_or_save_expected("tests/expected/select-demo-excluded.ndjson");
 
 // 5. Insert test data with various field combinations
 insert into user_data { name: "John", surname: "Doe", age: 30, email: "john@example.com", password: "secret123", ssn: "123-45-6789" };

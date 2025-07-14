@@ -222,7 +222,11 @@ export function defineQueryOperationRules() {
     this.stepList = this.RULE("stepList", () => {
         this.SUBRULE(this.stepDefinition);
         this.MANY(() => {
+            this.CONSUME(Semicolon);
             this.SUBRULE2(this.stepDefinition);
+        });
+        this.OPTION(() => {
+            this.CONSUME2(Semicolon);
         });
     });
 
@@ -238,7 +242,6 @@ export function defineQueryOperationRules() {
         this.SUBRULE(this.stepCondition);
         this.CONSUME(Arrow);
         this.SUBRULE(this.statementList);
-        this.CONSUME(Semicolon);
     });
 
     this.stepCondition = this.RULE("stepCondition", () => {

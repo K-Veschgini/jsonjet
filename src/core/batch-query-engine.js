@@ -47,9 +47,7 @@ export class BatchQueryEngine {
             }));
 
         } catch (error) {
-            console.warn('Unified parsing failed, falling back to legacy:', error.message);
-            // Fallback to legacy parsing logic for backward compatibility
-            return this.parseLegacy(input);
+            throw new Error(`Unified parsing failed: ${error.message}`);
         }
     }
 
@@ -63,10 +61,7 @@ export class BatchQueryEngine {
         for (const stmt of statements) {
             try {
                 let result;
-                if (stmt.type === 'legacy') {
-                    // Legacy statement - execute directly
-                    result = await this.queryEngine.executeStatement(stmt.text);
-                } else if (stmt.isCommand) {
+                if (stmt.isCommand) {
                     result = await this.executeCommand(stmt.ast);
                 } else if (stmt.isQuery) {
                     result = await this.executeQuery(stmt.ast);
@@ -148,7 +143,6 @@ export class BatchQueryEngine {
         if (ast.ast.command === 'create_flow') {
             return await this.handleCreateFlow(ast.ast);
         } else {
-            // For regular pipeline queries, fall back to legacy for now
             throw new Error('Regular pipeline queries not yet implemented in unified system');
         }
     }
@@ -176,7 +170,7 @@ export class BatchQueryEngine {
     async handleCreateFlow(params) {
         const { flowName, modifier, ttlExpression, flowQuery } = params;
         
-        // Build legacy flow command for now
+        // Build flow command
         let command = 'create ';
         if (modifier === 'or_replace') {
             command += 'or replace ';
@@ -193,24 +187,187 @@ export class BatchQueryEngine {
     }
 
     pipelineToCode(pipelineAst) {
-        // Simple conversion - this could be improved
-        if (pipelineAst && pipelineAst.source) {
-            let code = pipelineAst.source.sourceName;
-            if (pipelineAst.operations) {
-                for (const op of pipelineAst.operations) {
-                    code += ' | ' + this.operationToCode(op);
-                }
-            }
-            return code;
+        if (!pipelineAst || !pipelineAst.children) {
+            return '';
         }
-        return '';
+
+        // Extract source
+        let code = '';
+        if (pipelineAst.children.source && pipelineAst.children.source[0]) {
+            const sourceNode = pipelineAst.children.source[0];
+            code = sourceNode.children.sourceName[0].image;
+        }
+
+        // Extract operations
+        if (pipelineAst.children.operation) {
+            for (const opNode of pipelineAst.children.operation) {
+                code += ' | ' + this.operationToCode(opNode);
+            }
+        }
+
+        return code;
     }
 
-    operationToCode(operation) {
-        // Basic operation conversion - this is simplified
-        if (operation.includes('where')) return operation;
-        if (operation.includes('select')) return operation;
-        return operation;
+    operationToCode(operationNode) {
+        if (!operationNode || !operationNode.children) {
+            return '';
+        }
+
+        // Check which operation type this is
+        if (operationNode.children.whereClause) {
+            return this.whereClauseToCode(operationNode.children.whereClause[0]);
+        }
+        if (operationNode.children.selectClause) {
+            return this.selectClauseToCode(operationNode.children.selectClause[0]);
+        }
+        if (operationNode.children.scanClause) {
+            return this.scanClauseToCode(operationNode.children.scanClause[0]);
+        }
+        if (operationNode.children.summarizeClause) {
+            return this.summarizeClauseToCode(operationNode.children.summarizeClause[0]);
+        }
+        if (operationNode.children.insertIntoClause) {
+            return this.insertIntoClauseToCode(operationNode.children.insertIntoClause[0]);
+        }
+        if (operationNode.children.writeToFileClause) {
+            return this.writeToFileClauseToCode(operationNode.children.writeToFileClause[0]);
+        }
+        if (operationNode.children.assertOrSaveExpectedClause) {
+            return this.assertOrSaveExpectedClauseToCode(operationNode.children.assertOrSaveExpectedClause[0]);
+        }
+        if (operationNode.children.collectClause) {
+            return 'collect()';
+        }
+
+        return 'unknown_operation';
+    }
+
+    whereClauseToCode(whereNode) {
+        return `where ${this.expressionToCode(whereNode.children.expression[0])}`;
+    }
+
+    selectClauseToCode(selectNode) {
+        return `select ${this.selectObjectToCode(selectNode.children.selectObject[0])}`;
+    }
+
+    scanClauseToCode(scanNode) {
+        if (!scanNode || !scanNode.children) {
+            return 'scan(...)';
+        }
+
+        // For now, return a basic scan structure
+        // This is simplified and would need full implementation for complex scans
+        let scanCode = 'scan(';
+        
+        if (scanNode.children.stepList) {
+            const stepList = scanNode.children.stepList[0];
+            if (stepList.children && stepList.children.stepDefinition) {
+                const steps = stepList.children.stepDefinition;
+                for (let i = 0; i < steps.length; i++) {
+                    if (i > 0) scanCode += '; ';
+                    scanCode += this.stepDefinitionToCode(steps[i]);
+                }
+            }
+        }
+        
+        scanCode += ')';
+        return scanCode;
+    }
+
+    stepDefinitionToCode(stepNode) {
+        if (!stepNode || !stepNode.children) {
+            return 'step: true => x = 1';
+        }
+
+        let stepCode = 'step ';
+        
+        // Get step name
+        if (stepNode.children.stepName) {
+            stepCode += stepNode.children.stepName[0].image;
+        }
+        
+        stepCode += ': ';
+        
+        // Get condition (simplified)
+        if (stepNode.children.stepCondition) {
+            stepCode += this.expressionToCode(stepNode.children.stepCondition[0]);
+        } else {
+            stepCode += 'true';
+        }
+        
+        stepCode += ' => ';
+        
+        // Get statements (simplified)
+        if (stepNode.children.statementList) {
+            stepCode += 'x = 1'; // Simplified
+        }
+        
+        return stepCode;
+    }
+
+    summarizeClauseToCode(summarizeNode) {
+        // For now, return a simplified summarize
+        return 'summarize { ... }';
+    }
+
+    insertIntoClauseToCode(insertIntoNode) {
+        const targetStream = insertIntoNode.children.targetStream[0].image;
+        return `insert_into(${targetStream})`;
+    }
+
+    writeToFileClauseToCode(writeToFileNode) {
+        const filePath = this.expressionToCode(writeToFileNode.children.filePath[0]);
+        return `write_to_file(${filePath})`;
+    }
+
+    assertOrSaveExpectedClauseToCode(assertNode) {
+        const filePath = this.expressionToCode(assertNode.children.filePath[0]);
+        return `assert_or_save_expected(${filePath})`;
+    }
+
+    selectObjectToCode(selectObjectNode) {
+        // Simplified - just return basic object syntax
+        return '{ ... }';
+    }
+
+    expressionToCode(expressionNode) {
+        if (!expressionNode || !expressionNode.children) {
+            return '';
+        }
+
+        // Handle different expression types
+        if (expressionNode.children.primaryExpression) {
+            return this.primaryExpressionToCode(expressionNode.children.primaryExpression[0]);
+        }
+
+        return 'expr';
+    }
+
+    primaryExpressionToCode(primaryNode) {
+        if (!primaryNode || !primaryNode.children) {
+            return '';
+        }
+
+        if (primaryNode.children.stringLiteral) {
+            return primaryNode.children.stringLiteral[0].image;
+        }
+        if (primaryNode.children.durationLiteral) {
+            return primaryNode.children.durationLiteral[0].image;
+        }
+        if (primaryNode.children.numberLiteral) {
+            return primaryNode.children.numberLiteral[0].image;
+        }
+        if (primaryNode.children.booleanLiteral) {
+            return primaryNode.children.booleanLiteral[0].image;
+        }
+        if (primaryNode.children.nullLiteral) {
+            return primaryNode.children.nullLiteral[0].image;
+        }
+        if (primaryNode.children.identifier) {
+            return primaryNode.children.identifier[0].image;
+        }
+
+        return '';
     }
 
     /**
@@ -239,113 +396,6 @@ export class BatchQueryEngine {
         return `${stmt.type} statement`;
     }
 
-    /**
-     * Legacy parsing fallback - handles multi-line statements like the original RDB test runner
-     */
-    parseLegacy(input) {
-        const lines = input.split('\n');
-        const statements = [];
-        
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            
-            // Skip empty lines and comments
-            if (!line || line.startsWith('//')) {
-                continue;
-            }
-            
-            // Check if this looks like a statement
-            if (/^(create|insert|delete|flush|list|info|subscribe|unsubscribe|[a-zA-Z_][a-zA-Z0-9_]*\s*\|)/.test(line)) {
-                let currentStatement = line;
-                let currentLine = i;
-                
-                // Handle multi-line statements
-                if (!line.endsWith(';')) {
-                    for (let j = i + 1; j < lines.length; j++) {
-                        const nextLine = lines[j].trim();
-                        
-                        if (!nextLine || nextLine.startsWith('//')) {
-                            break;
-                        }
-                        
-                        currentStatement += ' ' + nextLine;
-                        
-                        if (nextLine.endsWith(';') || this.isCompleteStatement(currentStatement)) {
-                            i = j;
-                            break;
-                        }
-                    }
-                }
-                
-                if (this.isCompleteStatement(currentStatement)) {
-                    const trimmed = currentStatement.replace(/;$/, '').trim();
-                    statements.push({
-                        index: statements.length,
-                        text: trimmed,
-                        type: 'legacy',
-                        isCommand: true,
-                        isQuery: false,
-                        ast: null
-                    });
-                }
-            }
-        }
-        
-        return statements;
-    }
-
-    /**
-     * Check if a statement is complete (from original RDB test runner)
-     */
-    isCompleteStatement(stmt) {
-        const trimmed = stmt.trim();
-        if (!trimmed) return false;
-        
-        let braceCount = 0;
-        let bracketCount = 0; 
-        let parenCount = 0;
-        let inDoubleQuote = false;
-        let inSingleQuote = false;
-        let escapeNext = false;
-        
-        for (let i = 0; i < trimmed.length; i++) {
-            const char = trimmed[i];
-            
-            if (escapeNext) {
-                escapeNext = false;
-                continue;
-            }
-            
-            if (char === '\\') {
-                escapeNext = true;
-                continue;
-            }
-            
-            if (char === '"' && !inSingleQuote) {
-                inDoubleQuote = !inDoubleQuote;
-                continue;
-            }
-            
-            if (char === "'" && !inDoubleQuote) {
-                inSingleQuote = !inSingleQuote;
-                continue;
-            }
-            
-            if (inDoubleQuote || inSingleQuote) continue;
-            
-            if (char === '{') braceCount++;
-            if (char === '}') braceCount--;
-            if (char === '[') bracketCount++;
-            if (char === ']') bracketCount--;
-            if (char === '(') parenCount++;
-            if (char === ')') parenCount--;
-        }
-        
-        return trimmed.endsWith(';') && 
-               braceCount === 0 && 
-               bracketCount === 0 && 
-               parenCount === 0;
-    }
 }
 
 export default BatchQueryEngine;

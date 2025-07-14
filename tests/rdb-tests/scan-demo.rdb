@@ -32,7 +32,7 @@ events
           last_activity: last_activity
         });
     )
-  | insert_into(sessions);
+  | assert_or_save_expected("tests/expected/scan-demo-sessions.ndjson");
 
 // 3. Running Analytics with Scan Operator
 // Calculate running totals and averages
@@ -52,7 +52,7 @@ events
           current_value: value
         });
     )
-  | insert_into(analytics);
+  | assert_or_save_expected("tests/expected/scan-demo-analytics.ndjson");
 
 // 4. Insert session events (flows will process these immediately)
 insert into events { timestamp: 1000, event_type: "login", user_id: "alice", value: null };

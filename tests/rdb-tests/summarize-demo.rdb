@@ -11,7 +11,7 @@ create or replace stream daily_summary;
 create flow product_summary as
 sales 
   | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(2)
-  | insert_into(daily_summary);
+  | assert_or_save_expected("tests/expected/summarize-demo.ndjson");
 
 // 3. Insert sample sales data (flows will process this immediately)
 insert into sales { date: "2024-01-15", product: "laptop", amount: 1200, region: "north" };
