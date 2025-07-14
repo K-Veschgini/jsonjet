@@ -4,10 +4,10 @@ import { QueryEngine } from '../src/core/query-engine.js';
 import CommandParser from '../src/parser/command-parser.js';
 
 // Import all demos
-import { flowProcessingDemo } from '../demo-bun/src/demos/flow-processing.ts';
-import { summarizeDemo } from '../demo-bun/src/demos/summarize-demo.ts';
-import { scanDemo } from '../demo-bun/src/demos/scan-demo.ts';
-import { selectDemo } from '../demo-bun/src/demos/select-demo.ts';
+import { flowProcessingDemo } from '../demo-bun/src/demos/flow-processing.js';
+import { summarizeDemo } from '../demo-bun/src/demos/summarize-demo.js';
+import { scanDemo } from '../demo-bun/src/demos/scan-demo.js';
+import { selectDemo } from '../demo-bun/src/demos/select-demo.js';
 
 describe('Demo Integration Tests', () => {
   let streamManager;
