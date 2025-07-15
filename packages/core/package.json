@@ -1,0 +1,20 @@
+{
+  "name": "@resonancedb/core",
+  "version": "0.1.0",
+  "description": "Core ResonanceDB stream processing database library",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./server": "./src/server-index.js"
+  },
+  "dependencies": {
+    "chevrotain": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "scripts": {
+    "test": "bun test"
+  }
+}

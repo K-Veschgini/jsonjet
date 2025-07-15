@@ -54,11 +54,8 @@ Important:
 5. Set up dependency on core package
 
 ### Phase 3: Server Package
-1. Create `packages/server/`
-2. Move server-related files to `packages/server/src/`
-3. Create server-specific UI in `packages/server/src/ui/`
-4. Set up dependencies on core and ui packages
-5. Create `packages/server/package.json`
+1. Create empty folder `packages/server/`
+2. dont do anything else yet
 
 ### Phase 4: Demo Package
 1. Create `packages/demo/`

@@ -1,0 +1,95 @@
+/* Simple styles for the ResonanceDB demo app */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Play button decorations in glyph margin */
+.play-button-glyph {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.play-button-glyph::before {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  border-left: 8px solid #22c55e;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  transition: border-left-color 0.2s ease;
+}
+
+.play-button-glyph:hover::before {
+  border-left-color: #16a34a;
+}
+
+.play-button-glyph:active::before {
+  border-left-color: #15803d;
+}
+
+/* Generic solution for Monaco editor border */
+.editor-container {
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+/* Remove all Monaco's internal borders and outlines */
+.editor-container * {
+  border: none !important;
+  outline: none !important;
+}
+
+/* Ensure glyph margin is visible and sized correctly */
+.monaco-editor .margin {
+  background-color: transparent !important;
+}
+
+.monaco-editor .glyph-margin {
+  width: 20px !important;
+}
+
+.monaco-editor .margin-view-overlays {
+  background-color: transparent !important;
+}
+
+/* Badge fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Badge fade out animation */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+
+
