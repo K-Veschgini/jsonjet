@@ -2,6 +2,15 @@
 
 A high-performance stream processing database with flow-based architecture for real-time data processing.
 
+## 🌟 Features
+
+- **Stream Processing** - Real-time data flow processing with operators
+- **Flow-based Architecture** - Compose complex data transformations
+- **HTTP API Server** - REST endpoints for query execution and management  
+- **WebSocket Streaming** - Real-time data subscriptions
+- **Cross-platform Binaries** - Standalone executables for all major platforms
+- **SQL-like Query Language** - Familiar syntax for data operations
+
 ## Usage
 
 ```javascript
@@ -40,4 +49,46 @@ export class MyOperator extends Operator {
         }
     }
 }
-``` 
+```
+
+## 🚀 Quick Start with Server
+
+```bash
+# Start the HTTP/WebSocket server
+cd packages/server
+bun start
+
+# Or build cross-platform binaries
+bun run build:server
+```
+
+The server provides:
+- **HTTP API** on `http://localhost:3000/api/*`
+- **WebSocket streaming** on `ws://localhost:3000/ws`
+- **Real-time subscriptions** to data streams
+- **Query execution** via REST endpoints
+
+## 📦 Packages
+
+- **`packages/core/`** - Core streaming database engine  
+- **`packages/server/`** - Bun HTTP/WebSocket server with cross-platform builds
+- **`packages/demo/`** - Interactive web demo and examples
+- **`packages/ui/`** - Shared UI components for frontend applications
+
+## 🏗️ Development
+
+```bash
+# Install dependencies
+bun install
+
+# Run tests  
+bun test
+
+# Start development demo
+bun run dev:demo
+
+# Build cross-platform server binaries
+bun run build:server
+```
+
+See [BUILD.md](./BUILD.md) for detailed cross-platform build instructions.

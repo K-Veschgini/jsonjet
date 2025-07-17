@@ -1,0 +1,20 @@
+{
+  "name": "@resonancedb/server",
+  "version": "0.1.0",
+  "description": "Bun server for ResonanceDB with HTTP API and WebSocket streaming",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "bun run src/index.js",
+    "test": "bun test",
+    "dev": "bun --hot src/index.js",
+    "build": "bun build src/index.js --compile --outfile=resonancedb-server",
+    "build:run": "bun run build && ./resonancedb-server"
+  },
+  "dependencies": {
+    "@resonancedb/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+} 

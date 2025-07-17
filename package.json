@@ -12,6 +12,7 @@
     "test:core": "cd packages/core && bun test",
     "dev:demo": "cd packages/demo && bun run dev",
     "build:demo": "cd packages/demo && bun run build",
+    "build:server": "bun run build-server.js",
     "install:all": "bun install"
   },
   "devDependencies": {

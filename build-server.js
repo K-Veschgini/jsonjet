@@ -1,0 +1,222 @@
+#!/usr/bin/env bun
+
+/**
+ * Cross-platform build script for ResonanceDB Server
+ * Compiles standalone executables for all Bun-supported platforms
+ */
+
+import { existsSync, mkdirSync, rmSync } from 'fs';
+import { join } from 'path';
+
+const SERVER_SOURCE = './packages/server/src/index.js';
+const RELEASE_DIR = './release';
+
+// All platforms supported by Bun for cross-compilation
+const TARGETS = [
+  {
+    target: 'bun-linux-x64',
+    name: 'resonancedb-server-linux-x64-glibc',
+    description: 'Linux x64 (glibc)'
+  },
+  {
+    target: 'bun-linux-x64-baseline',
+    name: 'resonancedb-server-linux-x64-baseline-glibc',
+    description: 'Linux x64 baseline (glibc, older CPUs)'
+  },
+  {
+    target: 'bun-linux-arm64',
+    name: 'resonancedb-server-linux-arm64-glibc',
+    description: 'Linux ARM64 (glibc)'
+  },
+  {
+    target: 'bun-linux-x64-musl',
+    name: 'resonancedb-server-linux-x64-musl',
+    description: 'Linux x64 (musl, Alpine)'
+  },
+  {
+    target: 'bun-linux-arm64-musl',
+    name: 'resonancedb-server-linux-arm64-musl',
+    description: 'Linux ARM64 (musl, Alpine)'
+  },
+  {
+    target: 'bun-windows-x64-baseline',
+    name: 'resonancedb-server-windows-x64-baseline.exe',
+    description: 'Windows x64 baseline (older CPUs)'
+  },
+  {
+    target: 'bun-windows-x64',
+    name: 'resonancedb-server-windows-x64.exe',
+    description: 'Windows x64 (CPUs from 2013 and newer)'
+  },
+  {
+    target: 'bun-darwin-x64',
+    name: 'resonancedb-server-darwin-x64',
+    description: 'macOS x64 (Intel)'
+  },
+  {
+    target: 'bun-darwin-arm64',
+    name: 'resonancedb-server-darwin-arm64',
+    description: 'macOS ARM64 (Apple Silicon)'
+  }
+];
+
+async function buildAll() {
+  console.log('🏗️  Cross-platform ResonanceDB Server Build');
+  console.log('=' .repeat(50));
+  
+  // Check if source exists
+  if (!existsSync(SERVER_SOURCE)) {
+    console.error(`❌ Source file not found: ${SERVER_SOURCE}`);
+    process.exit(1);
+  }
+  
+  // Clean and create release directory
+  if (existsSync(RELEASE_DIR)) {
+    console.log('🧹 Cleaning existing release directory...');
+    rmSync(RELEASE_DIR, { recursive: true, force: true });
+  }
+  
+  mkdirSync(RELEASE_DIR, { recursive: true });
+  console.log(`📁 Created release directory: ${RELEASE_DIR}\n`);
+  
+  const results = [];
+  let successCount = 0;
+  let failureCount = 0;
+  
+  // Build for each target
+  for (const { target, name, description } of TARGETS) {
+    const outputPath = join(RELEASE_DIR, name);
+    console.log(`🔨 Building for ${target}...`);
+    console.log(`   ${description}`);
+    
+    const startTime = Date.now();
+    
+    try {
+      // Build command
+      const result = await Bun.spawn([
+        'bun', 'build',
+        SERVER_SOURCE,
+        '--compile',
+        '--minify',
+        '--sourcemap',
+        `--target=${target}`,
+        `--outfile=${outputPath}`
+      ], {
+        cwd: process.cwd(),
+        stdio: ['inherit', 'inherit', 'inherit']
+      });
+      
+      await result.exited;
+      
+      if (result.exitCode === 0) {
+        const duration = Date.now() - startTime;
+        console.log(`   ✅ Success (${duration}ms)`);
+        
+        // Get file size
+        const stat = await Bun.file(outputPath).size;
+        const sizeMB = (stat / 1024 / 1024).toFixed(1);
+        console.log(`   📦 Size: ${sizeMB} MB`);
+        
+        results.push({
+          target,
+          name,
+          description,
+          success: true,
+          duration,
+          size: stat,
+          sizeMB
+        });
+        successCount++;
+      } else {
+        console.log(`   ❌ Failed (exit code: ${result.exitCode})`);
+        
+        results.push({
+          target,
+          name,
+          description,
+          success: false,
+          error: `Exit code: ${result.exitCode}`
+        });
+        failureCount++;
+      }
+    } catch (error) {
+      console.log(`   ❌ Failed: ${error.message}`);
+      results.push({
+        target,
+        name,
+        description,
+        success: false,
+        error: error.message
+      });
+      failureCount++;
+    }
+    
+    console.log(''); // Empty line for readability
+  }
+  
+  // Summary
+  console.log('📊 Build Summary');
+  console.log('=' .repeat(50));
+  console.log(`✅ Successful builds: ${successCount}`);
+  console.log(`❌ Failed builds: ${failureCount}`);
+  console.log(`📁 Output directory: ${RELEASE_DIR}\n`);
+  
+  // Detailed results
+  console.log('📋 Detailed Results:');
+  for (const result of results) {
+    const status = result.success ? '✅' : '❌';
+    const sizeInfo = result.success ? ` (${result.sizeMB} MB)` : '';
+    console.log(`${status} ${result.name}${sizeInfo}`);
+    console.log(`   ${result.description}`);
+    if (!result.success && result.error) {
+      console.log(`   Error: ${result.error}`);
+    }
+    console.log('');
+  }
+  
+  // Create build info file
+  const buildInfo = {
+    buildTime: new Date().toISOString(),
+    bunVersion: await getBunVersion(),
+    sourceFile: SERVER_SOURCE,
+    targets: results,
+    summary: {
+      total: TARGETS.length,
+      successful: successCount,
+      failed: failureCount
+    }
+  };
+  
+  await Bun.write(
+    join(RELEASE_DIR, 'build-info.json'),
+    JSON.stringify(buildInfo, null, 2)
+  );
+  
+  console.log('💾 Build information saved to build-info.json');
+  
+  if (failureCount > 0) {
+    console.log(`\n⚠️  ${failureCount} builds failed. Check the errors above.`);
+    process.exit(1);
+  } else {
+    console.log('\n🎉 All builds completed successfully!');
+  }
+}
+
+async function getBunVersion() {
+  try {
+    const result = await Bun.spawn(['bun', '--version'], {
+      stdio: ['inherit', 'pipe', 'pipe']
+    });
+    const version = await new Response(result.stdout).text();
+    return version.trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
+// Run if this script is executed directly
+if (import.meta.main) {
+  buildAll().catch(console.error);
+}
+
+export { buildAll }; 
