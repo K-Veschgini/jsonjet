@@ -3,26 +3,32 @@
  * Extends browser registry with server-only operators (Node.js dependencies)
  */
 
-// Import browser registry first (gets all browser-safe operators)
-import { operatorRegistry } from './index.js';
+// Import browser registration function
+import { registerOperators } from './index.js';
 
 // Import server-only operators
 import { WriteToFile } from './write-to-file.js';
 import { AssertOrSaveExpected } from './assert-or-save-expected.js';
 
-// Server-only operators list
-const SERVER_ONLY_OPERATORS = [
-  { name: 'write_to_file', class: WriteToFile },
-  { name: 'assert_or_save_expected', class: AssertOrSaveExpected },
-];
+/**
+ * Register server operators (browser-safe + server-only) to a registry instance
+ * @param {Registry} registry - Registry instance to register operators to
+ */
+export function registerServerOperators(registry) {
+    // Register browser-safe operators first
+    registerOperators(registry);
+    
+    // Register server-only operators
+    registry.registerOperator('writetofile', WriteToFile);
+    registry.registerOperator('write_to_file', WriteToFile); // Alias
+    registry.registerOperator('assertorsaveexpected', AssertOrSaveExpected);
+    registry.registerOperator('assert_or_save_expected', AssertOrSaveExpected); // Alias
+}
 
-// Register server-only operators to existing registry
-SERVER_ONLY_OPERATORS.forEach(({ name, class: OperatorClass }) => {
-  operatorRegistry.register(name, OperatorClass);
-});
+// Re-export browser registration function for convenience
+export { registerOperators };
 
-// Re-export the enhanced registry and all operators
-export { operatorRegistry };
+// Export server-only operators for direct access
 export { WriteToFile, AssertOrSaveExpected };
 
 // Re-export all browser operators

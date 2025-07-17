@@ -15,7 +15,9 @@ import './operators/server-index.js';     // Registers all operators
 // Re-export enhanced registries
 export { functionRegistry } from './functions/server-index.js';
 export { aggregationRegistry } from './aggregations/server-index.js';
-export { operatorRegistry } from './operators/server-index.js';
+
+// Export operator registration functions (no global registry)
+export { registerOperators, registerServerOperators } from './operators/server-index.js';
 
 // Re-export all operators (browser + server)
 export {
