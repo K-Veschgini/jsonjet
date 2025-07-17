@@ -96,12 +96,21 @@ export const LiteralVisitorMixin = {
     // =============================================================================
 
     propertyKey(ctx) {
-        // Now beautifully simple! Context-sensitive lexer converts keywords to identifiers
+        // Handle identifiers and keywords that can be used as property keys
         if (ctx.Identifier) {
             const keyName = VisitorUtils.getTokenImage(ctx.Identifier);
             return this._formatPropertyKey(keyName);
         } else if (ctx.StringLiteral) {
             return VisitorUtils.getTokenImage(ctx.StringLiteral); // Already quoted
+        } else {
+            // Handle keyword tokens used as property keys
+            const keywordTokens = ['Step', 'Sum', 'Count', 'And', 'Or', 'Not', 'Where', 'Select', 'Scan', 'Group'];
+            for (const tokenType of keywordTokens) {
+                if (ctx[tokenType]) {
+                    const keyName = VisitorUtils.getTokenImage(ctx[tokenType]);
+                    return this._formatPropertyKey(keyName);
+                }
+            }
         }
         
         return '';

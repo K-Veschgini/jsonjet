@@ -129,7 +129,7 @@ describe('Demo Integration Tests', () => {
   // Helper function to execute a single statement
   const executeStatement = async (statement) => {
     if (statement.isCommand) {
-      return await CommandParser.executeCommand(statement.text, streamManager);
+      return await CommandParser.executeCommand(statement.text, streamManager, queryEngine);
     } else if (statement.isQuery) {
       return await queryEngine.executeStatement(statement.text);
     }
@@ -178,7 +178,11 @@ describe('Demo Integration Tests', () => {
     expect(statements.length).toBeGreaterThan(0);
     
     // Most statements should succeed (some might fail due to missing streams, but syntax should be valid)
-    const parseErrors = results.filter(r => !r.success && r.message.includes('Parse errors'));
+    const parseErrors = results.filter(r => {
+      if (!r || r.success) return false;
+      const message = r.message || (r.error && r.error.message) || '';
+      return message.includes('Parse errors');
+    });
     expect(parseErrors.length).toBe(0);
   });
 
@@ -196,7 +200,11 @@ describe('Demo Integration Tests', () => {
     
     expect(statements.length).toBeGreaterThan(0);
     
-    const parseErrors = results.filter(r => !r.success && r.message.includes('Parse errors'));
+    const parseErrors = results.filter(r => {
+      if (!r || r.success) return false;
+      const message = r.message || (r.error && r.error.message) || '';
+      return message.includes('Parse errors');
+    });
     expect(parseErrors.length).toBe(0);
   });
 
