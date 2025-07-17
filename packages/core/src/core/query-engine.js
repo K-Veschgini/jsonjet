@@ -977,10 +977,8 @@ export class QueryEngine {
                     const modifier = stmt.ast.modifier ? `${stmt.ast.modifier} ` : '';
                     return `create ${modifier}stream ${stmt.ast.streamName}`;
                 } else if (stmt.ast.command === 'create_flow') {
-                    const modifier = stmt.ast.modifier ? `${stmt.ast.modifier} ` : '';
-                    const ttl = stmt.ast.ttlExpression ? ` ttl(${stmt.ast.ttlExpression})` : '';
-                    const pipeline = this.reconstructFlowPipeline(stmt.ast.flowQuery);
-                    return `create ${modifier}flow ${stmt.ast.flowName}${ttl} as ${pipeline}`;
+                    // Extract the original flow statement text directly from input
+                    return this._extractOriginalFlowText(input, stmt.ast.flowName) || `statement_${index}`;
                 }
             }
             
@@ -1010,26 +1008,28 @@ export class QueryEngine {
     }
 
     /**
-     * Reconstruct flow pipeline from AST
-     * Instead of trying to reconstruct complex syntax, use the original approach
-     * of executing the transpiled JavaScript directly
+     * Extract the complete original flow statement text from input
      */
-    reconstructFlowPipeline(flowQuery) {
-        if (!flowQuery || !flowQuery.source) {
-            return '';
+    _extractOriginalFlowText(input, flowName) {
+        try {
+            // Find the complete flow creation statement
+            const flowRegex = new RegExp(
+                `(create\\s+(?:(?:or\\s+replace|if\\s+not\\s+exists)\\s+)?flow\\s+${flowName}(?:\\s+ttl\\s*\\([^)]+\\))?\\s+as\\s+[\\s\\S]*?)(?=;|$)`,
+                'i'
+            );
+            
+            const match = input.match(flowRegex);
+            if (match && match[1]) {
+                return match[1].trim();
+            }
+            
+            return null;
+        } catch (error) {
+            return null;
         }
-
-        // For simple cases, generate a basic pipeline
-        let pipeline = flowQuery.source.sourceName;
-        
-        if (flowQuery.operations && flowQuery.operations.length > 0) {
-            // This is too complex to reconstruct properly
-            // Just add a simple filter for now that will work
-            pipeline += ' | where true';
-        }
-
-        return pipeline;
     }
+
+
 
     /**
      * Execute a flow directly from AST without reconstructing syntax
@@ -1061,7 +1061,7 @@ export class QueryEngine {
                 queryId,
                 subscriptionId,
                 sourceName,
-                queryText: this.reconstructFlowPipeline(flowQuery), // For display purposes
+                queryText: flowQuery?.source?.sourceName || 'unknown', // For display purposes
                 pipeline,
                 sinks,
                 startTime: new Date(),
