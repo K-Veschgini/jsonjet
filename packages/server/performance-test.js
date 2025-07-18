@@ -3,12 +3,17 @@
 /**
  * Performance Test for ResonanceDB Server
  * Tests high-volume data insertion and aggregation query performance
+ * Benchmarks 4 different insertion methods:
+ * 1. HTTP single inserts
+ * 2. HTTP batch inserts  
+ * 3. WebSocket single inserts
+ * 4. WebSocket batch inserts
  */
 
-  const SERVER_URL = 'http://localhost:3333';
-  const WS_URL = 'ws://localhost:3333/ws';
-  const RECORD_COUNT = 100000;
-  const USE_WEBSOCKET_INSERTS = true; // Toggle between WebSocket and HTTP inserts
+const SERVER_URL = 'http://localhost:3333';
+const WS_URL = 'ws://localhost:3333/ws';
+const RECORD_COUNT = 10000; // Reduced for faster testing
+const BATCH_SIZE = 100;
 
 class PerformanceTest {
   constructor() {
@@ -20,6 +25,12 @@ class PerformanceTest {
     this.insertCompleted = false;
     this.insertResponses = 0;
     this.insertErrors = 0;
+    this.benchmarkResults = {
+      httpSingle: { time: 0, rate: 0 },
+      httpBatch: { time: 0, rate: 0 },
+      wsSingle: { time: 0, rate: 0 },
+      wsBatch: { time: 0, rate: 0 }
+    };
   }
 
   /**
@@ -122,61 +133,199 @@ class PerformanceTest {
     };
   }
 
-     /**
-    * Insert data in batches for better performance (HTTP)
-    */
-   async insertDataBatch(records) {
-     // Process records sequentially to avoid overwhelming the server
-     for (const record of records) {
-       await this.executeQuery(`insert into data ${JSON.stringify(record)}`);
-     }
-   }
+  /**
+   * Generate all test records
+   */
+  generateAllRecords() {
+    const records = [];
+    for (let i = 0; i < RECORD_COUNT; i++) {
+      records.push(this.generateTestRecord(i + 1));
+    }
+    return records;
+  }
 
-   /**
-    * Insert single record via WebSocket
-    */
-   insertRecordWS(target, data) {
-     this.ws.send(JSON.stringify({
-       type: 'insert',
-       target,
-       data
-     }));
-   }
+  /**
+   * Benchmark 1: HTTP Single Inserts
+   */
+  async benchmarkHttpSingle(records) {
+    console.log('\n🔍 Benchmark 1: HTTP Single Inserts');
+    console.log('=' .repeat(50));
+    
+    const startTime = Date.now();
+    
+    // Process records sequentially
+    for (const record of records) {
+      await this.executeQuery(`insert into data ${JSON.stringify(record)}`);
+    }
+    
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    const rate = Math.round(RECORD_COUNT / (duration / 1000));
+    
+    this.benchmarkResults.httpSingle = { time: duration, rate };
+    
+    console.log(`✅ HTTP Single Inserts completed`);
+    console.log(`⏱️  Time: ${duration}ms`);
+    console.log(`📈 Rate: ${rate} records/second`);
+  }
 
-   /**
-    * Insert batch of records via WebSocket
-    */
-   insertBatchWS(target, records) {
-     this.ws.send(JSON.stringify({
-       type: 'batch_insert',
-       target,
-       data: records
-     }));
-   }
+  /**
+   * Benchmark 2: HTTP Batch Inserts
+   */
+  async benchmarkHttpBatch(records) {
+    console.log('\n🔍 Benchmark 2: HTTP Batch Inserts');
+    console.log('=' .repeat(50));
+    
+    const startTime = Date.now();
+    
+    // Process records in batches
+    for (let i = 0; i < records.length; i += BATCH_SIZE) {
+      const batch = records.slice(i, i + BATCH_SIZE);
+      const batchJson = JSON.stringify(batch);
+      await this.executeQuery(`insert into data ${batchJson}`);
+    }
+    
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    const rate = Math.round(RECORD_COUNT / (duration / 1000));
+    
+    this.benchmarkResults.httpBatch = { time: duration, rate };
+    
+    console.log(`✅ HTTP Batch Inserts completed`);
+    console.log(`⏱️  Time: ${duration}ms`);
+    console.log(`📈 Rate: ${rate} records/second`);
+  }
 
-   /**
-    * Insert data using WebSocket for better performance
-    */
-   async insertDataWebSocket(records) {
-     const batchSize = 100; // Insert in batches of 100
-     
-     for (let i = 0; i < records.length; i += batchSize) {
-       const batch = records.slice(i, i + batchSize);
-       this.insertBatchWS('data', batch);
-       
-       // Small delay to prevent overwhelming the server
-       if (i + batchSize < records.length) {
-         await new Promise(resolve => setTimeout(resolve, 5));
-       }
-     }
-   }
+  /**
+   * Benchmark 3: WebSocket Single Inserts
+   */
+  async benchmarkWebSocketSingle(records) {
+    console.log('\n🔍 Benchmark 3: WebSocket Single Inserts');
+    console.log('=' .repeat(50));
+    
+    const startTime = Date.now();
+    this.insertResponses = 0;
+    this.insertErrors = 0;
+    
+    // Insert records one by one via WebSocket
+    for (const record of records) {
+      this.ws.send(JSON.stringify({
+        type: 'insert',
+        target: 'data',
+        data: record
+      }));
+    }
+    
+    // Wait for all insert responses
+    const maxWaitTime = 30000; // 30 seconds max
+    const startWait = Date.now();
+    while (this.insertResponses < RECORD_COUNT && (Date.now() - startWait) < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    const rate = Math.round(RECORD_COUNT / (duration / 1000));
+    
+    this.benchmarkResults.wsSingle = { time: duration, rate };
+    
+    console.log(`✅ WebSocket Single Inserts completed`);
+    console.log(`⏱️  Time: ${duration}ms`);
+    console.log(`📈 Rate: ${rate} records/second`);
+    console.log(`📊 Insert responses: ${this.insertResponses}/${RECORD_COUNT}`);
+    if (this.insertErrors > 0) {
+      console.log(`❌ Insert errors: ${this.insertErrors}`);
+    }
+  }
+
+  /**
+   * Benchmark 4: WebSocket Batch Inserts
+   */
+  async benchmarkWebSocketBatch(records) {
+    console.log('\n🔍 Benchmark 4: WebSocket Batch Inserts');
+    console.log('=' .repeat(50));
+    
+    const startTime = Date.now();
+    this.insertResponses = 0;
+    this.insertErrors = 0;
+    
+    // Insert records in batches via WebSocket
+    for (let i = 0; i < records.length; i += BATCH_SIZE) {
+      const batch = records.slice(i, i + BATCH_SIZE);
+      this.ws.send(JSON.stringify({
+        type: 'batch_insert',
+        target: 'data',
+        data: batch
+      }));
+    }
+    
+    // Wait for all insert responses
+    const maxWaitTime = 30000; // 30 seconds max
+    const startWait = Date.now();
+    while (this.insertResponses < RECORD_COUNT && (Date.now() - startWait) < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    const rate = Math.round(RECORD_COUNT / (duration / 1000));
+    
+    this.benchmarkResults.wsBatch = { time: duration, rate };
+    
+    console.log(`✅ WebSocket Batch Inserts completed`);
+    console.log(`⏱️  Time: ${duration}ms`);
+    console.log(`📈 Rate: ${rate} records/second`);
+    console.log(`📊 Insert responses: ${this.insertResponses}/${RECORD_COUNT}`);
+    if (this.insertErrors > 0) {
+      console.log(`❌ Insert errors: ${this.insertErrors}`);
+    }
+  }
+
+  /**
+   * Display benchmark results comparison
+   */
+  displayBenchmarkResults() {
+    console.log('\n' + '=' .repeat(80));
+    console.log('📊 BENCHMARK RESULTS COMPARISON');
+    console.log('=' .repeat(80));
+    
+    const results = [
+      { name: 'HTTP Single Inserts', ...this.benchmarkResults.httpSingle },
+      { name: 'HTTP Batch Inserts', ...this.benchmarkResults.httpBatch },
+      { name: 'WebSocket Single Inserts', ...this.benchmarkResults.wsSingle },
+      { name: 'WebSocket Batch Inserts', ...this.benchmarkResults.wsBatch }
+    ];
+    
+    // Sort by rate (highest first)
+    results.sort((a, b) => b.rate - a.rate);
+    
+    console.log('🏆 Performance Ranking (by records/second):');
+    console.log('');
+    
+    results.forEach((result, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+      console.log(`${medal} ${result.name}`);
+      console.log(`   ⏱️  Time: ${result.time}ms`);
+      console.log(`   📈 Rate: ${result.rate} records/second`);
+      console.log('');
+    });
+    
+    // Calculate improvements
+    const fastest = results[0];
+    const slowest = results[results.length - 1];
+    const improvement = ((fastest.rate - slowest.rate) / slowest.rate * 100).toFixed(1);
+    
+    console.log(`🚀 Fastest method (${fastest.name}) is ${improvement}% faster than slowest (${slowest.name})`);
+    console.log('=' .repeat(80));
+  }
 
   /**
    * Run the complete performance test
    */
   async run() {
-    console.log('🚀 Starting ResonanceDB Performance Test');
+    console.log('�� Starting ResonanceDB Performance Test');
     console.log(`📊 Records to insert: ${RECORD_COUNT.toLocaleString()}`);
+    console.log(`📦 Batch size: ${BATCH_SIZE}`);
     console.log('=' .repeat(60));
     
     this.startTime = Date.now();
@@ -202,74 +351,65 @@ data | summarize { total_sum: sum(x), record_count: count() } | insert_into(resu
       
       console.log('✅ Flow creation result:', flowResult);
       
-      // Step 5: Insert test data
-      console.log(`📥 Inserting ${RECORD_COUNT.toLocaleString()} records...`);
-      console.log(`🔧 Using ${USE_WEBSOCKET_INSERTS ? 'WebSocket' : 'HTTP'} inserts`);
-      this.insertStartTime = Date.now();
+      // Step 5: Generate test data
+      console.log('📋 Generating test data...');
+      const allRecords = this.generateAllRecords();
       
-      if (USE_WEBSOCKET_INSERTS) {
-        // Generate all records first
-        const allRecords = [];
-        for (let i = 0; i < RECORD_COUNT; i++) {
-          allRecords.push(this.generateTestRecord(i + 1));
-        }
-        
-        // Insert via WebSocket
-        await this.insertDataWebSocket(allRecords);
-        
-        // Wait for all insert responses
-        const maxWaitTime = 30000; // 30 seconds max
-        const startWait = Date.now();
-        while (this.insertResponses < RECORD_COUNT && (Date.now() - startWait) < maxWaitTime) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        console.log(`📊 Insert responses received: ${this.insertResponses}/${RECORD_COUNT}`);
-        if (this.insertErrors > 0) {
-          console.log(`❌ Insert errors: ${this.insertErrors}`);
-        }
-      } else {
-        // Use HTTP inserts (original method)
-        const BATCH_SIZE = 10; // Much smaller batches to avoid overwhelming server
-        let insertedCount = 0;
-        
-        for (let i = 0; i < RECORD_COUNT; i += BATCH_SIZE) {
-          const batchSize = Math.min(BATCH_SIZE, RECORD_COUNT - i);
-          const batch = [];
-          
-          for (let j = 0; j < batchSize; j++) {
-            batch.push(this.generateTestRecord(i + j + 1));
-          }
-          
-          await this.insertDataBatch(batch);
-          insertedCount += batchSize;
-          
-          // Add small delay every 1000 records to prevent overwhelming the server
-          if (insertedCount % 1000 === 0) {
-            await new Promise(resolve => setTimeout(resolve, 10));
-          }
-          
-          // Progress reporting
-          if (insertedCount % 10000 === 0) {
-            const elapsed = Date.now() - this.insertStartTime;
-            const rate = Math.round(insertedCount / (elapsed / 1000));
-            console.log(`📈 Inserted ${insertedCount.toLocaleString()}/${RECORD_COUNT.toLocaleString()} records (${rate} records/sec)`);
-          }
-        }
+      // Step 6: Run all benchmarks
+      console.log('\n🔬 Running insertion benchmarks...');
+      
+      // Clear data before each benchmark
+      await this.executeQuery('delete from data');
+      
+      // Benchmark 1: HTTP Single
+      await this.benchmarkHttpSingle(allRecords);
+      
+      // Clear data
+      await this.executeQuery('delete from data');
+      
+      // Benchmark 2: HTTP Batch
+      await this.benchmarkHttpBatch(allRecords);
+      
+      // Clear data
+      await this.executeQuery('delete from data');
+      
+      // Benchmark 3: WebSocket Single
+      await this.benchmarkWebSocketSingle(allRecords);
+      
+      // Clear data
+      await this.executeQuery('delete from data');
+      
+      // Benchmark 4: WebSocket Batch
+      await this.benchmarkWebSocketBatch(allRecords);
+      
+      // Step 7: Display results
+      this.displayBenchmarkResults();
+      
+      // Step 8: Run final aggregation test with fastest method
+      console.log('\n🎯 Running final aggregation test with fastest method...');
+      await this.executeQuery('delete from data');
+      
+      // Use the fastest method for final test
+      const fastestMethod = Object.entries(this.benchmarkResults)
+        .sort(([,a], [,b]) => b.rate - a.rate)[0][0];
+      
+      console.log(`🏆 Using fastest method: ${fastestMethod}`);
+      
+      if (fastestMethod === 'httpSingle') {
+        await this.benchmarkHttpSingle(allRecords);
+      } else if (fastestMethod === 'httpBatch') {
+        await this.benchmarkHttpBatch(allRecords);
+      } else if (fastestMethod === 'wsSingle') {
+        await this.benchmarkWebSocketSingle(allRecords);
+      } else if (fastestMethod === 'wsBatch') {
+        await this.benchmarkWebSocketBatch(allRecords);
       }
       
-      const insertTime = Date.now() - this.insertStartTime;
-      console.log(`✅ Data insertion completed in ${insertTime}ms`);
-      console.log(`📊 Insert rate: ${Math.round(RECORD_COUNT / (insertTime / 1000))} records/second`);
-      
-      // Mark insertion as completed
-      this.insertCompleted = true;
-      
-      // Step 6: Flush the stream to trigger final aggregation
+      // Flush and wait for aggregation result
       console.log('🔄 Flushing data stream to complete aggregation...');
       await this.executeQuery('flush data');
       
-      console.log('⏳ Waiting for aggregation result...');
+      this.insertCompleted = true;
       
       // Wait for WebSocket result (handled in handleWebSocketMessage)
       return new Promise((resolve) => {
