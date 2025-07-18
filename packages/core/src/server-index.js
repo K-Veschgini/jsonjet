@@ -13,8 +13,11 @@ import './aggregations/server-index.js';  // Registers all aggregations
 import './operators/server-index.js';     // Registers all operators
 
 // Re-export enhanced registries
-export { functionRegistry } from './functions/server-index.js';
+// Note: functionRegistry removed - components should create their own Registry instances
 export { aggregationRegistry } from './aggregations/server-index.js';
+
+// Export function registration functions (no global registry)
+export { registerFunctions, registerServerFunctions } from './functions/server-index.js';
 
 // Export operator registration functions (no global registry)
 export { registerOperators, registerServerOperators } from './operators/server-index.js';

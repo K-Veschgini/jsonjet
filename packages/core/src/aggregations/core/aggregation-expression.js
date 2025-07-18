@@ -1,7 +1,28 @@
 import { Aggregation } from './aggregation.js';
-import { functionRegistry } from '../../functions/core/function-registry.js';
 import { safeGet } from '../../utils/safe-access.js';
 import { aggregationRegistry } from './aggregation-registry.js';
+
+// Static registry reference - set by components that use AggregationExpression
+let _functionRegistry = null;
+
+/**
+ * Set the function registry for AggregationExpression to use
+ * @param {Registry} registry - Registry instance containing functions
+ */
+export function setFunctionRegistry(registry) {
+    _functionRegistry = registry;
+}
+
+/**
+ * Get the current function registry
+ * @returns {Registry} Current function registry
+ */
+function getFunctionRegistry() {
+    if (!_functionRegistry) {
+        throw new Error('Function registry not set. Call setFunctionRegistry() before using AggregationExpression.');
+    }
+    return _functionRegistry;
+}
 
 /**
  * AggregationExpression - Tree-based aggregation expression builder
@@ -37,7 +58,7 @@ export class AggregationExpression extends Aggregation {
             return 'safeGet';
         } else if (aggregationRegistry.has(functionName)) {
             return 'aggregation';
-        } else if (functionRegistry.has(functionName)) {
+        } else if (getFunctionRegistry().hasFunction(functionName)) {
             return 'scalar';
         } else {
             throw new Error(`Unknown function: ${functionName}`);
@@ -122,7 +143,7 @@ export class AggregationExpression extends Aggregation {
             }
         });
         
-        return functionRegistry.execute(this.functionName, argValues);
+        return getFunctionRegistry().executeFunction(this.functionName, argValues);
     }
     
     /**
@@ -172,7 +193,7 @@ export class AggregationExpression extends Aggregation {
         // Get values from all args with object context
         const argValues = this.args.map(arg => this._evaluateArgWithObject(arg, object));
         
-        return functionRegistry.execute(this.functionName, argValues);
+        return getFunctionRegistry().executeFunction(this.functionName, argValues);
     }
     
     /**

@@ -4,9 +4,10 @@ import { ParseError, TranspilerError } from '../errors/transpiler-errors.js';
 import { Stream } from '../../../core/stream.js';
 import * as Operators from '../../../operators/index.js';
 import { safeGet } from '../../../utils/safe-access.js';
-import { functionRegistry } from '../../../functions/index.js';
+import { Registry } from '../../../core/registry.js';
+import { registerServerFunctions } from '../../../functions/server-index.js';
 import { AggregationObject } from '../../../aggregations/core/aggregation-object.js';
-import { AggregationExpression } from '../../../aggregations/core/aggregation-expression.js';
+import { AggregationExpression, setFunctionRegistry } from '../../../aggregations/core/aggregation-expression.js';
 
 // =============================================================================
 // TRANSPILATION API
@@ -72,6 +73,11 @@ export function createQueryFunction(queryText) {
     
     return {
         execute: async function(data) {
+            // Create function registry for this execution
+            const functionRegistry = new Registry();
+            registerServerFunctions(functionRegistry);
+            setFunctionRegistry(functionRegistry);
+            
             // Create execution context with static imports
             const createPipeline = new Function('Stream', 'Operators', 'safeGet', 'functionRegistry', 'AggregationObject', 'AggregationExpression', `
                 return new Stream()${result.javascript};

@@ -5,9 +5,10 @@ import { unifiedTranspiler } from '../parser/transpiler/unified-transpiler.js';
 import CommandParser from '../parser/command-parser.js';
 import * as Operators from '../operators/index.js';
 import { safeGet } from '../utils/safe-access.js';
-import { functionRegistry } from '../functions/index.js';
+import { Registry } from './registry.js';
+import { registerServerFunctions } from '../functions/server-index.js';
 import { AggregationObject } from '../aggregations/core/aggregation-object.js';
-import { AggregationExpression } from '../aggregations/core/aggregation-expression.js';
+import { AggregationExpression, setFunctionRegistry } from '../aggregations/core/aggregation-expression.js';
 import DurationParser from '../utils/duration-parser.js';
 
 /**
@@ -20,6 +21,13 @@ export class QueryEngine {
         this.nextQueryId = 1;
         this.streamManager = streamManagerInstance;
         this.flowCallbacks = new Set(); // Callbacks for flow lifecycle events
+        
+        // Create unified registry for this query engine instance
+        this.registry = new Registry();
+        registerServerFunctions(this.registry);
+        
+        // Set the function registry for AggregationExpression
+        setFunctionRegistry(this.registry);
     }
 
     // =============================================================================
@@ -663,7 +671,7 @@ export class QueryEngine {
                 return stream${jsCode};
             `);
             
-            const pipeline = createPipeline(Stream, Operators, insertIntoFactory, safeGet, functionRegistry, AggregationObject, AggregationExpression);
+            const pipeline = createPipeline(Stream, Operators, insertIntoFactory, safeGet, this.registry, AggregationObject, AggregationExpression);
             
             return pipeline;
         } catch (error) {
@@ -1118,7 +1126,7 @@ export class QueryEngine {
                             `return pipeline${operation};`
                         );
                         
-                        pipeline = applyOperation(pipeline, Operators, insertIntoFactory, safeGet, functionRegistry, AggregationObject, AggregationExpression);
+                        pipeline = applyOperation(pipeline, Operators, insertIntoFactory, safeGet, this.registry, AggregationObject, AggregationExpression);
                     }
                 }
                 

@@ -1,10 +1,9 @@
 /**
  * JSDB Scalar Functions
- * Central exports and registration
+ * Central exports and registration functions
  */
 
 export { ScalarFunction } from './core/scalar-function.js';
-export { FunctionRegistry, functionRegistry } from './core/function-registry.js';
 export { Config, config } from './core/function-config.js';
 
 // Math functions
@@ -35,11 +34,8 @@ export { And } from './logical/and.js';
 export { Or } from './logical/or.js';
 export { Not } from './logical/not.js';
 
-// Register all functions
-import { functionRegistry } from './core/function-registry.js';
+// Import functions for registration
 import { ExpFunction } from './math/index.js';
-
-// Arithmetic functions
 import { Add } from './arithmetic/add.js';
 import { Sub } from './arithmetic/sub.js';
 import { Mul } from './arithmetic/mul.js';
@@ -48,8 +44,6 @@ import { Mod } from './arithmetic/mod.js';
 import { Pow } from './arithmetic/pow.js';
 import { Neg } from './arithmetic/neg.js';
 import { Abs } from './arithmetic/abs.js';
-
-// Comparison functions
 import { Eq } from './comparison/eq.js';
 import { Ne } from './comparison/ne.js';
 import { Lt } from './comparison/lt.js';
@@ -58,36 +52,40 @@ import { Gt } from './comparison/gt.js';
 import { Ge } from './comparison/ge.js';
 import { Min } from './comparison/min.js';
 import { Max } from './comparison/max.js';
-
-// Logical functions
 import { And } from './logical/and.js';
 import { Or } from './logical/or.js';
 import { Not } from './logical/not.js';
 
-// Auto-register all functions on import
-functionRegistry.register(new ExpFunction());
-
-// Register arithmetic functions
-functionRegistry.register(new Add());
-functionRegistry.register(new Sub());
-functionRegistry.register(new Mul());
-functionRegistry.register(new Div());
-functionRegistry.register(new Mod());
-functionRegistry.register(new Pow());
-functionRegistry.register(new Neg());
-functionRegistry.register(new Abs());
-
-// Register comparison functions
-functionRegistry.register(new Eq());
-functionRegistry.register(new Ne());
-functionRegistry.register(new Lt());
-functionRegistry.register(new Le());
-functionRegistry.register(new Gt());
-functionRegistry.register(new Ge());
-functionRegistry.register(new Min());
-functionRegistry.register(new Max());
-
-// Register logical functions
-functionRegistry.register(new And());
-functionRegistry.register(new Or());
-functionRegistry.register(new Not());
+/**
+ * Register browser-safe functions to a registry instance
+ * @param {Registry} registry - Registry instance to register functions to
+ */
+export function registerFunctions(registry) {
+    // Register math functions
+    registry.registerFunction(new ExpFunction());
+    
+    // Register arithmetic functions
+    registry.registerFunction(new Add());
+    registry.registerFunction(new Sub());
+    registry.registerFunction(new Mul());
+    registry.registerFunction(new Div());
+    registry.registerFunction(new Mod());
+    registry.registerFunction(new Pow());
+    registry.registerFunction(new Neg());
+    registry.registerFunction(new Abs());
+    
+    // Register comparison functions
+    registry.registerFunction(new Eq());
+    registry.registerFunction(new Ne());
+    registry.registerFunction(new Lt());
+    registry.registerFunction(new Le());
+    registry.registerFunction(new Gt());
+    registry.registerFunction(new Ge());
+    registry.registerFunction(new Min());
+    registry.registerFunction(new Max());
+    
+    // Register logical functions
+    registry.registerFunction(new And());
+    registry.registerFunction(new Or());
+    registry.registerFunction(new Not());
+}

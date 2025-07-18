@@ -3,21 +3,29 @@
  * Extends browser registry with server-only functions (Node.js dependencies)
  */
 
-// Import browser registry first (gets all browser-safe functions)
-import { functionRegistry } from './index.js';
+// Import browser registration function
+import { registerFunctions } from './index.js';
 
 // Server-only functions list (empty for now - add server functions here when needed)
 const SERVER_ONLY_FUNCTIONS = [
   // Add server-only functions here when implemented
 ];
 
-// Register server-only functions to existing registry
-SERVER_ONLY_FUNCTIONS.forEach(FunctionClass => {
-  functionRegistry.register(new FunctionClass());
-});
+/**
+ * Register server functions (browser-safe + server-only) to a registry instance
+ * @param {Registry} registry - Registry instance to register functions to
+ */
+export function registerServerFunctions(registry) {
+    // Register browser-safe functions first
+    registerFunctions(registry);
+    
+    // Register server-only functions when available
+    SERVER_ONLY_FUNCTIONS.forEach(FunctionClass => {
+        registry.registerFunction(new FunctionClass());
+    });
+}
 
-// Re-export the enhanced registry
-export { functionRegistry };
+// Re-export browser registration function for convenience  
+export { registerFunctions };
 export { ScalarFunction } from './core/scalar-function.js';
-export { FunctionRegistry } from './core/function-registry.js';
 export { Config, config } from './core/function-config.js';
