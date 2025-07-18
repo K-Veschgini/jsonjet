@@ -1,4 +1,4 @@
-{}
-{}
-{}
-{}
+{"age":30,"email":"john@example.com","name":"John"}
+{"age":25,"name":"Jane"}
+{"age":null,"email":"bob@example.com","name":"Bob"}
+{"name":"Alice"}

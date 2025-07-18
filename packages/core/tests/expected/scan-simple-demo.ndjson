@@ -1,5 +1,5 @@
-{"cumulative":null,"step":"sum"}
-{"cumulative":null,"step":"sum"}
-{"cumulative":null,"step":"sum"}
-{"cumulative":null,"step":"sum"}
-{"cumulative":null,"step":"sum"}
+{"cumulative":1,"input":1,"step":"sum"}
+{"cumulative":3,"input":2,"step":"sum"}
+{"cumulative":6,"input":3,"step":"sum"}
+{"cumulative":10,"input":4,"step":"sum"}
+{"cumulative":15,"input":5,"step":"sum"}

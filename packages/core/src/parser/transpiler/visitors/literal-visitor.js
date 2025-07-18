@@ -12,6 +12,45 @@ export const LiteralVisitorMixin = {
     // OBJECT LITERALS
     // =============================================================================
 
+    _createActualObject(properties) {
+        const obj = {};
+        for (const prop of properties) {
+            if (typeof prop === 'string') {
+                // Parse "key: value" strings into actual object properties
+                const colonIndex = prop.indexOf(':');
+                if (colonIndex > -1) {
+                    const key = prop.substring(0, colonIndex).trim();
+                    const valueStr = prop.substring(colonIndex + 1).trim();
+                    
+                    // Remove quotes from key if present
+                    const cleanKey = key.replace(/^["']|["']$/g, '');
+                    
+                    // Parse the value (handle strings, numbers, booleans, null)
+                    let value;
+                    if (valueStr === 'null') {
+                        value = null;
+                    } else if (valueStr === 'true') {
+                        value = true;
+                    } else if (valueStr === 'false') {
+                        value = false;
+                    } else if (valueStr.match(/^".*"$/)) {
+                        // String literal - remove quotes
+                        value = valueStr.slice(1, -1);
+                    } else if (valueStr.match(/^-?\d+(\.\d+)?$/)) {
+                        // Number literal
+                        value = parseFloat(valueStr);
+                    } else {
+                        // Default to string
+                        value = valueStr;
+                    }
+                    
+                    obj[cleanKey] = value;
+                }
+            }
+        }
+        return obj;
+    },
+
     objectLiteral(ctx) {
         const properties = [];
         
@@ -53,6 +92,11 @@ export const LiteralVisitorMixin = {
             
             const filtered = flattenedProperties.filter(prop => prop && typeof prop === 'string' && prop.trim() !== '');
             properties.push(...filtered);
+        }
+        
+        // For insert statements, return actual object instead of code string
+        if (this._isInsertContext) {
+            return this._createActualObject(properties.filter(p => p));
         }
         
         return VisitorUtils.createObjectLiteral(properties.filter(p => p));

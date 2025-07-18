@@ -6,8 +6,9 @@ import * as Operators from '../../../operators/index.js';
 import { safeGet } from '../../../utils/safe-access.js';
 import { Registry } from '../../../core/registry.js';
 import { registerServerFunctions } from '../../../functions/server-index.js';
+import { registerServerAggregations } from '../../../aggregations/server-index.js';
 import { AggregationObject } from '../../../aggregations/core/aggregation-object.js';
-import { AggregationExpression, setFunctionRegistry } from '../../../aggregations/core/aggregation-expression.js';
+import { AggregationExpression, setFunctionRegistry, setAggregationRegistry } from '../../../aggregations/core/aggregation-expression.js';
 
 // =============================================================================
 // TRANSPILATION API
@@ -73,10 +74,12 @@ export function createQueryFunction(queryText) {
     
     return {
         execute: async function(data) {
-            // Create function registry for this execution
+            // Create unified registry for this execution
             const functionRegistry = new Registry();
             registerServerFunctions(functionRegistry);
+            registerServerAggregations(functionRegistry);
             setFunctionRegistry(functionRegistry);
+            setAggregationRegistry(functionRegistry);
             
             // Create execution context with static imports
             const createPipeline = new Function('Stream', 'Operators', 'safeGet', 'functionRegistry', 'AggregationObject', 'AggregationExpression', `

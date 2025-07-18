@@ -7,8 +7,9 @@ import * as Operators from '../operators/index.js';
 import { safeGet } from '../utils/safe-access.js';
 import { Registry } from './registry.js';
 import { registerServerFunctions } from '../functions/server-index.js';
+import { registerServerAggregations } from '../aggregations/server-index.js';
 import { AggregationObject } from '../aggregations/core/aggregation-object.js';
-import { AggregationExpression, setFunctionRegistry } from '../aggregations/core/aggregation-expression.js';
+import { AggregationExpression, setFunctionRegistry, setAggregationRegistry } from '../aggregations/core/aggregation-expression.js';
 import DurationParser from '../utils/duration-parser.js';
 
 /**
@@ -25,9 +26,11 @@ export class QueryEngine {
         // Create unified registry for this query engine instance
         this.registry = new Registry();
         registerServerFunctions(this.registry);
+        registerServerAggregations(this.registry);
         
-        // Set the function registry for AggregationExpression
+        // Set registries for AggregationExpression
         setFunctionRegistry(this.registry);
+        setAggregationRegistry(this.registry);
     }
 
     // =============================================================================
@@ -315,15 +318,8 @@ export class QueryEngine {
             case 'delete_flow':
                 return this.stopFlowByName(ast.ast.flowName);
             case 'insert':
-                let data = ast.ast.data;
-                // If data is a string that looks like JSON, parse it
-                if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
-                    try {
-                        data = JSON.parse(data);
-                    } catch (e) {
-                        // If parsing fails, use the string as-is
-                    }
-                }
+                const data = ast.ast.data;
+                // Data should already be properly parsed by the transpiler
                 await this.streamManager.insertIntoStream(ast.ast.streamName, data);
                 return { success: true, message: 'Data inserted' };
             case 'flush':

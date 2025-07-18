@@ -118,7 +118,11 @@ export const UnifiedCommandVisitorMixin = {
 
     insertStatement(ctx) {
         const streamName = VisitorUtils.getTokenImage(ctx.streamName);
+        
+        // Set context for object literal processing
+        this._isInsertContext = true;
         const data = this.visit(ctx.data);
+        this._isInsertContext = false;
 
         return {
             command: 'insert',

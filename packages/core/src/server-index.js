@@ -12,12 +12,14 @@ import './functions/server-index.js';     // Registers all scalar functions
 import './aggregations/server-index.js';  // Registers all aggregations
 import './operators/server-index.js';     // Registers all operators
 
-// Re-export enhanced registries
-// Note: functionRegistry removed - components should create their own Registry instances
-export { aggregationRegistry } from './aggregations/server-index.js';
+// Re-export enhanced registries  
+// Note: functionRegistry and aggregationRegistry removed - components should create their own Registry instances
 
 // Export function registration functions (no global registry)
 export { registerFunctions, registerServerFunctions } from './functions/server-index.js';
+
+// Export aggregation registration functions (no global registry)
+export { registerAggregations, registerServerAggregations } from './aggregations/server-index.js';
 
 // Export operator registration functions (no global registry)
 export { registerOperators, registerServerOperators } from './operators/server-index.js';

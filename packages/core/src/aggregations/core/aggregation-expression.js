@@ -1,9 +1,9 @@
 import { Aggregation } from './aggregation.js';
 import { safeGet } from '../../utils/safe-access.js';
-import { aggregationRegistry } from './aggregation-registry.js';
 
-// Static registry reference - set by components that use AggregationExpression
+// Static registry references - set by components that use AggregationExpression
 let _functionRegistry = null;
+let _aggregationRegistry = null;
 
 /**
  * Set the function registry for AggregationExpression to use
@@ -11,6 +11,14 @@ let _functionRegistry = null;
  */
 export function setFunctionRegistry(registry) {
     _functionRegistry = registry;
+}
+
+/**
+ * Set the aggregation registry for AggregationExpression to use
+ * @param {Registry} registry - Registry instance containing aggregations
+ */
+export function setAggregationRegistry(registry) {
+    _aggregationRegistry = registry;
 }
 
 /**
@@ -22,6 +30,17 @@ function getFunctionRegistry() {
         throw new Error('Function registry not set. Call setFunctionRegistry() before using AggregationExpression.');
     }
     return _functionRegistry;
+}
+
+/**
+ * Get the current aggregation registry
+ * @returns {Registry} Current aggregation registry
+ */
+function getAggregationRegistry() {
+    if (!_aggregationRegistry) {
+        throw new Error('Aggregation registry not set. Call setAggregationRegistry() before using AggregationExpression.');
+    }
+    return _aggregationRegistry;
 }
 
 /**
@@ -56,7 +75,7 @@ export class AggregationExpression extends Aggregation {
     _inferAction(functionName) {
         if (functionName === 'safeGet') {
             return 'safeGet';
-        } else if (aggregationRegistry.has(functionName)) {
+        } else if (getAggregationRegistry().hasAggregation(functionName)) {
             return 'aggregation';
         } else if (getFunctionRegistry().hasFunction(functionName)) {
             return 'scalar';
@@ -69,8 +88,8 @@ export class AggregationExpression extends Aggregation {
      * Create wrapped aggregation based on function name
      */
     _createWrappedAggregation() {
-        // Spread all args as constructor parameters
-        return aggregationRegistry.create(this.functionName, ...this.args);
+        // For aggregation functions, create with no args - the args are used for evaluation during push
+        return getAggregationRegistry().createAggregation(this.functionName);
     }
     
     /**
