@@ -5,8 +5,9 @@ import { createInstances } from '@resonancedb/core';
  * Provides HTTP API and WebSocket streaming for query execution and stream subscriptions
  */
 class ResonanceDBServer {
-  constructor(port = 3333) {
+  constructor(port = 3333, verbose = false) {
     this.port = port;
+    this.verbose = verbose;
     this.wsClients = new Map(); // clientId -> { ws, subscriptions: Map<subscriptionId, streamName> }
     this.nextClientId = 1;
     
@@ -14,6 +15,15 @@ class ResonanceDBServer {
     const { streamManager, queryEngine } = createInstances();
     this.streamManager = streamManager;
     this.queryEngine = queryEngine;
+  }
+
+  /**
+   * Log message only if verbose mode is enabled
+   */
+  log(...args) {
+    if (this.verbose) {
+      console.log(...args);
+    }
   }
 
   /**
@@ -70,6 +80,9 @@ class ResonanceDBServer {
         case '/api/execute':
           response = await this.handleExecute(req);
           break;
+        case '/api/insert':
+          response = await this.handleHTTPInsert(req);
+          break;
         case '/api/streams':
           response = await this.handleStreams(req);
           break;
@@ -118,6 +131,80 @@ class ResonanceDBServer {
       });
     } catch (error) {
       return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
+  /**
+   * Handle HTTP insert (bypasses query engine for performance)
+   */
+  async handleHTTPInsert(req) {
+    if (req.method !== 'POST') {
+      return new Response('Method not allowed', { status: 405 });
+    }
+
+    try {
+      const { target, data } = await req.json();
+      
+      if (!target) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Target stream name is required' 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!data) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Data is required' 
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Handle single record or batch
+      if (Array.isArray(data)) {
+        // Batch insert
+        this.log(`📝 Server: Batch inserting ${data.length} records into '${target}'`);
+        for (const record of data) {
+          await this.streamManager.insertIntoStream(target, record);
+        }
+        this.log(`✅ Server: Successfully inserted ${data.length} records into '${target}'`);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          count: data.length,
+          target,
+          message: `${data.length} records inserted successfully into '${target}'`
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else {
+        // Single record insert
+        this.log(`📝 Server: Inserting single record into '${target}'`, data);
+        await this.streamManager.insertIntoStream(target, data);
+        this.log(`✅ Server: Successfully inserted record into '${target}'`);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          count: 1,
+          target,
+          message: `Record inserted successfully into '${target}'`
+        }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    } catch (error) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -182,7 +269,7 @@ class ResonanceDBServer {
       message: 'Connected to ResonanceDB WebSocket'
     }));
 
-    console.log(`📡 WebSocket client ${clientId} connected`);
+    this.log(`📡 WebSocket client ${clientId} connected`);
   }
 
   /**
@@ -256,7 +343,7 @@ class ResonanceDBServer {
         message: `Subscribed to stream '${streamName}'`
       }));
 
-      console.log(`📡 Client ${clientId} subscribed to stream '${streamName}' (sub: ${subscriptionId})`);
+      this.log(`📡 Client ${clientId} subscribed to stream '${streamName}' (sub: ${subscriptionId})`);
     } catch (error) {
       ws.send(JSON.stringify({ type: 'error', message: error.message }));
     }
@@ -289,7 +376,7 @@ class ResonanceDBServer {
         message: `Unsubscribed from subscription ${subscriptionId}`
       }));
 
-      console.log(`📡 Client ${clientId} unsubscribed from subscription ${subscriptionId}`);
+      this.log(`📡 Client ${clientId} unsubscribed from subscription ${subscriptionId}`);
     } catch (error) {
       ws.send(JSON.stringify({ type: 'error', message: error.message }));
     }
@@ -320,9 +407,8 @@ class ResonanceDBServer {
     }
 
     try {
-      // Execute insert command via query engine
-      const insertQuery = `insert into ${target}`;
-      await this.queryEngine.executeStatement(insertQuery, [recordData]);
+      // Bypass query engine for direct insert - much faster
+      await this.streamManager.insertIntoStream(target, recordData);
 
       ws.send(JSON.stringify({
         type: 'insert_response',
@@ -332,7 +418,7 @@ class ResonanceDBServer {
         message: `Record inserted successfully into '${target}'`
       }));
 
-      console.log(`📝 Client ${clientId} inserted record into '${target}'`);
+      this.log(`📝 Client ${clientId} inserted record into '${target}'`);
     } catch (error) {
       ws.send(JSON.stringify({ 
         type: 'insert_response', 
@@ -367,9 +453,10 @@ class ResonanceDBServer {
     }
 
     try {
-      // Execute batch insert via query engine
-      const insertQuery = `insert into ${target}`;
-      await this.queryEngine.executeStatement(insertQuery, recordsData);
+      // Bypass query engine for direct batch insert - much faster
+      for (const record of recordsData) {
+        await this.streamManager.insertIntoStream(target, record);
+      }
 
       ws.send(JSON.stringify({
         type: 'insert_response',
@@ -379,7 +466,7 @@ class ResonanceDBServer {
         message: `${recordsData.length} records inserted successfully into '${target}'`
       }));
 
-      console.log(`📝 Client ${clientId} inserted ${recordsData.length} records into '${target}'`);
+      this.log(`📝 Client ${clientId} inserted ${recordsData.length} records into '${target}'`);
     } catch (error) {
       ws.send(JSON.stringify({ 
         type: 'insert_response', 
@@ -410,7 +497,7 @@ class ResonanceDBServer {
       }
       
       this.wsClients.delete(clientId);
-      console.log(`📡 WebSocket client ${clientId} disconnected`);
+      this.log(`📡 WebSocket client ${clientId} disconnected`);
     }
   }
 
@@ -429,7 +516,8 @@ class ResonanceDBServer {
 
 // Start the server if this file is run directly
 if (import.meta.main) {
-  const server = new ResonanceDBServer(3333);
+  const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
+  const server = new ResonanceDBServer(3333, verbose);
   server.start();
 }
 

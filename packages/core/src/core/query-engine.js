@@ -318,9 +318,24 @@ export class QueryEngine {
             case 'delete_flow':
                 return this.stopFlowByName(ast.ast.flowName);
             case 'insert':
-                const data = ast.ast.data;
-                // Data should already be properly parsed by the transpiler
-                await this.streamManager.insertIntoStream(ast.ast.streamName, data);
+                let data = ast.ast.data;
+                // Handle JSON strings that need parsing
+                if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        // If parsing fails, keep as string
+                    }
+                }
+                
+                // Handle arrays (batch inserts)
+                if (Array.isArray(data)) {
+                    for (const record of data) {
+                        await this.streamManager.insertIntoStream(ast.ast.streamName, record);
+                    }
+                } else {
+                    await this.streamManager.insertIntoStream(ast.ast.streamName, data);
+                }
                 return { success: true, message: 'Data inserted' };
             case 'flush':
                 this.streamManager.flushStream(ast.ast.streamName);
