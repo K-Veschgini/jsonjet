@@ -1,9 +1,9 @@
-import { queryParser } from '../grammar/query-parser.js';
-import { UnifiedCommandVisitorMixin } from './visitors/unified-command-visitor.js';
-import { QueryOperationVisitorMixin } from './visitors/query-operation-visitor.js';
-import { ExpressionVisitorMixin } from './visitors/expression-visitor.js';
-import { LiteralVisitorMixin } from './visitors/literal-visitor.js';
-import { CommandVisitorMixin } from './visitors/command-visitor.js';
+import { queryParser } from '../../grammar/query-parser.js';
+import { UnifiedCommandVisitorMixin } from '../visitors/unified-command-visitor.js';
+import { QueryOperationVisitorMixin } from '../visitors/query-operation-visitor.js';
+import { ExpressionVisitorMixin } from '../visitors/expression-visitor.js';
+import { LiteralVisitorMixin } from '../visitors/literal-visitor.js';
+import { CommandVisitorMixin } from '../visitors/command-visitor.js';
 
 /**
  * Unified Transpiler - Handles both commands and queries in the new grammar

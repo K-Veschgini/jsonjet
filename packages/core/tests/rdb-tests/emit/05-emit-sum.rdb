@@ -1,0 +1,30 @@
+// JSDB Emit Functionality Demo - Emit with Sum Aggregation
+// Demonstrates how Emit can be used with sum aggregation on meaningful numeric data
+// This test shows sum aggregation on sales amounts grouped by region
+
+// Create streams for the demo
+create or replace stream sales_data;
+create or replace stream emit_results;
+
+// Test: Emit with sum aggregation on meaningful numeric data
+create flow emit_sum_demo as
+sales_data 
+  | summarize { 
+      total_sales: sum(amount),
+      transaction_count: count()
+    } 
+    by region
+    emit every 2
+  | assert_or_save_expected("tests/expected/emit-sum-demo.ndjson");
+
+// Insert test data for sales_data
+insert into sales_data { product: "laptop", amount: 1200, region: "north", timestamp: 1000 };
+insert into sales_data { product: "mouse", amount: 25, region: "north", timestamp: 2000 };
+insert into sales_data { product: "laptop", amount: 1100, region: "south", timestamp: 3000 };
+insert into sales_data { product: "keyboard", amount: 75, region: "south", timestamp: 4000 };
+
+// Flush streams to ensure all processing completes
+flush sales_data;
+
+// List streams to see results
+list streams; 

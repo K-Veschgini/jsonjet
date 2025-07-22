@@ -12,7 +12,7 @@ import { defineExpressionRules } from '../rules/expression-rules.js';
  * Unified Query Parser - Handles all statement types including commands and queries
  * Supports both single statements and multi-statement programs
  */
-export class UnifiedQueryParser extends CstParser {
+export class QueryParser extends CstParser {
     constructor() {
         super(allTokens, {
             recoveryEnabled: true,
@@ -89,4 +89,4 @@ export class UnifiedQueryParser extends CstParser {
 }
 
 // Export singleton instance for consistency with existing code
-export const unifiedQueryParser = new UnifiedQueryParser();
+export const queryParser = new QueryParser();

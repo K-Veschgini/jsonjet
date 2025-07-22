@@ -221,12 +221,6 @@ export class SummarizeOperator extends Operator {
     async emitCurrentState() {
         for (const [groupKey, groupData] of this.noWindowGroups.entries()) {
             const result = groupData.aggregation.getResult();
-            
-            // Add emit information to the result
-            if (this.emitFunc) {
-                result.emit_info = this.emitFunc.getEmitInfo();
-            }
-            
             this.emit(result);
         }
     }

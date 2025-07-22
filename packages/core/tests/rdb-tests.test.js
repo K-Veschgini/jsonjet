@@ -2,6 +2,11 @@ import { test, expect } from 'bun:test';
 import { RdbTestRunner } from './rdb-test-runner.js';
 
 test('RDB Integration Tests', async () => {
+    // Store original console methods
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    
     // Change to the right directory for RDB tests
     const originalCwd = process.cwd();
     process.chdir('/Users/veschgini/Dev/kambis/jsdb/packages/core');
@@ -21,12 +26,15 @@ test('RDB Integration Tests', async () => {
         }
         
     } catch (error) {
-        // Restore console even on error
+        // Log the error before restoring console
+        console.error('RDB Integration Tests failed with error:', error);
+        throw error;
+    } finally {
+        // Restore original console methods
         console.log = originalLog;
         console.warn = originalWarn;
         console.error = originalError;
-        throw error;
-    } finally {
+        
         // Restore original working directory
         process.chdir(originalCwd);
     }

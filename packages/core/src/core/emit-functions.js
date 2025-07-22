@@ -80,14 +80,7 @@ export function emit_every(interval, valueCallback = null) {
                     return true;
                 },
                 
-                // Get emit info for results
-                getEmitInfo: () => ({
-                    type: !valueCallback && interval >= 100 ? 'interval' : 'every',
-                    interval: interval,
-                    valueCallback: valueCallback,
-                    lastEmitValue: lastEmitValue,
-                    itemCount: itemCount
-                })
+
             };
         }
     };
@@ -124,12 +117,7 @@ export function emit_when(conditionCallback) {
                     return true;
                 },
                 
-                // Get emit info for results
-                getEmitInfo: () => ({
-                    type: 'when',
-                    conditionCallback: conditionCallback,
-                    ...(typeof conditionCallback === 'function' && { conditionExpr: conditionCallback })
-                })
+
             };
         }
     };
@@ -175,12 +163,7 @@ export function emit_on_change(valueCallback) {
                     return true;
                 },
                 
-                // Get emit info for results
-                getEmitInfo: () => ({
-                    type: 'change',
-                    valueCallback: valueCallback,
-                    lastValue: lastValue
-                })
+
             };
         }
     };
@@ -214,11 +197,7 @@ export function emit_on_group_change() {
                     return true;
                 },
                 
-                // Get emit info for results
-                getEmitInfo: () => ({
-                    type: 'group_change',
-                    lastGroupKey: lastGroupKey
-                })
+
             };
         }
     };
@@ -245,10 +224,7 @@ export function emit_on_update() {
                     return true;
                 },
                 
-                // Get emit info for results
-                getEmitInfo: () => ({
-                    type: 'update'
-                })
+
             };
         }
     };
@@ -274,12 +250,7 @@ export function emit_every_count(count) {
                     return true;
                 },
                 
-                getEmitInfo: () => ({
-                    type: 'count',
-                    count: count,
-                    interval: count,
-                    itemCount: itemCount
-                })
+
             };
         }
     };

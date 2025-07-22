@@ -1,7 +1,7 @@
 import { Stream } from './stream.js';
 import { QueryLexer } from '../parser/tokens/token-registry.js';
-import { unifiedQueryParser } from '../parser/grammar/unified-query-parser.js';
-import { unifiedTranspiler } from '../parser/transpiler/unified-transpiler.js';
+import { queryParser } from '../parser/grammar/query-parser.js';
+import { transpiler } from '../parser/transpiler/core/transpiler.js';
 import CommandParser from '../parser/command-parser.js';
 import * as Operators from '../operators/index.js';
 import { safeGet } from '../utils/safe-access.js';
@@ -96,8 +96,8 @@ export class QueryEngine {
                 throw new Error(`Lexing errors: ${lexResult.errors.map(e => e.message).join(', ')}`);
             }
 
-            const parseResult = unifiedQueryParser.parseProgram(lexResult.tokens);
-            const executionPlan = unifiedTranspiler.transpileProgram(parseResult);
+            const parseResult = queryParser.parseProgram(lexResult.tokens);
+            const executionPlan = transpiler.transpileProgram(parseResult);
             
             if (executionPlan.statements.length !== 1) {
                 throw new Error('Flow statement must contain exactly one statement');
@@ -133,8 +133,8 @@ export class QueryEngine {
                 throw new Error(`Lexing errors: ${lexResult.errors.map(e => e.message).join(', ')}`);
             }
 
-            const parseResult = unifiedQueryParser.parseProgram(lexResult.tokens);
-            const executionPlan = unifiedTranspiler.transpileProgram(parseResult);
+            const parseResult = queryParser.parseProgram(lexResult.tokens);
+            const executionPlan = transpiler.transpileProgram(parseResult);
             
             // For single query execution, we expect exactly one statement
             if (executionPlan.statements.length !== 1) {
@@ -235,18 +235,18 @@ export class QueryEngine {
             }
 
             // Parse with unified parser
-            const parseResult = unifiedQueryParser.parseProgram(lexResult.tokens);
+            const parseResult = queryParser.parseProgram(lexResult.tokens);
             
             // Transpile to get statement list
-            const executionPlan = unifiedTranspiler.transpileProgram(parseResult);
+            const executionPlan = transpiler.transpileProgram(parseResult);
             
             // Convert to simple statement objects
             return executionPlan.statements.map((stmt, index) => ({
                 index,
                 text: this.extractStatementText(input, stmt, index),
                 type: this.getStatementType(stmt),
-                isCommand: unifiedTranspiler.isCommand(stmt),
-                isQuery: unifiedTranspiler.isQuery(stmt),
+                isCommand: transpiler.isCommand(stmt),
+                isQuery: transpiler.isQuery(stmt),
                 ast: stmt
             }));
 

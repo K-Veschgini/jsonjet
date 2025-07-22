@@ -47,9 +47,6 @@ test-*.js
 debug-*.js
 coverage/
 
-# ResonanceDB specific temporary files
-expected_results/
-*.rdb
 
 # Runtime data
 pids/

@@ -70,3 +70,17 @@ this.command = this.RULE("command", () => {
 batch-query engine and query engine
 
 reconstructFlowPipeline
+
+
+
+const CONTEXT_SENSITIVE_KEYWORDS = new Set([
+'create', 'delete', 'insert', 'flush', 'list', 'info',
+'subscribe', 'unsubscribe', 'where', 'select', 'scan',
+'summarize', 'collect', 'by', 'step', 'iff', 'emit',
+'stream', 'flow', 'or', 'replace', 'if', 'not', 'exists',
+'into', 'ttl', 'as', 'print', 'every', 'when', 'on',
+'change', 'group', 'update', 'using', 'over',
+'hopping_window', 'tumbling_window', 'sliding_window',
+'count_window', 'hopping_window_by', 'tumbling_window_by',
+'sliding_window_by', 'session_window'
+]);

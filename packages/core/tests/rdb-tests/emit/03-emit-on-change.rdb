@@ -1,0 +1,34 @@
+// JSDB Emit Functionality Demo - Emit On Change
+// Demonstrates how Emit can be used to control when data is emitted when field values change
+// This test emits when the sensor location changes
+
+// Create streams for the demo
+create or replace stream sensor_data;
+create or replace stream emit_results;
+
+// Test: Emit on change of a field value
+// This will emit when the sensor location changes
+create flow emit_on_change_demo as
+sensor_data 
+  | summarize { 
+      record_count: count()
+    } 
+    by location
+    emit on change location
+  | assert_or_save_expected("tests/expected/emit-on-change-demo.ndjson");
+
+// Insert test data for sensor_data (temperature readings)
+insert into sensor_data { timestamp: 1000, temperature: 20, location: "room1", sensor_id: "s1" };
+insert into sensor_data { timestamp: 2000, temperature: 22, location: "room1", sensor_id: "s1" };
+insert into sensor_data { timestamp: 3000, temperature: 25, location: "room1", sensor_id: "s1" };
+insert into sensor_data { timestamp: 4000, temperature: 28, location: "room2", sensor_id: "s2" };
+insert into sensor_data { timestamp: 5000, temperature: 30, location: "room2", sensor_id: "s2" };
+insert into sensor_data { timestamp: 6000, temperature: 32, location: "room2", sensor_id: "s2" };
+insert into sensor_data { timestamp: 7000, temperature: 18, location: "room3", sensor_id: "s3" };
+insert into sensor_data { timestamp: 8000, temperature: 20, location: "room3", sensor_id: "s3" };
+
+// Flush streams to ensure all processing completes
+flush sensor_data;
+
+// List streams to see results
+list streams; 

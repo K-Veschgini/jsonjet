@@ -1,0 +1,149 @@
+// JSDB Array Indexing Demo
+// Learn how to access array elements in SELECT clauses
+
+// ====================================================
+// SETUP: Create streams for testing (using or replace to handle existing streams)
+// ====================================================
+
+create or replace stream users;
+create or replace stream results;
+
+// ====================================================
+// TEST 1: Basic Array Indexing
+// ====================================================
+
+// Create flow to access first, second, and third elements of arrays
+create or replace flow basic_indexing as
+users 
+| select { 
+    id: id, 
+    name: name, 
+    firstScore: scores[0], 
+    secondScore: scores[1],
+    thirdScore: scores[2],
+    firstHobby: hobbies[0]
+  } 
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
+
+// Now insert test data to see the flow in action
+// User 1 - Alice with multiple arrays
+insert into users {
+  "id": 1,
+  "name": "Alice", 
+  "scores": [85, 92, 78, 95],
+  "hobbies": ["reading", "coding", "hiking"],
+  "contacts": {
+    "emails": ["alice@work.com", "alice@personal.com"],
+    "phones": ["555-1234", "555-5678"]
+  },
+  "projects": [
+    {"name": "WebApp", "status": "active", "team": ["Alice", "Bob"]},
+    {"name": "MobileApp", "status": "complete", "team": ["Alice", "Carol"]}
+  ]
+};
+
+// User 2 - Bob with shorter arrays  
+insert into users {
+  "id": 2,
+  "name": "Bob",
+  "scores": [88, 76, 91], 
+  "hobbies": ["gaming", "music"],
+  "contacts": {
+    "emails": ["bob@company.com"],
+    "phones": ["555-9999"]
+  },
+  "projects": [
+    {"name": "API", "status": "planning", "team": ["Bob", "Dave"]}
+  ]
+};
+
+// User 3 - Carol with empty arrays and edge cases
+insert into users {
+  "id": 3,
+  "name": "Carol",
+  "scores": [95, 98, 93, 87, 92],
+  "hobbies": [],
+  "contacts": {
+    "emails": [],
+    "phones": ["555-0000", "555-1111", "555-2222"]
+  },
+  "projects": []
+};
+
+// ====================================================
+// TEST 2: Nested Object Array Access  
+// ====================================================
+
+// Create flow to access arrays inside nested objects
+create or replace flow nested_indexing as
+users 
+| select { 
+    id: id, 
+    name: name, 
+    firstEmail: contacts.emails[0],
+    secondPhone: contacts.phones[1],
+    thirdPhone: contacts.phones[2]
+  } 
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
+
+// ====================================================
+// TEST 3: Complex Object Array Access
+// ====================================================
+
+// Create flow to access properties of objects within arrays
+create or replace flow complex_indexing as
+users 
+| select { 
+    id: id, 
+    name: name, 
+    firstProject: projects[0].name,
+    firstProjectStatus: projects[0].status,
+    firstTeamMember: projects[0].team[0],
+    secondTeamMember: projects[0].team[1]
+  } 
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
+
+// ====================================================
+// TEST 4: Edge Cases (Out of Bounds, Empty Arrays)
+// ====================================================
+
+// Create flow to test what happens with invalid indices
+// Edge cases: out of bounds access, empty arrays
+create or replace flow edge_cases as
+users 
+| select { 
+    id: id, 
+    name: name, 
+    outOfBounds: scores[10],
+    emptyHobby: hobbies[0],
+    emptyEmail: contacts.emails[0]
+  } 
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
+
+// ====================================================
+// TEST 5: Variable/Dynamic Indexing
+// ====================================================
+
+// Create flow that uses variables as array indices
+create or replace flow variable_indexing as
+users 
+| select { 
+    id: id, 
+    name: name, 
+    scoreAtIndex: scores[scoreIndex],
+    hobbyAtIndex: hobbies[hobbyIndex]
+  } 
+| assert_or_save_expected("tests/expected/array-indexing-demo.ndjson");
+
+// Now insert test data with index variables
+insert into users {
+  "id": 4,
+  "name": "Dave",
+  "scores": [75, 82, 89],
+  "scoreIndex": 1,
+  "hobbies": ["swimming", "running"],
+  "hobbyIndex": 0
+};
+
+// View results to see array indexing in action
+flush users;

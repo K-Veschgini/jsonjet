@@ -1,0 +1,16 @@
+{
+  "name": "@jsdb/code-analyzer",
+  "version": "1.0.0",
+  "description": "JavaScript code analysis utilities using Acorn AST parser",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "acorn": "^8.11.3"
+  },
+  "keywords": ["javascript", "ast", "function-calls", "acorn", "code-analysis"],
+  "author": "JSDB Team",
+  "license": "MIT"
+} 
