@@ -1,66 +1,92 @@
 import { CstParser } from 'chevrotain';
 import { allTokens } from '../tokens/token-registry.js';
-import { createQueryLexer } from '../lexer/lexer-factory.js';
 
-// Import rule definition functions
+// Import all rule definitions
 import { defineCoreCrules } from '../rules/core-rules.js';
-import { defineExpressionRules } from '../rules/expression-rules.js';
-import { defineQueryOperationRules } from '../rules/query-operation-rules.js';
 import { defineCommandRules } from '../rules/command-rules.js';
+import { defineQueryOperationRules } from '../rules/query-operation-rules.js';
 import { defineLiteralRules } from '../rules/literal-rules.js';
+import { defineExpressionRules } from '../rules/expression-rules.js';
 
-// =============================================================================
-// QUERY PARSER CLASS
-// =============================================================================
-export class QueryParser extends CstParser {
+/**
+ * Unified Query Parser - Handles all statement types including commands and queries
+ * Supports both single statements and multi-statement programs
+ */
+export class UnifiedQueryParser extends CstParser {
     constructor() {
-        super(allTokens);
-        
+        super(allTokens, {
+            recoveryEnabled: true,
+            maxLookahead: 5,
+            traceInitPerf: false,
+            nodeLocationTracking: "full"
+        });
+
         // Define all grammar rules by calling rule definition functions
-        // This approach keeps the class clean and rules organized by category
         defineCoreCrules.call(this);
-        defineExpressionRules.call(this);
-        defineQueryOperationRules.call(this);
         defineCommandRules.call(this);
+        defineQueryOperationRules.call(this);
         defineLiteralRules.call(this);
-        
-        // Perform self-analysis after all rules are defined
+        defineExpressionRules.call(this);
+
+        // Perform static analysis to improve parser performance
         this.performSelfAnalysis();
     }
-}
 
-// =============================================================================
-// MAIN PARSE FUNCTION
-// =============================================================================
-export function parseQuery(queryText) {
-    // Tokenize the input using context-sensitive lexer
-    const contextSensitiveLexer = createQueryLexer();
-    const lexingResult = contextSensitiveLexer.tokenize(queryText);
-    
-    if (lexingResult.errors.length > 0) {
-        throw new Error(`Lexing errors: ${lexingResult.errors.map(e => e.message).join(', ')}`);
+    /**
+     * Parse a single statement (backward compatibility)
+     */
+    parseStatement(input) {
+        this.input = input;
+        const cst = this.query();
+        
+        if (this.errors.length > 0) {
+            throw new Error(`Parsing errors: ${this.errors.map(e => e.message).join(', ')}`);
+        }
+        
+        return cst;
     }
 
-    // Create fresh parser instance to ensure robust syntax changes
-    const parserInstance = new QueryParser();
-    parserInstance.input = lexingResult.tokens;
-    
-    // Parse starting from the main 'query' rule
-    const cst = parserInstance.query();
-
-    if (parserInstance.errors.length > 0) {
-        throw new Error(`Parsing errors: ${parserInstance.errors.map(e => e.message).join(', ')}`);
+    /**
+     * Parse multiple statements as a program
+     */
+    parseProgram(input) {
+        this.input = input;
+        const cst = this.program();
+        
+        if (this.errors.length > 0) {
+            throw new Error(`Parsing errors: ${this.errors.map(e => e.message).join(', ')}`);
+        }
+        
+        return cst;
     }
 
-    return {
-        cst,
-        tokens: lexingResult.tokens,
-        lexErrors: lexingResult.errors,
-        parseErrors: parserInstance.errors
-    };
+    /**
+     * Auto-detect and parse either single statement or program
+     */
+    parseAuto(input) {
+        // Reset state
+        this.errors = [];
+        
+        // Try parsing as program first (handles both single and multi-statement)
+        try {
+            return {
+                type: 'program',
+                cst: this.parseProgram(input)
+            };
+        } catch (error) {
+            // If program parsing fails, try single statement for backward compatibility
+            this.errors = [];
+            try {
+                return {
+                    type: 'statement',
+                    cst: this.parseStatement(input)
+                };
+            } catch (statementError) {
+                throw new Error(`Failed to parse input: ${error.message}`);
+            }
+        }
+    }
 }
 
-// =============================================================================
-// EXPORTS
-// =============================================================================
-export { allTokens };
+// Export singleton instance for consistency with existing code
+export const unifiedQueryParser = new UnifiedQueryParser();

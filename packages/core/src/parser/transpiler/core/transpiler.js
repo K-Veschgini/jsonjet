@@ -1,5 +1,4 @@
-import { VisitorUtils } from './core/base-visitor.js';
-import { unifiedQueryParser } from '../grammar/unified-query-parser.js';
+import { queryParser } from '../grammar/query-parser.js';
 import { UnifiedCommandVisitorMixin } from './visitors/unified-command-visitor.js';
 import { QueryOperationVisitorMixin } from './visitors/query-operation-visitor.js';
 import { ExpressionVisitorMixin } from './visitors/expression-visitor.js';
@@ -9,10 +8,10 @@ import { CommandVisitorMixin } from './visitors/command-visitor.js';
 /**
  * Unified Transpiler - Handles both commands and queries in the new grammar
  */
-export class UnifiedTranspiler {
+export class Transpiler {
     constructor() {
         // Get the base visitor constructor from unified parser
-        const BaseCstVisitor = unifiedQueryParser.getBaseCstVisitorConstructor();
+        const BaseCstVisitor = queryParser.getBaseCstVisitorConstructor();
         
         // Create the visitor instance
         this._visitor = new (class extends BaseCstVisitor {
@@ -190,4 +189,4 @@ export class UnifiedTranspiler {
 }
 
 // Export singleton instance
-export const unifiedTranspiler = new UnifiedTranspiler();
+export const transpiler = new Transpiler();

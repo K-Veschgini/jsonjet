@@ -1,24 +1,3 @@
-import { QueryParser } from '../../grammar/query-parser.js';
-
-// =============================================================================
-// BASE VISITOR SETUP
-// =============================================================================
-// Creates the base CST visitor class for transpilation
-
-let _baseCstVisitorConstructor = null;
-
-export function getBaseCstVisitorConstructor() {
-    if (!_baseCstVisitorConstructor) {
-        // Create a fresh parser instance to get the visitor constructor
-        const parserInstance = new QueryParser();
-        _baseCstVisitorConstructor = parserInstance.getBaseCstVisitorConstructor();
-    }
-    return _baseCstVisitorConstructor;
-}
-
-// =============================================================================
-// VISITOR UTILITIES
-// =============================================================================
 
 export class VisitorUtils {
     /**
