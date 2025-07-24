@@ -1,0 +1,22 @@
+// Test spread syntax consistency between select and summarize
+create or replace stream test_data;
+create or replace stream select_results;
+create or replace stream summarize_results;
+
+// Test spread in select
+create flow test_select_spread as
+test_data 
+  | select { ...*, ...window } 
+  | assert_or_save_expected("tests/expected/select-spread-test.ndjson");
+
+// Test spread in summarize
+create flow test_summarize_spread as
+test_data 
+  | summarize { ...window, count: count() } over window = tumbling_window(2)
+  | assert_or_save_expected("tests/expected/summarize-spread-test.ndjson");
+
+// Insert test data
+insert into test_data { field1: "value1", field2: "value2" };
+insert into test_data { field1: "value3", field2: "value4" };
+
+flush test_data; 

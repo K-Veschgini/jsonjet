@@ -1,0 +1,22 @@
+// Test exclusion syntax in both select and summarize
+create or replace stream test_data;
+create or replace stream select_results;
+create or replace stream summarize_results;
+
+// Test exclusion in select
+create flow test_select_exclusion as
+test_data 
+  | select { ...*, -field2, -field3 } 
+  | assert_or_save_expected("tests/expected/select-exclusion-test.ndjson");
+
+// Test exclusion in summarize
+create flow test_summarize_exclusion as
+test_data 
+  | summarize { ...window, -field2, -field3, count: count() } over window = tumbling_window(2)
+  | assert_or_save_expected("tests/expected/summarize-exclusion-test.ndjson");
+
+// Insert test data
+insert into test_data { field1: "value1", field2: "value2", field3: "value3", field4: "value4" };
+insert into test_data { field1: "value5", field2: "value6", field3: "value7", field4: "value8" };
+
+flush test_data; 

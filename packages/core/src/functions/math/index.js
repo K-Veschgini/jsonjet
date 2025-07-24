@@ -3,3 +3,4 @@
  */
 
 export { ExpFunction } from './exp.js';
+export { PiFunction } from './pi.js';

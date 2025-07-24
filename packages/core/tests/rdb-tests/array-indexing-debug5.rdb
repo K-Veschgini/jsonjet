@@ -1,0 +1,17 @@
+// Debug test to see what transpiler generates
+create or replace stream test_data;
+
+// Test just basic field access first
+create flow debug_data_test as
+test_data 
+| select { 
+    scores: scores
+  } 
+| assert_or_save_expected("tests/expected/array-indexing-debug5.ndjson");
+
+// Insert test data
+insert into test_data {
+  "scores": [85, 92, 78, 95]
+};
+
+flush test_data; 

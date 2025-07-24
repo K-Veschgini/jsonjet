@@ -10,7 +10,7 @@ create or replace stream daily_summary;
 // Window ensures results are emitted every 2 items automatically
 create flow product_summary as
 sales 
-  | summarize { total_amount: sum(amount), count: count() } by product over window = tumbling_window(2)
+  | summarize { ...window, total_amount: sum(amount), count: count() } by product over window = tumbling_window(2)
   | assert_or_save_expected("tests/expected/summarize-demo.ndjson");
 
 // 3. Insert sample sales data (flows will process this immediately)

@@ -1,0 +1,22 @@
+// Simple array indexing debug test
+create or replace stream test_data;
+create or replace stream results;
+
+// Test basic array indexing
+create flow debug_array_indexing as
+test_data 
+| select { 
+    id: id, 
+    name: name, 
+    firstScore: scores[0]
+  } 
+| assert_or_save_expected("tests/expected/array-indexing-debug.ndjson");
+
+// Insert test data
+insert into test_data {
+  "id": 1,
+  "name": "Alice", 
+  "scores": [85, 92, 78, 95]
+};
+
+flush test_data; 

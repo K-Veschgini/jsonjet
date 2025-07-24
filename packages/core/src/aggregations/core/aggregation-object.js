@@ -11,11 +11,12 @@ import { AggregationExpression } from './aggregation-expression.js';
  *   }
  */
 export class AggregationObject extends Aggregation {
-    constructor(spec) {
+    constructor(spec, context = {}) {
         super();
         this.spec = spec; // Object structure with AggregationExpressions at leaves
         this.aggregations = []; // Flat array of all AggregationExpressions found
         this.processedSpec = null; // Spec with AggregationExpressions replaced by placeholders
+        this.context = context; // Context object (e.g., window info) available to aggregations
         
         // Change tracking state
         this._lastResult = null;
@@ -28,6 +29,17 @@ export class AggregationObject extends Aggregation {
      * Recursively find all AggregationExpressions in the spec and replace with placeholders
      */
     _findAggregations() {
+        // Handle function-based specs (for spread properties)
+        if (typeof this.spec === 'string' && this.spec.startsWith('((context) =>')) {
+            // This is a function-based spec, evaluate it with the context
+            const functionBody = this.spec.substring(13, this.spec.length - 1);
+            const specFunction = new Function('context', functionBody);
+            this.spec = specFunction(this.context);
+        } else if (typeof this.spec === 'function') {
+            // Direct function spec, call it with context
+            this.spec = this.spec(this.context);
+        }
+        
         this.processedSpec = this._processRecursively(this.spec, []);
     }
     
@@ -57,14 +69,16 @@ export class AggregationObject extends Aggregation {
             return result;
         }
         
+
+        
         // Primitive value, return as-is
         return obj;
     }
     
     push(object) {
-        // Push the object to all aggregations
+        // Push the object to all aggregations with context
         for (const { expression } of this.aggregations) {
-            expression.push(object);
+            expression.push(object, this.context);
         }
         
         // Mark that we have new data, so result may have changed
@@ -87,6 +101,8 @@ export class AggregationObject extends Aggregation {
             const aggInfo = this.aggregations.find(agg => agg.placeholder === obj);
             return aggInfo ? aggInfo.expression.getResult() : obj;
         }
+        
+
         
         if (Array.isArray(obj)) {
             return obj.map(item => this._buildResultRecursively(item));

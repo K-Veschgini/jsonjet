@@ -95,10 +95,10 @@ export class AggregationExpression extends Aggregation {
     /**
      * Push data through the expression tree
      */
-    push(object) {
+    push(object, context = {}) {
         if (this.action === 'aggregation') {
-            // For aggregation, evaluate args with current object and push result
-            const values = this._evaluateArgsForPush(object);
+            // For aggregation, evaluate args with current object and context, then push result
+            const values = this._evaluateArgsForPush(object, context);
             if (this.wrappedAggregation) {
                 this.wrappedAggregation.push(...values);
             }
@@ -110,23 +110,23 @@ export class AggregationExpression extends Aggregation {
             const fieldName = this.args[0];
             this.result = safeGet(object, fieldName);
         } else if (this.action === 'scalar') {
-            // For scalar, evaluate with current object and store result
-            this.result = this._evaluateScalarWithObject(object);
+            // For scalar, evaluate with current object and context, then store result
+            this.result = this._evaluateScalarWithObject(object, context);
             // Also push to child aggregations
-            this._pushToChildren(object);
+            this._pushToChildren(object, context);
         } else {
             // For non-aggregation actions, push to all child aggregations
-            this._pushToChildren(object);
+            this._pushToChildren(object, context);
         }
     }
     
     /**
      * Push object to all child AggregationExpression nodes
      */
-    _pushToChildren(object) {
+    _pushToChildren(object, context = {}) {
         for (const arg of this.args) {
             if (arg instanceof AggregationExpression) {
-                arg.push(object);
+                arg.push(object, context);
             }
         }
     }
@@ -166,22 +166,22 @@ export class AggregationExpression extends Aggregation {
     }
     
     /**
-     * Evaluate args with current object (for push operations)
+     * Evaluate args with current object and context (for push operations)
      */
-    _evaluateArgsForPush(object) {
+    _evaluateArgsForPush(object, context = {}) {
         // For aggregation, if no args, use the whole object
         if (this.args.length === 0) {
             return [object];
         }
         
         // Evaluate all args - some aggregations might need multiple values per push
-        return this.args.map(arg => this._evaluateArgWithObject(arg, object));
+        return this.args.map(arg => this._evaluateArgWithObject(arg, object, context));
     }
     
     /**
-     * Evaluate a single arg with current object
+     * Evaluate a single arg with current object and context
      */
-    _evaluateArgWithObject(arg, object) {
+    _evaluateArgWithObject(arg, object, context = {}) {
         if (arg instanceof AggregationExpression) {
             switch (arg.action) {
                 case 'safeGet':
@@ -191,8 +191,8 @@ export class AggregationExpression extends Aggregation {
                     const fieldName = arg.args[0];
                     return safeGet(object, fieldName);
                 case 'scalar':
-                    // Evaluate scalar with object context
-                    return arg._evaluateScalarWithObject(object);
+                    // Evaluate scalar with object and context
+                    return arg._evaluateScalarWithObject(object, context);
                 case 'aggregation':
                     // For aggregation in object context, return current result
                     // This allows scalar functions to access intermediate aggregation results
@@ -206,11 +206,11 @@ export class AggregationExpression extends Aggregation {
     }
     
     /**
-     * Evaluate scalar function with object context
+     * Evaluate scalar function with object and context
      */
-    _evaluateScalarWithObject(object) {
-        // Get values from all args with object context
-        const argValues = this.args.map(arg => this._evaluateArgWithObject(arg, object));
+    _evaluateScalarWithObject(object, context = {}) {
+        // Get values from all args with object and context
+        const argValues = this.args.map(arg => this._evaluateArgWithObject(arg, object, context));
         
         return getFunctionRegistry().executeFunction(this.functionName, argValues);
     }

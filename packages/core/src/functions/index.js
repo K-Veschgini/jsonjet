@@ -7,7 +7,7 @@ export { ScalarFunction } from './core/scalar-function.js';
 export { Config, config } from './core/function-config.js';
 
 // Math functions
-export { ExpFunction } from './math/index.js';
+export { ExpFunction, PiFunction } from './math/index.js';
 
 // Arithmetic functions
 export { Add } from './arithmetic/add.js';
@@ -35,7 +35,7 @@ export { Or } from './logical/or.js';
 export { Not } from './logical/not.js';
 
 // Import functions for registration
-import { ExpFunction } from './math/index.js';
+import { ExpFunction, PiFunction } from './math/index.js';
 import { Add } from './arithmetic/add.js';
 import { Sub } from './arithmetic/sub.js';
 import { Mul } from './arithmetic/mul.js';
@@ -63,6 +63,7 @@ import { Not } from './logical/not.js';
 export function registerFunctions(registry) {
     // Register math functions
     registry.registerFunction(new ExpFunction());
+    registry.registerFunction(new PiFunction());
     
     // Register arithmetic functions
     registry.registerFunction(new Add());

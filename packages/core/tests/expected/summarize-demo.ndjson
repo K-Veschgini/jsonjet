@@ -1,7 +1,7 @@
-{"count":1,"total_amount":1200}
-{"count":1,"total_amount":25}
-{"count":1,"total_amount":1100}
-{"count":1,"total_amount":75}
-{"count":1,"total_amount":1300}
-{"count":1,"total_amount":30}
-{"count":1,"total_amount":1150}
+{"_id":0,"count":1,"end":2,"mode":"count","size":2,"start":0,"total_amount":1200,"type":"tumbling","windowId":0}
+{"_id":0,"count":1,"end":2,"mode":"count","size":2,"start":0,"total_amount":25,"type":"tumbling","windowId":0}
+{"_id":1,"count":1,"end":4,"mode":"count","size":2,"start":2,"total_amount":1100,"type":"tumbling","windowId":1}
+{"_id":1,"count":1,"end":4,"mode":"count","size":2,"start":2,"total_amount":75,"type":"tumbling","windowId":1}
+{"_id":2,"count":1,"end":6,"mode":"count","size":2,"start":4,"total_amount":1300,"type":"tumbling","windowId":2}
+{"_id":2,"count":1,"end":6,"mode":"count","size":2,"start":4,"total_amount":30,"type":"tumbling","windowId":2}
+{"_id":3,"count":1,"end":8,"mode":"count","size":2,"start":6,"total_amount":1150,"type":"tumbling","windowId":3}

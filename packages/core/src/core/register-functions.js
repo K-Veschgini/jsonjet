@@ -3,7 +3,7 @@
  */
 
 // Math functions
-import { ExpFunction } from '../functions/math/index.js';
+import { ExpFunction, PiFunction } from '../functions/math/index.js';
 
 // Arithmetic functions
 import { Add } from '../functions/arithmetic/add.js';
@@ -37,6 +37,7 @@ import { Not } from '../functions/logical/not.js';
 export function registerFunctions(registry) {
     // Register math functions
     registry.registerFunction(new ExpFunction());
+    registry.registerFunction(new PiFunction());
     
     // Register arithmetic functions
     registry.registerFunction(new Add());

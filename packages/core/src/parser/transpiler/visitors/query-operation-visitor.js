@@ -144,12 +144,43 @@ export const QueryOperationVisitorMixin = {
             // Flatten the properties array if it's nested
             const propArray = Array.isArray(properties) && Array.isArray(properties[0]) ? properties[0] : properties;
             
-            // Filter out exclusions for now (not supported in AggregationExpression yet)
-            const regularProperties = propArray.filter(prop => typeof prop === 'string' && !prop.startsWith('__EXCLUDE_'));
+            // Check if we have any spreads or exclusions
+            const hasSpreads = propArray.some(prop => prop && typeof prop === 'string' && prop.startsWith('...'));
+            const hasExclusions = propArray.some(prop => prop && prop.type === 'exclusion');
             
-            // Return the spec object directly, not wrapped in AggregationObject
-            const objectSpec = VisitorUtils.createObjectLiteral(regularProperties);
-            return objectSpec;
+            if (hasSpreads || hasExclusions) {
+                // Separate spreads, exclusions, and regular properties
+                const spreads = propArray.filter(prop => prop && typeof prop === 'string' && prop.startsWith('...'));
+                const exclusions = propArray.filter(prop => prop && prop.type === 'exclusion').map(prop => prop.field);
+                const regularProps = propArray.filter(prop => 
+                    prop && typeof prop === 'string' && !prop.startsWith('...') && prop.type !== 'exclusion' && prop.trim() !== ''
+                );
+                
+                // Create function-based approach for summarize
+                const objStr = regularProps.length > 0 ? `{ ${regularProps.join(', ')} }` : '{}';
+                const spreadChecks = spreads.map(spread => {
+                    const expr = spread.substring(3); // Remove '...'
+                    return `if (typeof context.${expr} !== 'object' || context.${expr} === null) throw new Error('Cannot spread ${expr}: not an object');`;
+                }).join('\n');
+                const spreadAssigns = spreads.map(spread => {
+                    const expr = spread.substring(3); // Remove '...'
+                    return `Object.assign(result, context.${expr});`;
+                }).join('\n');
+                const exclusionStr = exclusions.map(field => `'${field}'`).join(', ');
+                
+                return `((context) => {
+                    const result = ${objStr};
+                    ${spreadChecks}
+                    ${spreadAssigns}
+                    ${exclusions.length > 0 ? `[${exclusionStr}].forEach(key => delete result[key]);` : ''}
+                    return result;
+                })`;
+            } else {
+                // No spreads or exclusions - return regular object literal
+                const regularProperties = propArray.filter(prop => typeof prop === 'string' && prop.trim() !== '');
+                const objectSpec = VisitorUtils.createObjectLiteral(regularProperties);
+                return objectSpec;
+            }
         }
         return '{}';
     },
@@ -162,15 +193,20 @@ export const QueryOperationVisitorMixin = {
 
     aggregationProperty(ctx) {
         if (ctx.spreadAll) {
-            return '...item';
+            throw new Error('spreadAll ("...*") is not supported in summarize aggregation. Use explicit identifiers like ...window or ...w instead.');
         } else if (ctx.spreadExpression) {
-            // For spread expressions in aggregations, use state context instead of item context
-            const expr = this.visitWithStateContext(ctx.spreadExpression);
+            // For spread expressions in aggregations, handle context objects
+            // We need to get the raw identifier, not the safeGet expression
+            let expr = this._extractIdentifierFromExpression(ctx.spreadExpression[0]);
+            if (!expr) {
+                // Fallback to visiting the expression
+                expr = this.visit(ctx.spreadExpression);
+            }
             return `...${expr}`;
         } else if (ctx.excludeField) {
-            // Handle exclusion field with special marker
+            // Handle exclusion field with clean object structure
             const fieldName = VisitorUtils.getTokenImage(ctx.excludeField);
-            return `__EXCLUDE_${fieldName}`;
+            return { type: 'exclusion', field: fieldName };
         } else if (ctx.propertyKey && ctx.aggregationExpression) {
             const key = this.visit(ctx.propertyKey);
             const value = this.visit(ctx.aggregationExpression);
@@ -180,6 +216,42 @@ export const QueryOperationVisitorMixin = {
             return `${identifier}: new AggregationExpression('safeGet', ['${identifier}'])`;
         }
         return '';
+    },
+
+    /**
+     * Extract raw identifier from expression structure
+     */
+    _extractIdentifierFromExpression(ctx) {
+        if (!ctx) return null;
+        
+        // If it's a token with image, return the image
+        if (ctx.image) {
+            return ctx.image;
+        }
+        
+        // If it has children, recursively search for identifier
+        if (ctx.children) {
+            // Look for identifier in primaryExpression
+            if (ctx.children.primaryExpression) {
+                const primary = ctx.children.primaryExpression[0];
+                if (primary && primary.children && primary.children.identifier) {
+                    const identifier = primary.children.identifier[0];
+                    if (identifier && identifier.image) {
+                        return identifier.image;
+                    }
+                }
+            }
+            
+            // Recursively search through all children
+            for (const [key, children] of Object.entries(ctx.children)) {
+                if (Array.isArray(children) && children.length > 0) {
+                    const result = this._extractIdentifierFromExpression(children[0]);
+                    if (result) return result;
+                }
+            }
+        }
+        
+        return null;
     },
 
     aggregationExpression(ctx) {

@@ -73,13 +73,12 @@ export const LiteralVisitorMixin = {
             const flattenedProperties = Array.isArray(regularProperties) && Array.isArray(regularProperties[0]) ? regularProperties[0] : regularProperties;
             
             // Check if we have any exclusions
-            const hasExclusions = flattenedProperties.some(prop => prop && prop.includes('__EXCLUDE_'));
+            const hasExclusions = flattenedProperties.some(prop => prop && prop.type === 'exclusion');
             
             if (hasExclusions) {
                 // Extract exclusions and regular properties
-                const exclusions = flattenedProperties.filter(prop => prop && prop.includes('__EXCLUDE_'))
-                    .map(prop => prop.match(/__EXCLUDE_(.+)__/)[1]);
-                const regularProps = flattenedProperties.filter(prop => prop && !prop.includes('__EXCLUDE_') && typeof prop === 'string' && prop.trim() !== '');
+                const exclusions = flattenedProperties.filter(prop => prop && prop.type === 'exclusion').map(prop => prop.field);
+                const regularProps = flattenedProperties.filter(prop => prop && prop.type !== 'exclusion' && typeof prop === 'string' && prop.trim() !== '');
                 
                 // Add regular properties
                 properties.push(...regularProps);
@@ -120,7 +119,7 @@ export const LiteralVisitorMixin = {
         } else if (ctx.excludedProperty) {
             // Exclusion syntax: -field
             const identifier = VisitorUtils.getTokenImage(ctx.excludedProperty);
-            return `__EXCLUDE_${identifier}__: undefined`;
+            return { type: 'exclusion', field: identifier };
         } else if (ctx.propertyKey && ctx.propertyValue) {
             // Key-value pair: key: value
             const key = this.visit(ctx.propertyKey);

@@ -169,7 +169,7 @@ export class SummarizeOperator extends Operator {
         // Get or create aggregation object for this group
         if (!this.noWindowGroups.has(groupKey)) {
             this.noWindowGroups.set(groupKey, { 
-                aggregation: new AggregationObject(this.aggregationSpec, {}),
+                aggregation: new AggregationObject(this.aggregationSpec),
                 groupValue: groupValue
             });
         }
@@ -204,7 +204,7 @@ export class SummarizeOperator extends Operator {
         // Get or create aggregation object for this group
         if (!this.noWindowGroups.has(groupKey)) {
             this.noWindowGroups.set(groupKey, { 
-                aggregation: new AggregationObject(this.aggregationSpec, {}),
+                aggregation: new AggregationObject(this.aggregationSpec),
                 groupValue: groupValue
             });
         }

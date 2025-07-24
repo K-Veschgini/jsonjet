@@ -1,0 +1,16 @@
+// Test nested arrays, objects, and function calls as values
+create or replace stream test_data;
+
+// Test flow
+create flow test_structured as
+  test_data
+  | select {
+      arr: [1, 2, { nested: add(dummy, 5) }],
+      obj: { x: neg(dummy) },
+      deep: { a: { b: [pi(), { c: add(dummy, 10) }] } }
+    }
+  | assert_or_save_expected("tests/expected/array-nested-objects-functions.ndjson");
+
+// Insert test data
+insert into test_data { dummy: 3 };
+flush test_data; 

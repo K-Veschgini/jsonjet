@@ -178,7 +178,7 @@ export const ExpressionVisitorMixin = {
                 if (ctx.index && ctx.index[i]) {
                     // Array/object access: expr[index] - make it safe
                     const index = this.visit(ctx.index[i]);
-                    result = `safeGet(${result}, ${index})`;
+                    result = `(${result} && Array.isArray(${result}) ? ${result}[${index}] : undefined)`;
                 } else if (ctx.property && ctx.property[i]) {
                     // Property access: expr.property
                     const property = VisitorUtils.getTokenImage(ctx.property[i]);
