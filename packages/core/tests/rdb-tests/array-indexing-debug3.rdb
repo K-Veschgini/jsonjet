@@ -1,19 +1,16 @@
 // Debug test to see what data looks like
 create or replace stream test_data;
 
-// Test just basic field access first
+// Test just basic field access first  
 create flow debug_data_test as
 test_data 
 | select { 
-    scores: scores,
-    isArray: Array.isArray(scores),
-    firstScore: scores ? scores[0] : 'no scores'
+    scores: scores,  
+    firstScore: scores[0]
   } 
 | assert_or_save_expected("tests/expected/array-indexing-debug3.ndjson");
 
-// Insert test data with explicit array
-insert into test_data {
-  "scores": [85, 92, 78, 95]
-};
+// Insert test data as proper JSON object  
+insert into test_data {"scores": [85, 92, 78, 95]};
 
 flush test_data; 

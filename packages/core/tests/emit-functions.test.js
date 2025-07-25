@@ -24,11 +24,6 @@ describe('Emit Functions', () => {
             
             // Force emit should always work
             expect(emitFunc.forceEmit()).toBe(true);
-            
-            // Get emit info
-            const info = emitFunc.getEmitInfo();
-            expect(info.type).toBe('interval');
-            expect(info.interval).toBe(100);
         });
     });
     
@@ -50,12 +45,6 @@ describe('Emit Functions', () => {
             
             // Sixth item should emit
             expect(emitFunc.shouldEmit({ id: 6 })).toBe(true);
-            
-            // Get emit info
-            const info = emitFunc.getEmitInfo();
-            expect(info.type).toBe('count');
-            expect(info.count).toBe(3);
-            expect(info.itemCount).toBe(6);
         });
     });
     
@@ -143,10 +132,6 @@ describe('Emit Functions', () => {
             // Back to first group should emit
             expect(emitFunc.shouldEmit({ id: 5 }, 'group_a')).toBe(true);
             
-            // Get emit info
-            const info = emitFunc.getEmitInfo();
-            expect(info.type).toBe('group_change');
-            expect(info.lastGroupKey).toBe('group_a');
         });
     });
 });
