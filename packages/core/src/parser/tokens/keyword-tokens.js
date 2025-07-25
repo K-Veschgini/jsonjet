@@ -69,6 +69,7 @@ export const Not = createToken({ name: "Not", pattern: /not\b/i });
 export const Exists = createToken({ name: "Exists", pattern: /exists\b/i });
 export const Stream = createToken({ name: "Stream", pattern: /stream\b/i });
 export const Flow = createToken({ name: "Flow", pattern: /flow\b/i });
+export const Lookup = createToken({ name: "Lookup", pattern: /lookup\b/i });
 export const Delete = createToken({ name: "Delete", pattern: /delete\b/i });
 export const Insert = createToken({ name: "Insert", pattern: /insert\b/i });
 export const Into = createToken({ name: "Into", pattern: /into\b/i });

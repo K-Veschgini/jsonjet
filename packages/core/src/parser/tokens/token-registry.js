@@ -8,7 +8,7 @@ import {
     Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
-    Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
+    Create, Or, Replace, If, Not, Exists, Stream, Flow, Lookup, Delete, Insert, Into,
     Flush, List, Info, Subscribe, Unsubscribe, Ttl
 } from './keyword-tokens.js';
 import {
@@ -41,7 +41,7 @@ export const allTokens = [
     Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print, As,
     
     // Statement keywords
-    Create, Delete, Insert, Into, Flush, List, Info, Stream, Flow, 
+    Create, Delete, Insert, Into, Flush, List, Info, Stream, Flow, Lookup,
     Replace, Exists, Or, If, Not, Ttl,
     
     // Logical keywords (deprecated but supported for compatibility)
@@ -92,7 +92,7 @@ export {
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
     
     // Statement keywords
-    Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
+    Create, Or, Replace, If, Not, Exists, Stream, Flow, Lookup, Delete, Insert, Into,
     Flush, List, Info, Subscribe, Unsubscribe, Ttl,
     
     // Operators
@@ -104,6 +104,6 @@ export {
     StringLiteral, DurationLiteral, NumberLiteral, BooleanLiteral, NullLiteral,
     
     // Punctuation
-    LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket,
-    Comma, Semicolon, Colon, Dot
+    Comma, Semicolon, Colon, Dot,
+    LeftParen, RightParen, LeftBrace, RightBrace, LeftBracket, RightBracket
 };

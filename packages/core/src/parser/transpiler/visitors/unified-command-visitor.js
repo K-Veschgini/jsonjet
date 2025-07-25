@@ -96,6 +96,16 @@ export const UnifiedCommandVisitorMixin = {
                 ttlExpression,
                 flowQuery
             };
+        } else if (ctx.lookupName) {
+            const lookupName = VisitorUtils.getTokenImage(ctx.lookupName);
+            const lookupValue = this.visit(ctx.lookupValue);
+
+            return {
+                command: 'create_lookup',
+                lookupName,
+                lookupValue,
+                modifier
+            };
         }
 
         return null;
@@ -111,6 +121,11 @@ export const UnifiedCommandVisitorMixin = {
             return {
                 command: 'delete_flow',
                 flowName: VisitorUtils.getTokenImage(ctx.flowName)
+            };
+        } else if (ctx.lookupName) {
+            return {
+                command: 'delete_lookup',
+                lookupName: VisitorUtils.getTokenImage(ctx.lookupName)
             };
         }
         return null;
@@ -148,6 +163,8 @@ export const UnifiedCommandVisitorMixin = {
                 target = 'flows';
             } else if (targetToken === 'stream') {
                 target = 'streams';
+            } else if (targetToken === 'lookup') {
+                target = 'lookups';
             }
         }
 

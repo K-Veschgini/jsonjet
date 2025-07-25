@@ -52,7 +52,7 @@ export class QueryEngine {
             // Check if it's a regular command
             if (CommandParser.isCommand(trimmed)) {
                 const command = CommandParser.extractCommand(trimmed);
-                const result = await CommandParser.executeCommand(command, this.streamManager);
+                const result = await CommandParser.executeCommand(command, this.streamManager, this);
                 return result;
             }
 
@@ -312,11 +312,15 @@ export class QueryEngine {
                 return await this.handleCreateStream(ast.ast);
             case 'create_flow':
                 return await this.handleCreateFlow(ast.ast);
+            case 'create_lookup':
+                return await this.handleCreateLookup(ast.ast);
             case 'delete_stream':
                 this.streamManager.deleteStream(ast.ast.streamName);
                 return { success: true, message: `Stream '${ast.ast.streamName}' deleted` };
             case 'delete_flow':
                 return this.stopFlowByName(ast.ast.flowName);
+            case 'delete_lookup':
+                return await this.handleDeleteLookup(ast.ast);
             case 'insert':
                 let data = ast.ast.data;
                 // Handle JSON strings that need parsing
@@ -343,6 +347,8 @@ export class QueryEngine {
             case 'list':
                 if (ast.ast.target === 'flows') {
                     return { success: true, result: this.getActiveFlows() };
+                } else if (ast.ast.target === 'lookups') {
+                    return { success: true, result: this.registry.getAllLookups() };
                 } else {
                     return { success: true, result: this.streamManager.listStreams() };
                 }
@@ -792,6 +798,40 @@ export class QueryEngine {
         }
 
         throw new Error(`Failed to create flow: ${result.message}`);
+    }
+
+    async handleCreateLookup(params) {
+        const { lookupName, lookupValue, modifier } = params;
+        
+        try {
+            const exists = this.registry.hasLookup(lookupName);
+            
+            if (exists) {
+                if (modifier === 'or_replace') {
+                    this.registry.updateLookup(lookupName, lookupValue);
+                    return { success: true, message: `Lookup '${lookupName}' replaced` };
+                } else {
+                    throw new Error(`Lookup '${lookupName}' already exists`);
+                }
+            } else {
+                this.registry.registerLookup(lookupName, lookupValue);
+                return { success: true, message: `Lookup '${lookupName}' created` };
+            }
+        } catch (error) {
+            throw error; // Re-throw registry errors
+        }
+    }
+
+    async handleDeleteLookup(params) {
+        const { lookupName } = params;
+        
+        const deleted = this.registry.deleteLookup(lookupName);
+        
+        if (deleted) {
+            return { success: true, message: `Lookup '${lookupName}' deleted` };
+        } else {
+            throw new Error(`Lookup '${lookupName}' does not exist`);
+        }
     }
 
     pipelineToCode(pipelineAst) {

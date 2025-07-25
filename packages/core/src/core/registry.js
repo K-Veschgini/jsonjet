@@ -16,6 +16,9 @@ export class Registry {
         
         // Operator registry (operator classes)
         this.operators = new Map(); // name -> OperatorClass
+        
+        // Lookup registry (constants/variables)
+        this.lookups = new Map(); // name -> value
     }
     
     // =============================================================================
@@ -194,6 +197,161 @@ export class Registry {
      */
     getOperatorNames() {
         return Array.from(this.operators.keys());
+    }
+    
+    // =============================================================================
+    // LOOKUP REGISTRATION AND ACCESS
+    // =============================================================================
+    
+    /**
+     * Register a lookup value
+     * @param {string} name - Lookup name
+     * @param {any} value - Lookup value (must be serializable)
+     */
+    registerLookup(name, value) {
+        const normalizedName = name.toLowerCase();
+        
+        // Validate lookup name format
+        if (!this._isValidLookupName(name)) {
+            throw new JSDBError(
+                ErrorCodes.LOOKUP_DEFINITION_ERROR,
+                `Invalid lookup name '${name}'. Names must be valid identifiers.`
+            );
+        }
+        
+        // Check for conflicts with existing functions, aggregations, or operators
+        if (this.hasFunction(normalizedName) || this.hasAggregation(normalizedName) || this.hasOperator(normalizedName)) {
+            throw new JSDBError(
+                ErrorCodes.LOOKUP_NAME_CONFLICT,
+                `Cannot create lookup '${name}': conflicts with existing function, aggregation, or operator`
+            );
+        }
+        
+        // Validate lookup value
+        if (!this._isValidLookupValue(value)) {
+            throw new JSDBError(
+                ErrorCodes.LOOKUP_VALUE_ERROR,
+                `Invalid lookup value. Supported types: boolean, number, string, null, array, object`
+            );
+        }
+        
+        this.lookups.set(normalizedName, value);
+    }
+    
+    /**
+     * Update an existing lookup value (for "or replace" functionality)
+     * @param {string} name - Lookup name
+     * @param {any} value - New lookup value
+     */
+    updateLookup(name, value) {
+        const normalizedName = name.toLowerCase();
+        
+        if (!this.hasLookup(normalizedName)) {
+            throw new JSDBError(
+                ErrorCodes.LOOKUP_NOT_FOUND,
+                `Lookup '${name}' does not exist`
+            );
+        }
+        
+        // Validate lookup value
+        if (!this._isValidLookupValue(value)) {
+            throw new JSDBError(
+                ErrorCodes.LOOKUP_VALUE_ERROR,
+                `Invalid lookup value. Supported types: boolean, number, string, null, array, object`
+            );
+        }
+        
+        this.lookups.set(normalizedName, value);
+    }
+    
+    /**
+     * Get a lookup value by name
+     * @param {string} name - Lookup name
+     * @returns {any|null} Lookup value or null if not found
+     */
+    getLookup(name) {
+        const result = this.lookups.get(name.toLowerCase());
+        return result !== undefined ? result : null;
+    }
+    
+    /**
+     * Check if a lookup exists
+     * @param {string} name - Lookup name
+     * @returns {boolean} True if lookup exists
+     */
+    hasLookup(name) {
+        return this.lookups.has(name.toLowerCase());
+    }
+    
+    /**
+     * Delete a lookup
+     * @param {string} name - Lookup name
+     * @returns {boolean} True if lookup was deleted, false if it didn't exist
+     */
+    deleteLookup(name) {
+        return this.lookups.delete(name.toLowerCase());
+    }
+    
+    /**
+     * Get all registered lookup names
+     * @returns {string[]}
+     */
+    getLookupNames() {
+        return Array.from(this.lookups.keys());
+    }
+    
+    /**
+     * Get all lookups as an object
+     * @returns {Object} Object with lookup names as keys and values as values
+     */
+    getAllLookups() {
+        const result = {};
+        for (const [name, value] of this.lookups) {
+            result[name] = value;
+        }
+        return result;
+    }
+    
+    // =============================================================================
+    // LOOKUP VALIDATION HELPERS
+    // =============================================================================
+    
+    /**
+     * Check if a lookup name is valid
+     * @param {string} name - Name to validate
+     * @returns {boolean} True if valid
+     * @private
+     */
+    _isValidLookupName(name) {
+        // Must be a valid JavaScript identifier
+        return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name);
+    }
+    
+    /**
+     * Check if a lookup value is valid
+     * @param {any} value - Value to validate
+     * @returns {boolean} True if valid
+     * @private
+     */
+    _isValidLookupValue(value) {
+        // Allow: boolean, number, string, null, array, object
+        if (value === null || value === undefined) return true;
+        
+        const type = typeof value;
+        if (type === 'boolean' || type === 'number' || type === 'string') return true;
+        
+        if (Array.isArray(value)) {
+            // All array elements must be valid lookup values
+            return value.every(item => this._isValidLookupValue(item));
+        }
+        
+        if (type === 'object') {
+            // All object values must be valid lookup values
+            return Object.values(value).every(item => this._isValidLookupValue(item));
+        }
+        
+        // Functions, symbols, etc. are not allowed
+        return false;
     }
     
     // =============================================================================

@@ -242,8 +242,10 @@ export const ExpressionVisitorMixin = {
                 // This is a step name - access from state
                 return `state.${stepOrVariable}`;
             } else {
-                // This is a variable - access from current item using safeGet
-                return VisitorUtils.createSafeAccess('item', stepOrVariable);
+                // Check if this is a lookup first
+                // Generate code that checks lookup registry, then falls back to item property
+                const lookupCheck = `(functionRegistry.hasLookup('${stepOrVariable}') ? functionRegistry.getLookup('${stepOrVariable}') : ${VisitorUtils.createSafeAccess('item', stepOrVariable)})`;
+                return lookupCheck;
             }
         }
     }

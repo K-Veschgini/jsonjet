@@ -1,8 +1,8 @@
 // Core grammar rules - unified program structure for all statement types
 import { 
     Dot, Pipe, Semicolon, Identifier, Create, Or, Replace, If, Not, Exists, 
-    Stream, Flow, Delete, Insert, Into, Flush, List, Info, Subscribe, Unsubscribe,
-    Ttl, LeftParen, RightParen, As,
+    Stream, Flow, Lookup, Delete, Insert, Into, Flush, List, Info, Subscribe, Unsubscribe,
+    Ttl, LeftParen, RightParen, As, Assign,
     // Import all keywords for use as identifiers
     Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
@@ -98,6 +98,13 @@ export function defineCoreCrules() {
                 });
                 this.CONSUME(As);
                 this.SUBRULE(this.pipelineQuery, { LABEL: "flowQuery" });
+            }},
+            // Create lookup
+            { ALT: () => {
+                this.CONSUME(Lookup);
+                this.CONSUME3(Identifier, { LABEL: "lookupName" });
+                this.CONSUME(Assign);
+                this.SUBRULE2(this.expression, { LABEL: "lookupValue" });
             }}
         ]);
     });
@@ -112,6 +119,10 @@ export function defineCoreCrules() {
             { ALT: () => {
                 this.CONSUME(Flow);
                 this.CONSUME2(Identifier, { LABEL: "flowName" });
+            }},
+            { ALT: () => {
+                this.CONSUME(Lookup);
+                this.CONSUME3(Identifier, { LABEL: "lookupName" });
             }}
         ]);
     });
@@ -134,7 +145,8 @@ export function defineCoreCrules() {
             this.OR([
                 { ALT: () => this.CONSUME(Stream, { LABEL: "target" }) },
                 { ALT: () => this.CONSUME(Flow, { LABEL: "target" }) },
-                { ALT: () => this.CONSUME(Identifier, { LABEL: "target" }) } // Allow plurals like "flows", "streams"
+                { ALT: () => this.CONSUME(Lookup, { LABEL: "target" }) },
+                { ALT: () => this.CONSUME(Identifier, { LABEL: "target" }) } // Allow plurals like "flows", "streams", "lookups"
             ]);
         });
     });

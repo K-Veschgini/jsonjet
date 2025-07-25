@@ -28,10 +28,10 @@ export class CommandParser {
 
             switch (action.toLowerCase()) {
                 case 'create':
-                    return await this.handleCreateCommand(args, sm);
+                    return await this.handleCreateCommand(args, sm, queryEngine);
                 
                 case 'delete':
-                    return await this.handleDeleteCommand(args, sm);
+                    return await this.handleDeleteCommand(args, sm, queryEngine);
                 
                 case 'insert':
                     return await this.handleInsertCommand(args, sm);
@@ -68,7 +68,7 @@ export class CommandParser {
     /**
      * Handle create [or replace | if not exists] stream <name> or create flow <name> [ttl(<duration>)] as\n<stream> | ...
      */
-    static async handleCreateCommand(args, sm) {
+    static async handleCreateCommand(args, sm, queryEngine = null) {
         if (args.length === 0) {
             throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] as\\n<stream> | ...');
         }
@@ -139,17 +139,86 @@ export class CommandParser {
             } catch (error) {
                 throw error; // Re-throw any errors from stream manager
             }
+        } else if (subcommand === 'lookup') {
+            return await this.handleCreateLookupCommand(remainingArgs.slice(1), sm, modifier, queryEngine);
         } else {
-            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] as\\n<stream> | ...');
+            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] as\\n<stream> | ... OR create [or replace] lookup <name> = <value>');
+        }
+    }
+
+    /**
+     * Handle create [or replace] lookup <name> = <value>
+     */
+    static async handleCreateLookupCommand(args, sm, modifier = null, queryEngine = null) {
+        // Parse: <name> = <value>
+        if (args.length < 3) {
+            throw new Error('Usage: create [or replace] lookup <name> = <value>');
+        }
+        
+        const lookupName = args[0];
+        const assignOp = args[1];
+        const valueText = args.slice(2).join(' ');
+        
+        if (assignOp !== '=') {
+            throw new Error('Usage: create [or replace] lookup <name> = <value>');
+        }
+        
+        // Validate lookup name
+        if (!this.isValidIdentifier(lookupName)) {
+            throw new Error(`Invalid lookup name '${lookupName}'. Lookup names must start with a letter or underscore and contain only letters, numbers, and underscores.`);
+        }
+        
+        // Parse lookup value
+        let lookupValue;
+        try {
+            lookupValue = this.parseJSONWithUnquotedKeys(valueText);
+        } catch (error) {
+            throw new Error(`Invalid lookup value: ${error.message}`);
+        }
+        
+        // Get registry from query engine
+        if (!queryEngine || !queryEngine.registry) {
+            throw new Error('Registry not available');
+        }
+        
+        try {
+            const exists = queryEngine.registry.hasLookup(lookupName);
+            
+            if (exists) {
+                if (modifier === 'or_replace') {
+                    // Update existing lookup
+                    queryEngine.registry.updateLookup(lookupName, lookupValue);
+                    return {
+                        type: 'command',
+                        success: true,
+                        result: { lookupName, lookupValue },
+                        message: `Lookup '${lookupName}' replaced successfully`
+                    };
+                } else {
+                    // Regular create - should fail
+                    throw new Error(`Lookup '${lookupName}' already exists. Use 'create or replace lookup ${lookupName} = <value>' to replace it.`);
+                }
+            } else {
+                // Lookup doesn't exist, create it
+                queryEngine.registry.registerLookup(lookupName, lookupValue);
+                sm.initializeLogger();
+                return sm.logger.createSuccessResponse(
+                    'lookup',
+                    `Lookup '${lookupName}' created successfully`,
+                    { lookupName, lookupValue }
+                );
+            }
+        } catch (error) {
+            throw error; // Re-throw any errors from registry
         }
     }
 
     /**
      * Handle delete stream <name> or delete flow <name>
      */
-    static async handleDeleteCommand(args, sm) {
+    static async handleDeleteCommand(args, sm, queryEngine = null) {
         if (args.length !== 2) {
-            throw new Error('Usage: delete stream <name> OR delete flow <name>');
+            throw new Error('Usage: delete stream <name> OR delete flow <name> OR delete lookup <name>');
         }
 
         const subcommand = args[0].toLowerCase();
@@ -184,8 +253,26 @@ export class CommandParser {
             } else {
                 throw new Error(result.message);
             }
+        } else if (subcommand === 'lookup') {
+            // Get registry from query engine
+            if (!queryEngine || !queryEngine.registry) {
+                throw new Error('Registry not available');
+            }
+            
+            const deleted = queryEngine.registry.deleteLookup(name);
+            
+            if (deleted) {
+                return {
+                    type: 'command',
+                    success: true,
+                    result: { lookupName: name },
+                    message: `Lookup '${name}' deleted successfully`
+                };
+            } else {
+                throw new Error(`Lookup '${name}' does not exist`);
+            }
         } else {
-            throw new Error('Usage: delete stream <name> OR delete flow <name>');
+            throw new Error('Usage: delete stream <name> OR delete flow <name> OR delete lookup <name>');
         }
     }
 
@@ -319,9 +406,39 @@ export class CommandParser {
                 result: { subscriptions },
                 message: subscriptionsOutput
             };
+        } else if (args[0].toLowerCase() === 'lookups') {
+            // Get registry from query engine
+            if (!queryEngine || !queryEngine.registry) {
+                throw new Error('Registry not available');
+            }
+            
+            const lookups = queryEngine.registry.getAllLookups();
+            const lookupNames = Object.keys(lookups);
+            
+            // Format lookups output for better display
+            let lookupsOutput = `Found ${lookupNames.length} lookup(s)`;
+            if (lookupNames.length > 0) {
+                lookupsOutput += ':\n';
+                lookupNames.forEach((name, index) => {
+                    // Show a preview of the value (truncate if too long)
+                    let valuePreview = JSON.stringify(lookups[name]);
+                    if (valuePreview.length > 50) {
+                        valuePreview = valuePreview.substring(0, 47) + '...';
+                    }
+                    lookupsOutput += `${index + 1}. ${name} = ${valuePreview}`;
+                    if (index < lookupNames.length - 1) lookupsOutput += '\n';
+                });
+            }
+            
+            return {
+                type: 'command',
+                success: true,
+                result: { lookups },
+                message: lookupsOutput
+            };
         }
 
-        throw new Error('Usage: list streams OR list flows OR list subscriptions');
+        throw new Error('Usage: list streams OR list flows OR list subscriptions OR list lookups');
     }
 
     /**
@@ -529,7 +646,7 @@ export class CommandParser {
     static isCommand(line) {
         const trimmed = line.trim();
         // Commands start with these keywords (but exclude flow creation)
-        return /^(create\s+(?:or\s+replace\s+|if\s+not\s+exists\s+)?stream|insert\s+into|delete\s+(stream|flow)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
+        return /^(create\s+(?:or\s+replace\s+|if\s+not\s+exists\s+)?(?:stream|lookup)|insert\s+into|delete\s+(?:stream|flow|lookup)|flush|list|info|subscribe|unsubscribe)\b/.test(trimmed);
     }
 
     /**
