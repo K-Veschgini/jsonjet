@@ -25,7 +25,7 @@ export const LiteralVisitorMixin = {
                     // Remove quotes from key if present
                     const cleanKey = key.replace(/^["']|["']$/g, '');
                     
-                    // Parse the value (handle strings, numbers, booleans, null)
+                    // Parse the value (handle strings, numbers, booleans, null, arrays, objects)
                     let value;
                     if (valueStr === 'null') {
                         value = null;
@@ -39,6 +39,14 @@ export const LiteralVisitorMixin = {
                     } else if (valueStr.match(/^-?\d+(\.\d+)?$/)) {
                         // Number literal
                         value = parseFloat(valueStr);
+                    } else if (valueStr.match(/^\[.*\]$/) || valueStr.match(/^\{.*\}$/)) {
+                        // JSON array or object - parse as JSON
+                        try {
+                            value = JSON.parse(valueStr);
+                        } catch (error) {
+                            // If JSON parsing fails, fall back to string
+                            value = valueStr;
+                        }
                     } else {
                         // Default to string
                         value = valueStr;
