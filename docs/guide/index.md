@@ -10,7 +10,7 @@ JSONJet processes data as streams, allowing for real-time data processing and an
 ### Lookup Definitions
 Create and manage lookup tables for data enrichment:
 
-```sql
+```js
 create lookup threshold = 50
 create lookup multiplier = 2
 
@@ -24,7 +24,7 @@ create flow analysis as
 ### Array Indexing
 Native support for array operations:
 
-```sql
+```js
 -- Insert data with arrays
 insert into users {"name": "Alice", "scores": [85, 92, 78, 95]}
 
@@ -41,7 +41,7 @@ create flow results as
 ### SQL-like Syntax
 Familiar query syntax for data manipulation:
 
-```sql
+```js
 create stream events
 create flow filtered as
   events 
@@ -53,4 +53,6 @@ create flow filtered as
 ## Next Steps
 
 - [Quick Start Guide](/guide/quick-start) - Get up and running quickly
+- [Syntax Reference](/guide/syntax) - Complete language syntax documentation
+- [Syntax Highlighting Demo](/syntax-highlighting-demo) - See the query language in action
 - [API Reference](/api/) - Detailed API documentation

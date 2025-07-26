@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: "JSONJet"
-  text: "JavaScript Database"
-  tagline: "Real-time streaming database with SQL-like query capabilities"
+  text: "Stream Processing Engine"
+  tagline: "High-performance stream processing with Kusto-like query language"
   actions:
     - theme: brand
       text: Get Started
@@ -14,12 +14,24 @@ hero:
       link: https://github.com/your-org/jsonjet
 
 features:
-  - title: Real-time Streaming
-    details: Process data as it flows through your application with real-time stream processing capabilities.
-  - title: SQL-like Queries
-    details: Use familiar SQL-like syntax for querying and manipulating your data streams.
-  - title: Lookup Definitions
-    details: Create and manage lookup tables with full CRUD operations for data enrichment.
-  - title: Array Indexing
-    details: Native support for array indexing and complex data structure operations.
+  - icon: 
+      light: /icons/file-json-2.svg
+      dark: /icons/file-json-2-light.svg
+    title: Document-Based Flexible
+    details: Schemaless JSON stream processor for maximal flexibility with dynamic data structures.
+  - icon:
+      light: /icons/rocket.svg
+      dark: /icons/rocket-light.svg
+    title: JIT Compiled
+    details: Just-in-time compilation delivers high-performance query execution for real-time processing.
+  - icon:
+      light: /icons/cpu.svg
+      dark: /icons/cpu-light.svg
+    title: Memory Efficient
+    details: Optimized for edge computing and automotive applications with minimal memory footprint.
+  - icon:
+      light: /icons/square-function.svg
+      dark: /icons/square-function-light.svg
+    title: Kusto-Like Language
+    details: Familiar query syntax inspired by Azure Data Explorer for powerful stream processing.
 ---

@@ -1,0 +1,275 @@
+/* JSONJet Syntax Highlighting Styles */
+
+/* Default light theme styles */
+.language-jsonjet {
+  background: #f6f8fa;
+  color: #24292e;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  border: 1px solid #e1e4e8;
+}
+
+/* Declaration keywords (create, insert, delete, etc.) */
+.language-jsonjet .token-keyword-declaration {
+  color: #d73a49;
+  font-weight: bold;
+}
+
+/* Query keywords (where, select, scan, etc.) */
+.language-jsonjet .token-keyword-query {
+  color: #e36209;
+  font-weight: bold;
+}
+
+/* Flow keywords (stream, flow, as, etc.) */
+.language-jsonjet .token-keyword-flow {
+  color: #6f42c1;
+  font-weight: bold;
+}
+
+/* Control keywords (or, replace, if, etc.) */
+.language-jsonjet .token-keyword-control {
+  color: #d73a49;
+  font-weight: bold;
+}
+
+/* Logical keywords (and, or, not) */
+.language-jsonjet .token-keyword-logical {
+  color: #d73a49;
+  font-weight: bold;
+}
+
+/* Window keywords */
+.language-jsonjet .token-keyword-window {
+  color: #6f42c1;
+  font-weight: bold;
+}
+
+/* Boolean literals */
+.language-jsonjet .token-literal-boolean {
+  color: #005cc5;
+  font-weight: bold;
+}
+
+/* Regular functions */
+.language-jsonjet .token-function {
+  color: #6f42c1;
+}
+
+/* Special functions (iff, assert_or_save_expected, etc.) */
+.language-jsonjet .token-function-special {
+  color: #e36209;
+  font-weight: bold;
+}
+
+/* Operators */
+.language-jsonjet .token-operator {
+  color: #24292e;
+  font-weight: bold;
+}
+
+/* Strings */
+.language-jsonjet .token-string {
+  color: #032f62;
+}
+
+/* Numbers */
+.language-jsonjet .token-number {
+  color: #005cc5;
+}
+
+/* Comments */
+.language-jsonjet .token-comment {
+  color: #6a737d;
+  font-style: italic;
+}
+
+/* Regular identifiers */
+.language-jsonjet .token-identifier {
+  color: #24292e;
+}
+
+/* Object property keys */
+.language-jsonjet .token-property-key {
+  color: #0550ae;
+  font-weight: bold;
+  background-color: rgba(5, 80, 174, 0.1);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* Punctuation */
+.language-jsonjet .token-punctuation {
+  color: #24292e;
+}
+
+/* Whitespace */
+.language-jsonjet .token-whitespace {
+  color: transparent;
+}
+
+/* Dark theme overrides */
+html.dark .language-jsonjet {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #30363d;
+}
+
+/* Declaration keywords */
+html.dark .language-jsonjet .token-keyword-declaration {
+  color: #569cd6;
+}
+
+/* Query keywords */
+html.dark .language-jsonjet .token-keyword-query {
+  color: #ff7b72;
+}
+
+/* Flow keywords */
+html.dark .language-jsonjet .token-keyword-flow {
+  color: #d2a8ff;
+}
+
+/* Control keywords */
+html.dark .language-jsonjet .token-keyword-control {
+  color: #569cd6;
+}
+
+/* Logical keywords */
+html.dark .language-jsonjet .token-keyword-logical {
+  color: #569cd6;
+}
+
+/* Window keywords */
+html.dark .language-jsonjet .token-keyword-window {
+  color: #d2a8ff;
+}
+
+/* Boolean literals */
+html.dark .language-jsonjet .token-literal-boolean {
+  color: #79c0ff;
+}
+
+/* Regular functions */
+html.dark .language-jsonjet .token-function {
+  color: #dcdcaa;
+}
+
+/* Special functions */
+html.dark .language-jsonjet .token-function-special {
+  color: #ff7b72;
+}
+
+/* Operators */
+html.dark .language-jsonjet .token-operator {
+  color: #d4d4d4;
+}
+
+/* Strings */
+html.dark .language-jsonjet .token-string {
+  color: #ce9178;
+}
+
+/* Numbers */
+html.dark .language-jsonjet .token-number {
+  color: #b5cea8;
+}
+
+/* Comments */
+html.dark .language-jsonjet .token-comment {
+  color: #6a9955;
+}
+
+/* Regular identifiers */
+html.dark .language-jsonjet .token-identifier {
+  color: #9cdcfe;
+}
+
+/* Object property keys */
+html.dark .language-jsonjet .token-property-key {
+  color: #79c0ff;
+  background-color: rgba(121, 192, 255, 0.1);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* Punctuation */
+html.dark .language-jsonjet .token-punctuation {
+  color: #d4d4d4;
+}
+
+/* Alternative dark theme selector for compatibility */
+.dark .language-jsonjet {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #30363d;
+}
+
+.dark .language-jsonjet .token-keyword-declaration {
+  color: #569cd6;
+}
+
+.dark .language-jsonjet .token-keyword-query {
+  color: #ff7b72;
+}
+
+.dark .language-jsonjet .token-keyword-flow {
+  color: #d2a8ff;
+}
+
+.dark .language-jsonjet .token-keyword-control {
+  color: #569cd6;
+}
+
+.dark .language-jsonjet .token-keyword-logical {
+  color: #569cd6;
+}
+
+.dark .language-jsonjet .token-keyword-window {
+  color: #d2a8ff;
+}
+
+.dark .language-jsonjet .token-literal-boolean {
+  color: #79c0ff;
+}
+
+.dark .language-jsonjet .token-function {
+  color: #dcdcaa;
+}
+
+.dark .language-jsonjet .token-function-special {
+  color: #ff7b72;
+}
+
+.dark .language-jsonjet .token-operator {
+  color: #d4d4d4;
+}
+
+.dark .language-jsonjet .token-string {
+  color: #ce9178;
+}
+
+.dark .language-jsonjet .token-number {
+  color: #b5cea8;
+}
+
+.dark .language-jsonjet .token-comment {
+  color: #6a9955;
+}
+
+.dark .language-jsonjet .token-identifier {
+  color: #9cdcfe;
+}
+
+.dark .language-jsonjet .token-property-key {
+  color: #79c0ff;
+  background-color: rgba(121, 192, 255, 0.1);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+.dark .language-jsonjet .token-punctuation {
+  color: #d4d4d4;
+} 

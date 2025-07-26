@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@shikijs/transformers": "^3.8.1",
     "vitepress": "^1.6.3"
   }
 }

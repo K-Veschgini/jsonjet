@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 587 587" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-946.856,-946.374)">
+        <g transform="matrix(1.21035,0,0,1.21035,-331.825,-1121.23)">
+            <circle cx="1298.78" cy="1950.59" r="222.992" style="fill:rgb(13,121,242);"/>
+        </g>
+        <g transform="matrix(1.3153,0,0,1.3153,-468.131,-1325.94)">
+            <circle cx="1298.78" cy="1950.59" r="222.992" style="fill:none;"/>
+        </g>
+        <g transform="matrix(0.608798,0.608798,-0.608798,0.608798,2638.64,-1086.02)">
+            <g transform="matrix(492.828,0,0,492.828,964.121,3186.17)">
+            </g>
+            <text x="560.83px" y="3186.17px" style="font-family:'Arial-BoldMT', 'Arial', sans-serif;font-weight:700;font-size:492.828px;fill:white;">{<tspan x="772.332px " y="3186.17px ">}</tspan></text>
+        </g>
+    </g>
+</svg>

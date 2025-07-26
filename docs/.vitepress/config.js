@@ -1,11 +1,41 @@
 import { defineConfig } from 'vitepress'
+import { highlightJsonjet } from './highlighter/jsonjet-highlighter.js'
 
 export default defineConfig({
-  title: 'JSDB Documentation',
-  description: 'JavaScript Database with real-time streaming capabilities',
+  title: 'JSONJet Documentation',
+  description: 'Stream processing engine with Kusto-like query language',
+  
+  appearance: true, // Enable dark mode toggle
+  
+  markdown: {
+    theme: {
+      light: 'github-light',
+      dark: 'github-dark'
+    },
+    config: (md) => {
+      // Override the fence renderer to handle jsonjet language
+      const defaultRender = md.renderer.rules.fence || function(tokens, idx, options, env, self) {
+        return self.renderToken(tokens, idx, options)
+      }
+      
+      md.renderer.rules.fence = function (tokens, idx, options, env, self) {
+        const token = tokens[idx]
+        const lang = token.info.trim()
+        
+        if (lang === 'jsonjet' || lang === 'jet') {
+          // Use custom JSONJet highlighter
+          return highlightJsonjet(token.content)
+        }
+        
+        return defaultRender(tokens, idx, options, env, self)
+      }
+    }
+  },
   
   // Enable local search without external services
   themeConfig: {
+    logo: '/logo.svg',
+    
     search: {
       provider: 'local',
       options: {
@@ -33,7 +63,9 @@ export default defineConfig({
         text: 'Getting Started',
         items: [
           { text: 'Introduction', link: '/guide/' },
-          { text: 'Quick Start', link: '/guide/quick-start' }
+          { text: 'Quick Start', link: '/guide/quick-start' },
+          { text: 'Syntax Reference', link: '/guide/syntax' },
+          { text: 'Syntax Highlighting', link: '/syntax-highlighting-demo' }
         ]
       },
       {

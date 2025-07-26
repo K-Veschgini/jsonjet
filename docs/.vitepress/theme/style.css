@@ -1,0 +1,81 @@
+/* Custom brand color */
+:root {
+  --vp-c-brand-1: #0D79F2;
+  --vp-c-brand-2: #0D79F2;
+  --vp-c-brand-3: #0D79F2;
+  --vp-c-brand-soft: #0D79F2;
+}
+
+/* Background video for home page */
+.VPHome {
+  position: relative;
+}
+
+/* Force dark theme on home page only - hide entire appearance section */
+.VPHome .VPNavBarAppearance,
+.VPHome .VPSwitchAppearance,
+.VPHome .appearance,
+.VPHome .divider:has(+ .VPNavBarAppearance),
+.VPHome .VPNavBarAppearance + .divider,
+.VPHome .VPNavBarExtra > .divider:last-child,
+.VPHome .VPNavBarExtra > .divider:nth-last-child(2) {
+  display: none !important;
+}
+
+.VPHome::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: url('/background.mp4') center/cover no-repeat;
+}
+
+.home-background-video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  opacity: 0.3;
+}
+
+.VPHero {
+  position: relative;
+  z-index: 1;
+}
+
+/* Custom theme styles for icons */
+.VPFeature .VPImage {
+  filter: none;
+}
+
+/* Add grey border to feature boxes on homepage */
+.VPHome .VPFeature {
+  border: 1px solid #444;
+  border-radius: 8px;
+}
+
+/* Force icon colors for light and dark themes */
+.VPFeature .VPImage svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--vp-c-text-1) !important;
+  color: var(--vp-c-text-1) !important;
+}
+
+/* Dark theme specific overrides */
+.dark .VPFeature .VPImage svg {
+  stroke: var(--vp-c-text-1) !important;
+  color: var(--vp-c-text-1) !important;
+}
+
+/* Light theme specific overrides */
+:root .VPFeature .VPImage svg {
+  stroke: var(--vp-c-text-1) !important;
+  color: var(--vp-c-text-1) !important;
+}

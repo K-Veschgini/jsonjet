@@ -1,0 +1,266 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "jsonjet",
+  "scopeName": "source.jsonjet",
+  "fileTypes": ["jet", "jsonjet"],
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#identifiers"
+    },
+    {
+      "include": "#json-objects"
+    },
+    {
+      "include": "#array-access"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#window-functions"
+    },
+    {
+      "include": "#dot-commands"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.jsonjet",
+          "match": "\\b(create|or|replace|stream|flow|lookup|insert|into|delete|list|as|where|select|scan|step|emit|summarize|collect|by|over|iff|every|when|on|change|group|update|using|flush|info|subscribe|unsubscribe|ttl|print|assert_or_save_expected|write_to_file|insert_into)\\b"
+        },
+        {
+          "name": "keyword.operator.logical.jsonjet",
+          "match": "\\b(and|or|not|if|exists)\\b"
+        },
+        {
+          "name": "constant.language.boolean.jsonjet",
+          "match": "\\b(true|false|null)\\b"
+        },
+        {
+          "name": "keyword.control.window.jsonjet",
+          "match": "\\b(hopping_window|tumbling_window|sliding_window|count_window|hopping_window_by|tumbling_window_by|sliding_window_by|session_window)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.pipe.jsonjet",
+          "match": "\\|"
+        },
+        {
+          "name": "keyword.operator.arrow.jsonjet",
+          "match": "=>"
+        },
+        {
+          "name": "keyword.operator.comparison.jsonjet",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.assignment.jsonjet",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.arithmetic.jsonjet",
+          "match": "(\\+|\\-|\\*|\\/|%)"
+        },
+        {
+          "name": "keyword.operator.logical.jsonjet",
+          "match": "(\\&\\&|\\|\\|)"
+        },
+        {
+          "name": "keyword.operator.spread.jsonjet",
+          "match": "\\.\\.\\."
+        },
+        {
+          "name": "keyword.operator.ternary.jsonjet",
+          "match": "\\?"
+        },
+        {
+          "name": "keyword.operator.colon.jsonjet",
+          "match": ":"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.jsonjet",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.jsonjet",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.jsonjet",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.jsonjet",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.jsonjet",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "identifiers": {
+      "name": "variable.other.jsonjet",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+    },
+    "json-objects": {
+      "patterns": [
+        {
+          "name": "punctuation.definition.object.begin.jsonjet",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.definition.object.end.jsonjet",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.definition.array.begin.jsonjet",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.definition.array.end.jsonjet",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.separator.key-value.jsonjet",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.separator.comma.jsonjet",
+          "match": ","
+        },
+        {
+          "name": "punctuation.definition.parenthesis.begin.jsonjet",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.definition.parenthesis.end.jsonjet",
+          "match": "\\)"
+        },
+        {
+          "name": "punctuation.terminator.semicolon.jsonjet",
+          "match": ";"
+        }
+      ]
+    },
+    "array-access": {
+      "name": "meta.array-access.jsonjet",
+      "match": "([a-zA-Z_][a-zA-Z0-9_]*)(\\[)(\\d+|[a-zA-Z_][a-zA-Z0-9_]*)(\\])",
+      "captures": {
+        "1": { "name": "variable.other.jsonjet" },
+        "2": { "name": "punctuation.definition.array.begin.jsonjet" },
+        "3": { "name": "constant.numeric.jsonjet" },
+        "4": { "name": "punctuation.definition.array.end.jsonjet" }
+      }
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "meta.function-call.jsonjet",
+          "begin": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\(",
+          "end": "\\)",
+          "beginCaptures": {
+            "1": { "name": "entity.name.function.jsonjet" }
+          },
+          "patterns": [
+            {
+              "include": "#expressions"
+            }
+          ]
+        },
+        {
+          "name": "support.function.builtin.jsonjet",
+          "match": "\\b(count|sum|avg|min|max|abs|exp|pi|pow|mod|add|sub|mul|div|neg|eq|ne|lt|le|gt|ge|and|or|not)\\b"
+        }
+      ]
+    },
+    "window-functions": {
+      "patterns": [
+        {
+          "name": "meta.window-function.jsonjet",
+          "begin": "\\b(hopping_window|tumbling_window|sliding_window|count_window|hopping_window_by|tumbling_window_by|sliding_window_by|session_window)\\s*\\(",
+          "end": "\\)",
+          "beginCaptures": {
+            "1": { "name": "support.function.window.jsonjet" }
+          },
+          "patterns": [
+            {
+              "include": "#expressions"
+            }
+          ]
+        }
+      ]
+    },
+    "dot-commands": {
+      "patterns": [
+        {
+          "name": "meta.dot-command.jsonjet",
+          "begin": "\\.",
+          "end": "(?=\\s|$|;)",
+          "patterns": [
+            {
+              "name": "entity.name.function.command.jsonjet",
+              "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+            }
+          ]
+        }
+      ]
+    },
+    "expressions": {
+      "patterns": [
+        {
+          "include": "#keywords"
+        },
+        {
+          "include": "#operators"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#identifiers"
+        },
+        {
+          "include": "#json-objects"
+        },
+        {
+          "include": "#array-access"
+        },
+        {
+          "include": "#functions"
+        }
+      ]
+    }
+  }
+} 
