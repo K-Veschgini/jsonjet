@@ -1,6 +1,6 @@
 # 🔥 Server Profiling Guide
 
-This guide shows how to generate flame graphs of the ResonanceDB server during benchmark execution.
+This guide shows how to generate flame graphs of the JSONJet server during benchmark execution.
 
 ## Quick Start
 

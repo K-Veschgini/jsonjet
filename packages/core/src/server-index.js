@@ -1,5 +1,5 @@
 /**
- * JSDB Core - Server Registry (Full Features)
+ * JSONJet Core - Server Registry (Full Features)
  * Extends browser registry with server-only components (Node.js dependencies)
  */
 

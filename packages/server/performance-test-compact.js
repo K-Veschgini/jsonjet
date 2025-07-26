@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * Compact Performance Test for ResonanceDB Server
+ * Compact Performance Test for JSONJet Server
  * Clean, minimalistic version with proper flow logic
  */
 

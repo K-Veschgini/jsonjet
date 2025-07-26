@@ -1,4 +1,4 @@
-// Simple logging system for JSDB
+// Simple logging system for JSONJet
 export class Logger {
     constructor(streamManager) {
         this.streamManager = streamManager;

@@ -1,4 +1,4 @@
-# ResonanceDB
+# JSONJet
 
 A high-performance stream processing database with flow-based architecture for real-time data processing.
 

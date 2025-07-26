@@ -3,11 +3,11 @@ import path from 'path';
 import { createInstances } from '../src/instances.js';
 
 /**
- * RDB Test Runner - Discovers and runs all .rdb query files in specified directories
- * Each .rdb file is executed with a fresh StreamManager and checked for errors in _log stream
+ * JET Test Runner - Discovers and runs all .jet query files in specified directories
+ * Each .jet file is executed with a fresh StreamManager and checked for errors in _log stream
  */
-class RdbTestRunner {
-    constructor(testDirectories = ['tests/rdb-tests']) {
+class JetTestRunner {
+    constructor(testDirectories = ['tests/jet-tests']) {
         this.testDirectories = testDirectories;
         this.results = {
             passed: 0,
@@ -18,7 +18,7 @@ class RdbTestRunner {
     }
 
     /**
-     * Recursively find all .rdb files in the specified directories
+     * Recursively find all .jet files in the specified directories
      */
     findRdbFiles(directory) {
         const rdbFiles = [];
@@ -37,7 +37,7 @@ class RdbTestRunner {
             if (stat.isDirectory()) {
                 // Recursively search subdirectories
                 rdbFiles.push(...this.findRdbFiles(fullPath));
-            } else if (stat.isFile() && item.endsWith('.rdb')) {
+            } else if (stat.isFile() && item.endsWith('.jet')) {
                 rdbFiles.push(fullPath);
             }
         }
@@ -48,7 +48,7 @@ class RdbTestRunner {
     // Remove manual statement parsing - now handled by unified parser
 
     /**
-     * Execute a single .rdb test file
+     * Execute a single .jet test file
      */
     async executeRdbFile(filePath) {
         const relativePath = path.relative(process.cwd(), filePath);
@@ -64,7 +64,7 @@ class RdbTestRunner {
         };
         
         try {
-            // Read the .rdb file
+            // Read the .jet file
             const content = fs.readFileSync(filePath, 'utf8');
             
             // Create fresh instances for this test
@@ -146,9 +146,9 @@ class RdbTestRunner {
      * Run all tests in the specified directories
      */
     async runAllTests() {
-        console.log('🚀 RDB Test Runner Starting...\n');
+        console.log('🚀 JET Test Runner Starting...\n');
         
-        // Find all .rdb files
+        // Find all .jet files
         const allRdbFiles = [];
         for (const directory of this.testDirectories) {
             const files = this.findRdbFiles(directory);
@@ -156,12 +156,12 @@ class RdbTestRunner {
         }
         
         if (allRdbFiles.length === 0) {
-            console.log('⚠️  No .rdb files found in specified directories');
+            console.log('⚠️  No .jet files found in specified directories');
             console.log('   Searched directories:', this.testDirectories);
             return this.results;
         }
         
-        console.log(`📁 Found ${allRdbFiles.length} .rdb test file(s):`);
+        console.log(`📁 Found ${allRdbFiles.length} .jet test file(s):`);
         allRdbFiles.forEach(file => {
             console.log(`   - ${path.relative(process.cwd(), file)}`);
         });
@@ -201,12 +201,12 @@ class RdbTestRunner {
 }
 
 // Export for use as a module
-export { RdbTestRunner };
+export { JetTestRunner };
 
 
 // If run directly, execute with default directories
 if (import.meta.url === `file://${process.argv[1]}`) {
-    const runner = new RdbTestRunner();
+    const runner = new JetTestRunner();
     const results = await runner.runAllTests();
     
     // Exit with appropriate code

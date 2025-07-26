@@ -3,7 +3,7 @@
  * Non-singleton, each manager gets its own instance
  */
 
-import { JSDBError, ErrorCodes } from './jsdb-error.js';
+import { JSONJetError, ErrorCodes } from './jsdb-error.js';
 import { ScalarFunction } from '../functions/core/scalar-function.js';
 
 export class Registry {
@@ -31,7 +31,7 @@ export class Registry {
      */
     registerFunction(functionInstance) {
         if (!(functionInstance instanceof ScalarFunction)) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.FUNCTION_DEFINITION_ERROR,
                 'Can only register instances of ScalarFunction'
             );
@@ -40,7 +40,7 @@ export class Registry {
         const name = functionInstance.name.toLowerCase();
         
         if (this.functions.has(name)) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.FUNCTION_DEFINITION_ERROR,
                 `Function '${name}' is already registered`
             );
@@ -76,7 +76,7 @@ export class Registry {
     executeFunction(name, args) {
         const func = this.getFunction(name);
         if (!func) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.FUNCTION_NOT_FOUND,
                 `Function '${name}' is not registered`
             );
@@ -213,7 +213,7 @@ export class Registry {
         
         // Validate lookup name format
         if (!this._isValidLookupName(name)) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.LOOKUP_DEFINITION_ERROR,
                 `Invalid lookup name '${name}'. Names must be valid identifiers.`
             );
@@ -221,7 +221,7 @@ export class Registry {
         
         // Check for conflicts with existing functions, aggregations, or operators
         if (this.hasFunction(normalizedName) || this.hasAggregation(normalizedName) || this.hasOperator(normalizedName)) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.LOOKUP_NAME_CONFLICT,
                 `Cannot create lookup '${name}': conflicts with existing function, aggregation, or operator`
             );
@@ -229,7 +229,7 @@ export class Registry {
         
         // Validate lookup value
         if (!this._isValidLookupValue(value)) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.LOOKUP_VALUE_ERROR,
                 `Invalid lookup value. Supported types: boolean, number, string, null, array, object`
             );
@@ -247,7 +247,7 @@ export class Registry {
         const normalizedName = name.toLowerCase();
         
         if (!this.hasLookup(normalizedName)) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.LOOKUP_NOT_FOUND,
                 `Lookup '${name}' does not exist`
             );
@@ -255,7 +255,7 @@ export class Registry {
         
         // Validate lookup value
         if (!this._isValidLookupValue(value)) {
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.LOOKUP_VALUE_ERROR,
                 `Invalid lookup value. Supported types: boolean, number, string, null, array, object`
             );

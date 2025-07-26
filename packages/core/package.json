@@ -1,7 +1,7 @@
 {
-  "name": "@resonancedb/core",
-  "version": "0.1.0",
-  "description": "Core ResonanceDB stream processing database library",
+  "name": "@jsonjet/core",
+  "version": "0.0.0",
+  "description": "Core JSONJet stream processing database library",
   "type": "module",
   "main": "src/index.js",
   "exports": {

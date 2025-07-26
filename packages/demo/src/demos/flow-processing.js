@@ -1,4 +1,4 @@
-export const flowProcessingDemo = `// ResonanceDB Flow Processing Demo
+export const flowProcessingDemo = `// JSONJet Flow Processing Demo
 // Learn how to create flows that process and route data in real-time
 
 // 1. Create streams (using or replace to handle existing streams)

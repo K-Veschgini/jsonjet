@@ -1,8 +1,8 @@
-// Custom error class for JSDB with error codes
-export class JSDBError extends Error {
-    constructor(code, message) {
-        super(message);
-        this.name = 'JSDBError';
+// Custom error class for JSONJet with error codes
+export class JSONJetError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'JSONJetError';
         this.code = code;
     }
 }

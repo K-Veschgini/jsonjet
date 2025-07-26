@@ -1,6 +1,6 @@
-# ResonanceDB Server
+# JSONJet Server
 
-A Bun-based HTTP and WebSocket server for ResonanceDB that provides real-time query execution and stream subscriptions.
+A Bun-based HTTP and WebSocket server for JSONJet that provides real-time query execution and stream subscriptions.
 
 ## Features
 
@@ -8,7 +8,7 @@ A Bun-based HTTP and WebSocket server for ResonanceDB that provides real-time qu
 - **WebSocket** for real-time stream subscriptions
 - **CORS enabled** for browser integration
 - **Stream management** with live data flow
-- **Query execution** with the full JSDB query language
+- **Query execution** with the full JSONJet query language
 
 ## Installation
 
@@ -45,7 +45,7 @@ You can compile the server into a standalone executable:
 bun run build
 ```
 
-This creates a `resonancedb-server` binary (~59MB) that includes the entire runtime and can be distributed without requiring Bun to be installed on the target system.
+This creates a `jsonjet-server` binary (~59MB) that includes the entire runtime and can be distributed without requiring Bun to be installed on the target system.
 
 ### HTTP API Endpoints
 

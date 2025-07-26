@@ -1,6 +1,6 @@
 import { Stream } from './stream.js';
 import { Logger } from './logger.js';
-import { JSDBError, ErrorCodes } from './jsdb-error.js';
+import { JSONJetError, ErrorCodes } from './jsdb-error.js';
 import { sanitizeForJSON } from '../utils/json-sanitizer.js';
 
 /**
@@ -39,7 +39,7 @@ export class StreamManager {
         if (this.streams.has(name)) {
             this.initializeLogger();
             this.logger.error(ErrorCodes.STREAM_ALREADY_EXISTS, `Stream '${name}' already exists`);
-            throw new JSDBError(ErrorCodes.STREAM_ALREADY_EXISTS, `Stream '${name}' already exists`);
+            throw new JSONJetError(ErrorCodes.STREAM_ALREADY_EXISTS, `Stream '${name}' already exists`);
         }
 
         return this.createStreamInternal(name);
@@ -75,7 +75,7 @@ export class StreamManager {
         if (!container) {
             this.initializeLogger();
             this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
-            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSONJetError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         // Stop all active flows on this stream
@@ -134,7 +134,7 @@ export class StreamManager {
         if (!container) {
             this.initializeLogger();
             this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
-            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSONJetError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         // Handle bulk insert (array) or single insert
@@ -198,7 +198,7 @@ export class StreamManager {
         if (!container) {
             this.initializeLogger();
             this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
-            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSONJetError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         // Call flushAll on all flow pipelines subscribed to this stream
@@ -226,7 +226,7 @@ export class StreamManager {
         if (!container) {
             this.initializeLogger();
             this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
-            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
+            throw new JSONJetError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${name}' does not exist`);
         }
 
         const queryId = this.nextSubscriptionId++;
@@ -247,7 +247,7 @@ export class StreamManager {
         if (!container) {
             this.initializeLogger();
             this.logger.error(ErrorCodes.STREAM_NOT_FOUND, `Stream '${streamName}' does not exist`);
-            throw new JSDBError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${streamName}' does not exist`);
+            throw new JSONJetError(ErrorCodes.STREAM_NOT_FOUND, `Stream '${streamName}' does not exist`);
         }
 
         const subscriptionId = this.nextSubscriptionId++;

@@ -3,7 +3,7 @@
  * Simple interface for function execution with error handling
  */
 
-import { JSDBError, ErrorCodes } from '../../core/jsdb-error.js';
+import { JSONJetError, ErrorCodes } from '../../core/jsdb-error.js';
 
 export class ScalarFunction {
     /**
@@ -22,10 +22,10 @@ export class ScalarFunction {
         try {
             return this._execute(args);
         } catch (error) {
-            if (error instanceof JSDBError) {
+            if (error instanceof JSONJetError) {
                 throw error;
             }
-            throw new JSDBError(
+            throw new JSONJetError(
                 ErrorCodes.FUNCTION_EXECUTION_ERROR,
                 `Error executing function '${this.name}': ${error.message}`
             );
@@ -39,7 +39,7 @@ export class ScalarFunction {
      * @protected
      */
     _execute(args) {
-        throw new JSDBError(
+        throw new JSONJetError(
             ErrorCodes.FUNCTION_DEFINITION_ERROR,
             `Function '${this.name}' must implement _execute method`
         );

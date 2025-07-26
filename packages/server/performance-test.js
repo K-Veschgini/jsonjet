@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * Performance Test for ResonanceDB Server
+ * Performance Test for JSONJet Server
  * Tests high-volume data insertion and aggregation query performance
  * Benchmarks 4 different insertion methods:
  * 1. HTTP single inserts
@@ -323,7 +323,7 @@ class PerformanceTest {
    * Run the complete performance test
    */
   async run() {
-    console.log('�� Starting ResonanceDB Performance Test');
+    console.log('�� Starting JSONJet Performance Test');
     console.log(`📊 Records to insert: ${RECORD_COUNT.toLocaleString()}`);
     console.log(`📦 Batch size: ${BATCH_SIZE}`);
     console.log('=' .repeat(60));

@@ -1,5 +1,5 @@
 /**
- * JSDB Aggregations - Server Registry
+ * JSONJet Aggregations - Server Registry
  * Extends browser registry with server-only aggregations (Node.js dependencies)
  */
 

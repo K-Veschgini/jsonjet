@@ -1,22 +1,23 @@
 {
-  "name": "resonancedb-demo",
-  "version": "0.1.0",
+  "name": "jsonjet-demo",
+  "version": "0.0.0",
   "private": true,
-  "description": "Interactive demo application for ResonanceDB - a stream processing database",
+  "description": "Interactive demo application for JSONJet - a stream processing database",
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
   "scripts": {
-    "dev": "bun --hot src/index.js",
+    "dev": "vite",
     "dev:no-hot": "bun src/index.js",
-    "build": "bun build ./src/index.html --outdir=dist --sourcemap --target=browser --minify --define:process.env.NODE_ENV='\"production\"' --env='BUN_PUBLIC_*'",
+    "build": "vite build",
+    "preview": "vite preview",
     "start": "NODE_ENV=production bun src/index.js"
   },
   "dependencies": {
-    "@resonancedb/core": "workspace:*",
-    "@resonancedb/ui": "workspace:*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@jsonjet/core": "workspace:*",
+    "@jsonjet/ui": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -1,7 +1,7 @@
 {
-  "name": "resonancedb-monorepo",
-  "version": "0.1.0",
-  "description": "ResonanceDB stream processing database - monorepo structure",
+  "name": "jsonjet-monorepo",
+  "version": "0.0.0",
+  "description": "JSONJet stream processing database - monorepo structure",
   "type": "module",
   "private": true,
   "workspaces": [

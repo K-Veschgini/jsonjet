@@ -1,10 +1,10 @@
-import { createInstances } from '@resonancedb/core';
+import { createInstances } from '@jsonjet/core';
 
 /**
- * ResonanceDB Bun Server
+ * JSONJet Bun Server
  * Provides HTTP API and WebSocket streaming for query execution and stream subscriptions
  */
-class ResonanceDBServer {
+class JSONJetServer {
   constructor(port = 3333, verbose = false) {
     this.port = port;
     this.verbose = verbose;
@@ -41,7 +41,7 @@ class ResonanceDBServer {
     });
 
     this.server = server;
-    console.log(`🚀 ResonanceDB Server running on http://localhost:${this.port}`);
+    console.log(`🚀 JSONJet Server running on http://localhost:${this.port}`);
     console.log(`📡 WebSocket endpoint: ws://localhost:${this.port}/ws`);
     return server;
   }
@@ -266,7 +266,7 @@ class ResonanceDBServer {
     ws.send(JSON.stringify({
       type: 'connected',
       clientId,
-      message: 'Connected to ResonanceDB WebSocket'
+              message: 'Connected to JSONJet WebSocket'
     }));
 
     this.log(`📡 WebSocket client ${clientId} connected`);
@@ -517,8 +517,8 @@ class ResonanceDBServer {
 // Start the server if this file is run directly
 if (import.meta.main) {
   const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
-  const server = new ResonanceDBServer(3333, verbose);
+  const server = new JSONJetServer(3333, verbose);
   server.start();
 }
 
-export default ResonanceDBServer; 
+export default JSONJetServer; 

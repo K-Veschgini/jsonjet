@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test';
-import { RdbTestRunner } from './rdb-test-runner.js';
+import { JetTestRunner } from './jet-test-runner.js';
 
-test('RDB Integration Tests', async () => {
+test('JET Integration Tests', async () => {
     // Store original console methods
     const originalLog = console.log;
     const originalWarn = console.warn;
@@ -11,7 +11,7 @@ test('RDB Integration Tests', async () => {
     const originalCwd = process.cwd();
     process.chdir('/Users/veschgini/Dev/kambis/jsdb/packages/core');
     
-    const runner = new RdbTestRunner();
+    const runner = new JetTestRunner();
     
     try {
         const results = await runner.runAllTests();

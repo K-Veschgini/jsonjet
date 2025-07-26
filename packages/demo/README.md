@@ -1,6 +1,6 @@
-# ResonanceDB Demo
+# JSONJet Demo
 
-Interactive demo application for ResonanceDB - a stream processing database with flow-based architecture.
+Interactive demo application for JSONJet - a stream processing database with flow-based architecture.
 
 ## Features
 

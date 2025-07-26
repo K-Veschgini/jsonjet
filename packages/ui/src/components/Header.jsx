@@ -13,7 +13,7 @@ export function Header() {
       flexShrink: 0
     }}>
       <Title order={3} c="blue">
-        🗃️ ResonanceDB Query Demo
+        🗃️ JSONJet Query Demo
       </Title>
     </div>
   );

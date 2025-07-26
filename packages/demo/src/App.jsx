@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
-import '@resonancedb/ui/src/App.css';
-import '@resonancedb/ui/src/index.css';
+import '@jsonjet/ui/src/App.css';
+import '@jsonjet/ui/src/index.css';
 
-// Import ResonanceDB library
-import { createInstances, CommandParser } from '@resonancedb/core';
+// Import JSONJet library
+import { createInstances, CommandParser } from '@jsonjet/core';
 
 // Import components and hooks from UI package
-import { Header, ResizablePanels, CodeEditor, DataTabs, useUnreadCounts } from '@resonancedb/ui';
+import { Header, ResizablePanels, CodeEditor, DataTabs, useUnreadCounts } from '@jsonjet/ui';
 
 // Import demos
 import { flowProcessingDemo, summarizeDemo, scanSimpleDemo, scanDemo, scanAdvancedDemo, selectDemo, runArrayIndexingDemo } from './demos';
@@ -197,9 +197,9 @@ function App() {
     
     // Also log to browser console
     if (response?.success === false) {
-      console.error(`[ResonanceDB] Command failed:`, command, response);
+      console.error(`[JSONJet] Command failed:`, command, response);
     } else {
-      console.log(`[ResonanceDB] Command executed:`, command, response);
+              console.log(`[JSONJet] Command executed:`, command, response);
     }
   }, [incrementConsoleEntries]);
 
@@ -300,7 +300,7 @@ function App() {
       resetAllCounts();
       
     } catch (error) {
-      // Reset is a UI action, so only log errors to browser console, not ResonanceDB console
+      // Reset is a UI action, so only log errors to browser console, not JSONJet console
       console.error('Reset error:', error);
     }
   }, [addConsoleEntry]);

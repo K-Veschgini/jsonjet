@@ -110,9 +110,9 @@ bun --hot ./index.ts
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
 
-## ResonanceDB Demo Best Practices
+## JSONJet Demo Best Practices
 
-When creating demos for ResonanceDB:
+When creating demos for JSONJet:
 
 1. **Flow-First Pattern**: Always create flows BEFORE inserting data into streams. Never write data to streams before creating flows that will process them.
 
@@ -122,6 +122,6 @@ When creating demos for ResonanceDB:
    - Insert data third
    - Flush results at the end
 
-3. **Why This Matters**: ResonanceDB is a flow-based system where data flows through pipelines as it arrives. Creating flows first ensures data is processed correctly when inserted.
+3. **Why This Matters**: JSONJet is a flow-based system where data flows through pipelines as it arrives. Creating flows first ensures data is processed correctly when inserted.
 
 4. **Always Flush**: End demos with `.flush <stream_name>;` to show results to users.

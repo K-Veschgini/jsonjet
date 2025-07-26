@@ -1,6 +1,6 @@
 # Cross-Platform Build Guide
 
-This document explains how to build ResonanceDB Server for all supported platforms.
+This document explains how to build JSONJet Server for all supported platforms.
 
 ## Quick Start
 
@@ -14,19 +14,19 @@ bun run build-server.js
 
 ## Supported Platforms
 
-The build script compiles ResonanceDB Server for all platforms supported by Bun:
+The build script compiles JSONJet Server for all platforms supported by Bun:
 
 | Platform | Architecture | Binary Name | Description |
 |----------|-------------|-------------|-------------|
-| **Linux** | x64 | `resonancedb-server-linux-x64-glibc` | Standard Linux (glibc) |
-| | x64 baseline | `resonancedb-server-linux-x64-baseline-glibc` | Older CPUs (pre-2013) |
-| | ARM64 | `resonancedb-server-linux-arm64-glibc` | ARM64 Linux (glibc) |
-| | x64 musl | `resonancedb-server-linux-x64-musl` | Alpine Linux |
-| | ARM64 musl | `resonancedb-server-linux-arm64-musl` | ARM64 Alpine |
-| **Windows** | x64 | `resonancedb-server-windows-x64.exe` | Modern Windows |
-| | x64 baseline | `resonancedb-server-windows-x64-baseline.exe` | Older CPUs |
-| **macOS** | x64 | `resonancedb-server-darwin-x64` | Intel Macs |
-| | ARM64 | `resonancedb-server-darwin-arm64` | Apple Silicon |
+| **Linux** | x64 | `jsonjet-server-linux-x64-glibc` | Standard Linux (glibc) |
+| | x64 baseline | `jsonjet-server-linux-x64-baseline-glibc` | Older CPUs (pre-2013) |
+| | ARM64 | `jsonjet-server-linux-arm64-glibc` | ARM64 Linux (glibc) |
+| | x64 musl | `jsonjet-server-linux-x64-musl` | Alpine Linux |
+| | ARM64 musl | `jsonjet-server-linux-arm64-musl` | ARM64 Alpine |
+| **Windows** | x64 | `jsonjet-server-windows-x64.exe` | Modern Windows |
+| | x64 baseline | `jsonjet-server-windows-x64-baseline.exe` | Older CPUs |
+| **macOS** | x64 | `jsonjet-server-darwin-x64` | Intel Macs |
+| | ARM64 | `jsonjet-server-darwin-arm64` | Apple Silicon |
 
 ## Build Output
 
@@ -34,7 +34,7 @@ All binaries are created in the `release/` folder with:
 
 - **Minification** enabled for smaller binary size
 - **Source maps** embedded for better error reporting  
-- **Full JSDB functionality** including HTTP API and WebSocket streaming
+- **Full JSONJet functionality** including HTTP API and WebSocket streaming
 - **No dependencies** required on target systems
 
 ### Binary Sizes
@@ -62,20 +62,20 @@ To build for a specific platform manually:
 
 ```bash
 # Linux x64
-bun build packages/server/src/index.js --compile --minify --sourcemap --target=bun-linux-x64 --outfile=release/resonancedb-server-linux-x64-glibc
+bun build packages/server/src/index.js --compile --minify --sourcemap --target=bun-linux-x64 --outfile=release/jsonjet-server-linux-x64-glibc
 
 # Windows x64  
-bun build packages/server/src/index.js --compile --minify --sourcemap --target=bun-windows-x64 --outfile=release/resonancedb-server-windows-x64.exe
+bun build packages/server/src/index.js --compile --minify --sourcemap --target=bun-windows-x64 --outfile=release/jsonjet-server-windows-x64.exe
 
 # macOS ARM64
-bun build packages/server/src/index.js --compile --minify --sourcemap --target=bun-darwin-arm64 --outfile=release/resonancedb-server-darwin-arm64
+bun build packages/server/src/index.js --compile --minify --sourcemap --target=bun-darwin-arm64 --outfile=release/jsonjet-server-darwin-arm64
 ```
 
 ### Deployment
 
 The compiled binaries are standalone and include:
 - Bun runtime
-- ResonanceDB server code
+- JSONJet server code
 - All dependencies
 - Full HTTP API and WebSocket functionality
 
@@ -83,10 +83,10 @@ Simply copy the appropriate binary to your target system and run:
 
 ```bash
 # Linux/macOS
-./resonancedb-server-linux-x64-glibc
+./jsonjet-server-linux-x64-glibc
 
 # Windows  
-resonancedb-server-windows-x64.exe
+jsonjet-server-windows-x64.exe
 ```
 
 The server will start on `http://localhost:3000` by default.
@@ -133,13 +133,13 @@ For automated builds in CI/CD:
 
 ```yaml
 # Example GitHub Actions
-- name: Build ResonanceDB Server
+- name: Build JSONJet Server
   run: bun run build:server
 
 - name: Upload Release Artifacts
   uses: actions/upload-artifact@v3
   with:
-    name: resonancedb-server-binaries
+    name: jsonjet-server-binaries
     path: release/
 ```
 

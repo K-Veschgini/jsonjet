@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * Cross-platform build script for ResonanceDB Server
+ * Cross-platform build script for JSONJet Server
  * Compiles standalone executables for all Bun-supported platforms
  */
 
@@ -15,53 +15,53 @@ const RELEASE_DIR = './release';
 const TARGETS = [
   {
     target: 'bun-linux-x64',
-    name: 'resonancedb-server-linux-x64-glibc',
+    name: 'jsonjet-server-linux-x64-glibc',
     description: 'Linux x64 (glibc)'
   },
   {
     target: 'bun-linux-x64-baseline',
-    name: 'resonancedb-server-linux-x64-baseline-glibc',
+    name: 'jsonjet-server-linux-x64-baseline-glibc',
     description: 'Linux x64 baseline (glibc, older CPUs)'
   },
   {
     target: 'bun-linux-arm64',
-    name: 'resonancedb-server-linux-arm64-glibc',
+    name: 'jsonjet-server-linux-arm64-glibc',
     description: 'Linux ARM64 (glibc)'
   },
   {
     target: 'bun-linux-x64-musl',
-    name: 'resonancedb-server-linux-x64-musl',
+    name: 'jsonjet-server-linux-x64-musl',
     description: 'Linux x64 (musl, Alpine)'
   },
   {
     target: 'bun-linux-arm64-musl',
-    name: 'resonancedb-server-linux-arm64-musl',
+    name: 'jsonjet-server-linux-arm64-musl',
     description: 'Linux ARM64 (musl, Alpine)'
   },
   {
     target: 'bun-windows-x64-baseline',
-    name: 'resonancedb-server-windows-x64-baseline.exe',
+    name: 'jsonjet-server-windows-x64-baseline.exe',
     description: 'Windows x64 baseline (older CPUs)'
   },
   {
     target: 'bun-windows-x64',
-    name: 'resonancedb-server-windows-x64.exe',
+    name: 'jsonjet-server-windows-x64.exe',
     description: 'Windows x64 (CPUs from 2013 and newer)'
   },
   {
     target: 'bun-darwin-x64',
-    name: 'resonancedb-server-darwin-x64',
+    name: 'jsonjet-server-darwin-x64',
     description: 'macOS x64 (Intel)'
   },
   {
     target: 'bun-darwin-arm64',
-    name: 'resonancedb-server-darwin-arm64',
+    name: 'jsonjet-server-darwin-arm64',
     description: 'macOS ARM64 (Apple Silicon)'
   }
 ];
 
 async function buildAll() {
-  console.log('🏗️  Cross-platform ResonanceDB Server Build');
+  console.log('🏗️  Cross-platform JSONJet Server Build');
   console.log('=' .repeat(50));
   
   // Check if source exists

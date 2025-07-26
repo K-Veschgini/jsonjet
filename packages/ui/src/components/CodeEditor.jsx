@@ -200,9 +200,9 @@ export function CodeEditor({
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     
-    monaco.languages.register({ id: 'resonancedb' });
+    monaco.languages.register({ id: 'jsonjet' });
     
-    monaco.languages.setMonarchTokensProvider('resonancedb', {
+    monaco.languages.setMonarchTokensProvider('jsonjet', {
       tokenizer: {
         root: [
           [/\/\/.*$/, 'comment'],
@@ -248,7 +248,7 @@ export function CodeEditor({
       }
     });
     
-    monaco.editor.defineTheme('resonancedb-theme', {
+    monaco.editor.defineTheme('jsonjet-theme', {
       base: 'vs',
       inherit: true,
       rules: [
@@ -283,8 +283,8 @@ export function CodeEditor({
     });
     
     const model = editor.getModel();
-    monaco.editor.setModelLanguage(model, 'resonancedb');
-    monaco.editor.setTheme('resonancedb-theme');
+          monaco.editor.setModelLanguage(model, 'jsonjet');
+      monaco.editor.setTheme('jsonjet-theme');
     
     decorationsRef.current = editor.createDecorationsCollection([]);
     
@@ -347,9 +347,9 @@ export function CodeEditor({
       >
         <Editor
           height="100%"
-          defaultLanguage="resonancedb"
+          defaultLanguage="jsonjet"
           value={demoContent}
-          theme="resonancedb-theme"
+          theme="jsonjet-theme"
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: false },
