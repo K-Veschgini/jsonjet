@@ -15,7 +15,7 @@ import {
     Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, As,
     Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
     Flush, List, Info, Subscribe, Unsubscribe, Ttl
 } from '../tokens/keyword-tokens.js';
@@ -38,7 +38,7 @@ export const IDENTIFIER_SAFE_KEYWORDS = [
     
     // Command keywords
     Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
-    Flush, List, Info, Subscribe, Unsubscribe, Ttl, As, Print
+    Flush, List, Info, Subscribe, Unsubscribe, Ttl, As
 ];
 
 // Keywords that should NOT be used as identifiers (reserved for special syntax)

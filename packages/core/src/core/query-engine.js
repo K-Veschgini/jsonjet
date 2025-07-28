@@ -744,9 +744,6 @@ export class QueryEngine {
         
         const exists = this.flowExists(flowName);
         if (exists && modifier !== 'or_replace') {
-            if (modifier === 'if_not_exists') {
-                return { success: true, message: `Flow '${flowName}' already exists` };
-            }
             throw new Error(`Flow '${flowName}' already exists`);
         }
 
@@ -811,6 +808,7 @@ export class QueryEngine {
                     this.registry.updateLookup(lookupName, lookupValue);
                     return { success: true, message: `Lookup '${lookupName}' replaced` };
                 } else {
+                    // Regular create or if not exists - should fail
                     throw new Error(`Lookup '${lookupName}' already exists`);
                 }
             } else {

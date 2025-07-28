@@ -7,7 +7,7 @@ import {
     Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow
 } from '../tokens/token-registry.js';
 
 export function defineCoreCrules() {
@@ -51,10 +51,6 @@ export function defineCoreCrules() {
             { ALT: () => this.SUBRULE(this.infoStatement) },
             { ALT: () => this.SUBRULE(this.subscribeStatement) },
             { ALT: () => this.SUBRULE(this.unsubscribeStatement) },
-            
-            // Dot commands
-            { ALT: () => this.SUBRULE(this.dotCommand) },
-            { ALT: () => this.SUBRULE(this.command) },
             
             // Pipeline queries
             { ALT: () => this.SUBRULE(this.pipelineQuery) }

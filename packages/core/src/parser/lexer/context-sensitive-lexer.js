@@ -118,7 +118,7 @@ const CONTEXT_SENSITIVE_KEYWORDS = new Set([
     'subscribe', 'unsubscribe', 'where', 'select', 'scan', 
     'summarize', 'collect', 'by', 'step', 'iff', 'emit',
     'stream', 'flow', 'or', 'replace', 'if', 'not', 'exists',
-    'into', 'ttl', 'as', 'print', 'every', 'when', 'on',
+            'into', 'ttl', 'as', 'every', 'when', 'on',
     'change', 'group', 'update', 'using', 'over',
     'hopping_window', 'tumbling_window', 'sliding_window', 
     'count_window', 'hopping_window_by', 'tumbling_window_by',

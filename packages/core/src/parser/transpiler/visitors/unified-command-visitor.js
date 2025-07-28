@@ -45,7 +45,7 @@ export const UnifiedCommandVisitorMixin = {
         const statementTypes = [
             'createStatement', 'deleteStatement', 'insertStatement', 'flushStatement', 
             'listStatement', 'infoStatement', 'subscribeStatement', 'unsubscribeStatement', 
-            'dotCommand', 'command', 'pipelineQuery'
+            'pipelineQuery'
         ];
 
         for (const type of statementTypes) {

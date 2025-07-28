@@ -7,7 +7,7 @@ import {
     By, Over, Step, Iff, Emit,
     Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, As,
     Create, Or, Replace, If, Not, Exists, Stream, Flow, Lookup, Delete, Insert, Into,
     Flush, List, Info, Subscribe, Unsubscribe, Ttl
 } from './keyword-tokens.js';
@@ -38,7 +38,7 @@ export const allTokens = [
     
     // Query operation keywords
     Where, Select, Scan, Step, Summarize, By, Over, 
-    Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, Print, As,
+    Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, As,
     
     // Statement keywords
     Create, Delete, Insert, Into, Flush, List, Info, Stream, Flow, Lookup,
@@ -89,7 +89,7 @@ export {
     Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print, As,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, As,
     
     // Statement keywords
     Create, Or, Replace, If, Not, Exists, Stream, Flow, Lookup, Delete, Insert, Into,

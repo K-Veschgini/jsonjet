@@ -3,7 +3,6 @@ import { UnifiedCommandVisitorMixin } from '../visitors/unified-command-visitor.
 import { QueryOperationVisitorMixin } from '../visitors/query-operation-visitor.js';
 import { ExpressionVisitorMixin } from '../visitors/expression-visitor.js';
 import { LiteralVisitorMixin } from '../visitors/literal-visitor.js';
-import { CommandVisitorMixin } from '../visitors/command-visitor.js';
 
 /**
  * Unified Transpiler - Handles both commands and queries in the new grammar
@@ -30,7 +29,6 @@ export class Transpiler {
         Object.assign(this._visitor, QueryOperationVisitorMixin);
         Object.assign(this._visitor, ExpressionVisitorMixin);
         Object.assign(this._visitor, LiteralVisitorMixin);
-        Object.assign(this._visitor, CommandVisitorMixin);
     }
 
     visit(cst) {

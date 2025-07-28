@@ -7,7 +7,7 @@ import {
     Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
     By, Over, Step, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
-    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, Print,
+    HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow,
     Create, Or, Replace, If, Not, Exists, Stream, Flow, Delete, Insert, Into,
     Flush, List, Info, Subscribe, Unsubscribe, Ttl, As
 } from '../tokens/token-registry.js';

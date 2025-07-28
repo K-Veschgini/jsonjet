@@ -114,17 +114,10 @@ export class CommandParser {
                             result: { streamName },
                             message: `Stream '${streamName}' replaced successfully`
                         };
-                    } else if (modifier === 'if_not_exists') {
-                        // Do nothing, return success
-                        return {
-                            type: 'command',
-                            success: true,
-                            result: { streamName },
-                            message: `Stream '${streamName}' already exists (no action taken)`
-                        };
                     } else {
-                        // Regular create - should fail
-                        throw new Error(`Stream '${streamName}' already exists. Use 'create or replace stream ${streamName}' to replace it or 'create if not exists stream ${streamName}' to ignore if exists.`);
+                        // Regular create or if not exists - should fail
+                        const modifierText = modifier === 'if_not_exists' ? 'if not exists ' : '';
+                        throw new Error(`Stream '${streamName}' already exists. Use 'create or replace stream ${streamName}' to replace it.`);
                     }
                 } else {
                     // Stream doesn't exist, create it
@@ -142,7 +135,7 @@ export class CommandParser {
         } else if (subcommand === 'lookup') {
             return await this.handleCreateLookupCommand(remainingArgs.slice(1), sm, modifier, queryEngine);
         } else {
-            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] as\\n<stream> | ... OR create [or replace] lookup <name> = <value>');
+            throw new Error('Usage: create [or replace | if not exists] stream <name> OR create flow <name> [ttl(<duration>)] as\\n<stream> | ... OR create [or replace | if not exists] lookup <name> = <value>');
         }
     }
 
@@ -195,7 +188,7 @@ export class CommandParser {
                         message: `Lookup '${lookupName}' replaced successfully`
                     };
                 } else {
-                    // Regular create - should fail
+                    // Regular create or if not exists - should fail
                     throw new Error(`Lookup '${lookupName}' already exists. Use 'create or replace lookup ${lookupName} = <value>' to replace it.`);
                 }
             } else {

@@ -3,7 +3,7 @@ import { allTokens } from '../tokens/token-registry.js';
 
 // Import all rule definitions
 import { defineCoreCrules } from '../rules/core-rules.js';
-import { defineCommandRules } from '../rules/command-rules.js';
+
 import { defineQueryOperationRules } from '../rules/query-operation-rules.js';
 import { defineLiteralRules } from '../rules/literal-rules.js';
 import { defineExpressionRules } from '../rules/expression-rules.js';
@@ -23,7 +23,6 @@ export class QueryParser extends CstParser {
 
         // Define all grammar rules by calling rule definition functions
         defineCoreCrules.call(this);
-        defineCommandRules.call(this);
         defineQueryOperationRules.call(this);
         defineLiteralRules.call(this);
         defineExpressionRules.call(this);
