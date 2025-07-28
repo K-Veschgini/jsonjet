@@ -1,6 +1,47 @@
-# WebSocket Message Reference
+# HTTP and WebSocket APIs
 
-## Client → Server Messages
+JSONJet provides both HTTP and WebSocket APIs for different use cases.
+
+## HTTP API
+
+The HTTP API is used for executing commands and queries.
+
+### Endpoint
+
+```
+POST http://localhost:3333/api/execute
+```
+
+### Request Format
+
+```json
+{
+  "query": "create stream sensor_data"
+}
+```
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "result": "..."
+}
+```
+
+## WebSocket API
+
+The WebSocket API is used for real-time operations like stream subscriptions and data insertion.
+
+### Connection
+
+```
+ws://localhost:3333/ws
+```
+
+### Message Types
+
+#### Client → Server Messages
 
 | Type | Description | Payload |
 |------|-------------|---------|
@@ -9,7 +50,7 @@
 | `insert` | Insert single record | `{ "type": "insert", "target": "stream_name", "data": {...} }` |
 | `batch_insert` | Insert multiple records | `{ "type": "batch_insert", "target": "stream_name", "data": [...] }` |
 
-## Server → Client Messages
+#### Server → Client Messages
 
 | Type | Description | Payload |
 |------|-------------|---------|

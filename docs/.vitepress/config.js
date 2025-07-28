@@ -60,9 +60,8 @@ export default defineConfig({
     
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide/' },
-      { text: 'API Reference', link: '/api/' },
-      { text: 'JSONJet Reference', link: '/api/' }
+      { text: 'Documentation', link: '/guide/' },
+
     ],
 
     sidebar: [
@@ -71,51 +70,47 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/guide/' },
           { text: 'Quick Start', link: '/guide/quick-start' },
-          { text: 'Syntax Reference', link: '/guide/syntax' },
-          { text: 'Syntax Highlighting', link: '/syntax-highlighting-demo' }
         ]
       },
       {
-        text: 'API Reference',
+        text: 'Server Reference',
         items: [
-          { text: 'Server CLI', link: '/api/server-cli' },
-          { text: 'HTTP and WebSocket APIs', link: '/api/http-websocket' },
-          { text: 'WebSocket Message Reference', link: '/api/websocket-messages' }
+          { text: 'Server CLI', link: '/server/server-cli' },
+          { text: 'HTTP and WebSocket APIs', link: '/server/http-websocket' },
         ]
       },
       {
-        text: 'JSONJet Reference',
+        text: 'Jet Language Reference',
         items: [
-          { text: 'Overview', link: '/api/' },
+          { text: 'Syntax', link: '/jet/syntax' },
           {
             text: 'Statements',
             items: [
-              { text: 'create stream', link: '/api/statements/create-stream' },
-              { text: 'create flow', link: '/api/statements/create-flow' },
-              { text: 'create lookup', link: '/api/statements/create-lookup' },
-              { text: 'delete stream', link: '/api/statements/delete-stream' },
-              { text: 'delete flow', link: '/api/statements/delete-flow' },
-              { text: 'delete lookup', link: '/api/statements/delete-lookup' },
-              { text: 'insert into', link: '/api/statements/insert-into' },
-              { text: 'flush', link: '/api/statements/flush' },
-              { text: 'list', link: '/api/statements/list' },
-              { text: 'info', link: '/api/statements/info' },
-              { text: 'subscribe', link: '/api/statements/subscribe' },
-              { text: 'unsubscribe', link: '/api/statements/unsubscribe' },
-              { text: '.print', link: '/api/statements/print' }
+              { text: 'create stream', link: '/jet/statements/create-stream' },
+              { text: 'create flow', link: '/jet/statements/create-flow' },
+              { text: 'create lookup', link: '/jet/statements/create-lookup' },
+              { text: 'delete stream', link: '/jet/statements/delete-stream' },
+              { text: 'delete flow', link: '/jet/statements/delete-flow' },
+              { text: 'delete lookup', link: '/jet/statements/delete-lookup' },
+              { text: 'insert into', link: '/jet/statements/insert-into' },
+              { text: 'flush', link: '/jet/statements/flush' },
+              { text: 'list', link: '/jet/statements/list' },
+              { text: 'info', link: '/jet/statements/info' },
+              { text: 'subscribe', link: '/jet/statements/subscribe' },
+              { text: 'unsubscribe', link: '/jet/statements/unsubscribe' }
             ]
           },
           {
             text: 'Operators',
             items: [
-              { text: 'where', link: '/api/operators/where' },
-              { text: 'select', link: '/api/operators/select' },
-              { text: 'scan', link: '/api/operators/scan' },
-              { text: 'summarize', link: '/api/operators/summarize' },
-              { text: 'insert_into', link: '/api/operators/insert-into' },
-              { text: 'write_to_file', link: '/api/operators/write-to-file' },
-              { text: 'assert_or_save_expected', link: '/api/operators/assert-or-save-expected' },
-              { text: 'collect', link: '/api/operators/collect' }
+              { text: 'where', link: '/jet/operators/where' },
+              { text: 'select', link: '/jet/operators/select' },
+              { text: 'scan', link: '/jet/operators/scan' },
+              { text: 'summarize', link: '/jet/operators/summarize' },
+              { text: 'insert_into', link: '/jet/operators/insert-into' },
+              { text: 'write_to_file', link: '/jet/operators/write-to-file' },
+              { text: 'assert_or_save_expected', link: '/jet/operators/assert-or-save-expected' },
+              { text: 'collect', link: '/jet/operators/collect' }
             ]
           }
         ]

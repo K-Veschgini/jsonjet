@@ -54,18 +54,6 @@ insert into numbers { x: 5 };
 flush numbers;
 
 
-this.command = this.RULE("command", () => {
-        this.OR([
-            { ALT: () => this.SUBRULE(this.printCommand) }
-        ]);
-    });
-
-    this.printCommand = this.RULE("printCommand", () => {
-        this.CONSUME(Print);
-        this.SUBRULE(this.expression);
-    });
-}
-
 
 batch-query engine and query engine
 

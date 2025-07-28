@@ -57,9 +57,6 @@ export const SessionWindow = createToken({ name: "SessionWindow", pattern: /sess
 // Flow creation keywords
 export const As = createToken({ name: "As", pattern: /as\b/i });
 
-// Dot commands
-export const Print = createToken({ name: "Print", pattern: /\.print/i });
-
 // Statement keywords
 export const Create = createToken({ name: "Create", pattern: /create\b/i });
 export const Or = createToken({ name: "Or", pattern: /or\b/i });

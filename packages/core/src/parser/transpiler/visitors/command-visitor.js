@@ -43,20 +43,4 @@ export const CommandVisitorMixin = {
         return '';
     },
 
-    // =============================================================================
-    // PRINT COMMANDS (.print expression)
-    // =============================================================================
-
-    command(ctx) {
-        if (ctx.printCommand) {
-            return this.visit(ctx.printCommand);
-        }
-        // Future: handle other commands like .help, .describe, etc.
-        return '';
-    },
-
-    printCommand(ctx) {
-        const expression = this.visit(ctx.expression);
-        return `console.log(${expression})`;
-    }
 };

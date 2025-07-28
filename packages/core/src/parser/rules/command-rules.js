@@ -30,18 +30,4 @@ export function defineCommandRules() {
         ]);
     });
 
-    // =============================================================================
-    // PRINT COMMANDS (.print expression)
-    // =============================================================================
-    
-    this.command = this.RULE("command", () => {
-        this.OR([
-            { ALT: () => this.SUBRULE(this.printCommand) }
-        ]);
-    });
-
-    this.printCommand = this.RULE("printCommand", () => {
-        this.CONSUME(Print);
-        this.SUBRULE(this.expression);
-    });
 }

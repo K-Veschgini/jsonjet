@@ -10,8 +10,11 @@ hero:
       text: Get Started
       link: /guide/
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/your-org/jsonjet
+      text: Language Reference
+      link: /jet/
+    - theme: alt
+      text: Server APIs
+      link: /server/
 
 features:
   - icon: 
