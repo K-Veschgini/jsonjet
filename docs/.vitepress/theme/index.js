@@ -1,13 +1,35 @@
 import DefaultTheme from 'vitepress/theme'
 import './style.css'
 import './custom-jsonjet.css'
+import mermaid from 'mermaid'
 
 export default {
   ...DefaultTheme,
   enhanceApp({ app, router, siteData }) {
-    // Add background video to home page
+    // Initialize Mermaid
     if (typeof window !== 'undefined') {
+      mermaid.initialize({ 
+        startOnLoad: true,
+        theme: 'default'
+      })
+      
+      // Simple Mermaid rendering
+      const renderMermaid = () => {
+        mermaid.init()
+      }
+      
+      // Initial render
+      setTimeout(renderMermaid, 100)
+      
+      // Store original route change handler
+      const originalOnAfterRouteChanged = router.onAfterRouteChanged
+      
+      // Combined route change handler
       router.onAfterRouteChanged = (to) => {
+        // Render Mermaid diagrams
+        setTimeout(renderMermaid, 100)
+        
+        // Handle homepage background video
         if (to === '/') {
           // Force dark theme on homepage
           document.documentElement.classList.add('dark')

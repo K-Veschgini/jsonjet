@@ -8,6 +8,8 @@ class JSONJetServer {
   constructor(port = 3333, verbose = false) {
     this.port = port;
     this.verbose = verbose;
+    const versionString = VERSION || 'development';
+    this.version = versionString.startsWith('v') ? versionString.substring(1) : versionString;
     this.wsClients = new Map(); // clientId -> { ws, subscriptions: Map<subscriptionId, streamName> }
     this.nextClientId = 1;
     
@@ -41,7 +43,7 @@ class JSONJetServer {
     });
 
     this.server = server;
-    console.log(`🚀 JSONJet Server running on http://localhost:${this.port}`);
+    console.log(`🚀 JSONJet Server v${this.version} running on http://localhost:${this.port}`);
     console.log(`📡 WebSocket endpoint: ws://localhost:${this.port}/ws`);
     return server;
   }
@@ -242,6 +244,7 @@ class JSONJetServer {
 
     const status = {
       status: 'running',
+      version: this.version,
       streams: this.streamManager.listStreams().length,
       activeQueries: this.queryEngine.getActiveFlows().length,
       wsConnections: this.wsClients.size,

@@ -15,54 +15,114 @@ const RELEASE_DIR = './release';
 const TARGETS = [
   {
     target: 'bun-linux-x64',
-    name: 'jsonjet-server-linux-x64-glibc',
-    description: 'Linux x64 (glibc)'
+    executableName: 'jsonjet',
+    archiveName: 'jsonjet-server-linux-x64-glibc',
+    description: 'Linux x64 (glibc)',
+    extension: ''
   },
   {
     target: 'bun-linux-x64-baseline',
-    name: 'jsonjet-server-linux-x64-baseline-glibc',
-    description: 'Linux x64 baseline (glibc, older CPUs)'
+    executableName: 'jsonjet',
+    archiveName: 'jsonjet-server-linux-x64-baseline-glibc',
+    description: 'Linux x64 baseline (glibc, older CPUs)',
+    extension: ''
   },
   {
     target: 'bun-linux-arm64',
-    name: 'jsonjet-server-linux-arm64-glibc',
-    description: 'Linux ARM64 (glibc)'
+    executableName: 'jsonjet',
+    archiveName: 'jsonjet-server-linux-arm64-glibc',
+    description: 'Linux ARM64 (glibc)',
+    extension: ''
   },
   {
     target: 'bun-linux-x64-musl',
-    name: 'jsonjet-server-linux-x64-musl',
-    description: 'Linux x64 (musl, Alpine)'
+    executableName: 'jsonjet',
+    archiveName: 'jsonjet-server-linux-x64-musl',
+    description: 'Linux x64 (musl, Alpine)',
+    extension: ''
   },
   {
     target: 'bun-linux-arm64-musl',
-    name: 'jsonjet-server-linux-arm64-musl',
-    description: 'Linux ARM64 (musl, Alpine)'
+    executableName: 'jsonjet',
+    archiveName: 'jsonjet-server-linux-arm64-musl',
+    description: 'Linux ARM64 (musl, Alpine)',
+    extension: ''
   },
   {
     target: 'bun-windows-x64-baseline',
-    name: 'jsonjet-server-windows-x64-baseline.exe',
-    description: 'Windows x64 baseline (older CPUs)'
+    executableName: 'jsonjet.exe',
+    archiveName: 'jsonjet-server-windows-x64-baseline',
+    description: 'Windows x64 baseline (older CPUs)',
+    extension: '.exe'
   },
   {
     target: 'bun-windows-x64',
-    name: 'jsonjet-server-windows-x64.exe',
-    description: 'Windows x64 (CPUs from 2013 and newer)'
+    executableName: 'jsonjet.exe',
+    archiveName: 'jsonjet-server-windows-x64',
+    description: 'Windows x64 (CPUs from 2013 and newer)',
+    extension: '.exe'
   },
   {
     target: 'bun-darwin-x64',
-    name: 'jsonjet-server-darwin-x64',
-    description: 'macOS x64 (Intel)'
+    executableName: 'jsonjet',
+    archiveName: 'jsonjet-server-darwin-x64',
+    description: 'macOS x64 (Intel)',
+    extension: ''
   },
   {
     target: 'bun-darwin-arm64',
-    name: 'jsonjet-server-darwin-arm64',
-    description: 'macOS ARM64 (Apple Silicon)'
+    executableName: 'jsonjet',
+    archiveName: 'jsonjet-server-darwin-arm64',
+    description: 'macOS ARM64 (Apple Silicon)',
+    extension: ''
   }
 ];
+
+async function getCurrentGitTag() {
+  try {
+    // Check if we're on a tag
+    const tagResult = await Bun.spawn(['git', 'describe', '--exact-match', '--tags'], {
+      stdio: ['inherit', 'pipe', 'pipe']
+    });
+    
+    await tagResult.exited;
+    
+    if (tagResult.exitCode === 0) {
+      const tag = await new Response(tagResult.stdout).text();
+      return tag.trim();
+    } else {
+      return null;
+    }
+  } catch (error) {
+    return null;
+  }
+}
+
+async function getBunVersion() {
+  try {
+    const result = await Bun.spawn(['bun', '--version'], {
+      stdio: ['inherit', 'pipe', 'pipe']
+    });
+    const version = await new Response(result.stdout).text();
+    return version.trim();
+  } catch {
+    return 'unknown';
+  }
+}
 
 async function buildAll() {
   console.log('🏗️  Cross-platform JSONJet Server Build');
   console.log('=' .repeat(50));
+  
+  // Check for Git tag
+  const version = await getCurrentGitTag();
+  if (!version) {
+    console.error('❌ No Git tag found. Please create and checkout a tag before building.');
+    console.error('   Example: git tag v1.0.0 && git checkout v1.0.0');
+    process.exit(1);
+  }
+  
+  console.log(`📦 Building version: ${version}\n`);
   
   // Check if source exists
   if (!existsSync(SERVER_SOURCE)) {
@@ -84,8 +144,10 @@ async function buildAll() {
   let failureCount = 0;
   
   // Build for each target
-  for (const { target, name, description } of TARGETS) {
-    const outputPath = join(RELEASE_DIR, name);
+  for (const { target, executableName, archiveName, description, extension } of TARGETS) {
+    const tempExecutablePath = join(RELEASE_DIR, executableName);
+    const versionedArchiveName = `${archiveName}-${version}`;
+    
     console.log(`🔨 Building for ${target}...`);
     console.log(`   ${description}`);
     
@@ -100,7 +162,8 @@ async function buildAll() {
         '--minify',
         '--sourcemap',
         `--target=${target}`,
-        `--outfile=${outputPath}`
+        `--outfile=${tempExecutablePath}`,
+        `--define=VERSION=${JSON.stringify(version)}`
       ], {
         cwd: process.cwd(),
         stdio: ['inherit', 'inherit', 'inherit']
@@ -110,32 +173,74 @@ async function buildAll() {
       
       if (result.exitCode === 0) {
         const duration = Date.now() - startTime;
-        console.log(`   ✅ Success (${duration}ms)`);
+        console.log(`   ✅ Build successful (${duration}ms)`);
         
         // Get file size
-        const stat = await Bun.file(outputPath).size;
+        const stat = await Bun.file(tempExecutablePath).size;
         const sizeMB = (stat / 1024 / 1024).toFixed(1);
         console.log(`   📦 Size: ${sizeMB} MB`);
         
-        results.push({
-          target,
-          name,
-          description,
-          success: true,
-          duration,
-          size: stat,
-          sizeMB
+        // Create compressed archives
+        console.log(`   📦 Creating archives...`);
+        
+        // Create tgz archive
+        const tgzResult = await Bun.spawn([
+          'tar', '-czf', 
+          join(RELEASE_DIR, `${versionedArchiveName}.tar.gz`),
+          '-C', RELEASE_DIR, executableName
+        ], {
+          stdio: ['inherit', 'inherit', 'inherit']
         });
-        successCount++;
+        
+        await tgzResult.exited;
+        
+        // Create zip archive
+        const zipResult = await Bun.spawn([
+          'zip', '-j',
+          join(RELEASE_DIR, `${versionedArchiveName}.zip`),
+          tempExecutablePath
+        ], {
+          stdio: ['inherit', 'inherit', 'inherit']
+        });
+        
+        await zipResult.exited;
+        
+        if (tgzResult.exitCode === 0 && zipResult.exitCode === 0) {
+          console.log(`   ✅ Archives created successfully`);
+          
+          // Clean up temporary executable
+          rmSync(tempExecutablePath);
+          
+          results.push({
+            target,
+            archiveName: versionedArchiveName,
+            description,
+            success: true,
+            duration,
+            size: stat,
+            sizeMB
+          });
+          successCount++;
+        } else {
+          console.log(`   ❌ Archive creation failed`);
+          results.push({
+            target,
+            archiveName: versionedArchiveName,
+            description,
+            success: false,
+            error: `Archive creation failed - tgz: ${tgzResult.exitCode}, zip: ${zipResult.exitCode}`
+          });
+          failureCount++;
+        }
       } else {
-        console.log(`   ❌ Failed (exit code: ${result.exitCode})`);
+        console.log(`   ❌ Build failed (exit code: ${result.exitCode})`);
         
         results.push({
           target,
-          name,
+          archiveName: versionedArchiveName,
           description,
           success: false,
-          error: `Exit code: ${result.exitCode}`
+          error: `Build failed - exit code: ${result.exitCode}`
         });
         failureCount++;
       }
@@ -143,7 +248,7 @@ async function buildAll() {
       console.log(`   ❌ Failed: ${error.message}`);
       results.push({
         target,
-        name,
+        archiveName: versionedArchiveName,
         description,
         success: false,
         error: error.message
@@ -157,6 +262,7 @@ async function buildAll() {
   // Summary
   console.log('📊 Build Summary');
   console.log('=' .repeat(50));
+  console.log(`📦 Version: ${version}`);
   console.log(`✅ Successful builds: ${successCount}`);
   console.log(`❌ Failed builds: ${failureCount}`);
   console.log(`📁 Output directory: ${RELEASE_DIR}\n`);
@@ -166,8 +272,11 @@ async function buildAll() {
   for (const result of results) {
     const status = result.success ? '✅' : '❌';
     const sizeInfo = result.success ? ` (${result.sizeMB} MB)` : '';
-    console.log(`${status} ${result.name}${sizeInfo}`);
+    console.log(`${status} ${result.archiveName}${sizeInfo}`);
     console.log(`   ${result.description}`);
+    if (result.success) {
+      console.log(`   📦 Archives: ${result.archiveName}.tar.gz, ${result.archiveName}.zip`);
+    }
     if (!result.success && result.error) {
       console.log(`   Error: ${result.error}`);
     }
@@ -176,6 +285,7 @@ async function buildAll() {
   
   // Create build info file
   const buildInfo = {
+    version,
     buildTime: new Date().toISOString(),
     bunVersion: await getBunVersion(),
     sourceFile: SERVER_SOURCE,
@@ -199,18 +309,6 @@ async function buildAll() {
     process.exit(1);
   } else {
     console.log('\n🎉 All builds completed successfully!');
-  }
-}
-
-async function getBunVersion() {
-  try {
-    const result = await Bun.spawn(['bun', '--version'], {
-      stdio: ['inherit', 'pipe', 'pipe']
-    });
-    const version = await new Response(result.stdout).text();
-    return version.trim();
-  } catch {
-    return 'unknown';
   }
 }
 

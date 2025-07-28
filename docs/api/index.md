@@ -1,4 +1,4 @@
-# API Reference
+# JSONJet Reference
 
 This page provides a reference for JSONJet's Kusto-like query language and operations.
 
