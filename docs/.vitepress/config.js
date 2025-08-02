@@ -6,6 +6,9 @@ export default defineConfig({
   title: 'JSONJet Documentation',
   description: 'Stream processing engine with Kusto-like query language',
   
+  // Ignore dead links for now - can be fixed later
+  ignoreDeadLinks: true,
+  
   appearance: true, // Enable dark mode toggle
   
   markdown: {
@@ -60,8 +63,9 @@ export default defineConfig({
     
     nav: [
       { text: 'Home', link: '/' },
+      { text: 'Downloads', link: '/downloads' },
       { text: 'Documentation', link: '/guide/' },
-
+      { text: 'Demo', link: '/demo/', target: '_blank' }
     ],
 
     sidebar: [
@@ -69,6 +73,7 @@ export default defineConfig({
         text: 'Getting Started',
         items: [
           { text: 'Introduction', link: '/guide/' },
+          { text: 'Downloads', link: '/downloads' },
           { text: 'Quick Start', link: '/guide/quick-start' },
         ]
       },

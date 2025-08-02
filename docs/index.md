@@ -10,11 +10,11 @@ hero:
       text: Get Started
       link: /guide/
     - theme: alt
-      text: Language Reference
-      link: /jet/
+      text: Download
+      link: /downloads
     - theme: alt
-      text: Server APIs
-      link: /server/
+      text: View Demo
+      link: /demo/
 
 features:
   - icon: 
