@@ -3,13 +3,19 @@
 JSONJet is a document based real-time stream processing engine. It is best explained by a simple example:
 ```jsonjet
 create stream sensor_data;
-create stream processed_data;
+create stream alerts;
 
 create flow data_processor as
   sensor_data 
-  | where temperature > 25 
-  | select { id: id, temp: temperature, alert: true } 
-  | insert_into(processed_data);
+  | where temperature > 70 
+  | select { 
+      sensor_id: sensor_id,
+      message: "temperature too high", 
+      temperature: temperature, 
+      timestamp: timestamp,
+      level: iff(temperature>=100, 'danger', 'warning') 
+    } 
+  | insert_into(alerts);
 ```
 
 The key concepts here are:

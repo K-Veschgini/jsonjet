@@ -73,6 +73,7 @@ export default defineConfig({
         text: 'Getting Started',
         items: [
           { text: 'Introduction', link: '/guide/' },
+          { text: 'Project Status', link: '/status' },
           { text: 'Downloads', link: '/downloads' },
           { text: 'Quick Start', link: '/guide/quick-start' },
         ]

@@ -1,3 +1,4 @@
+export { sensorMonitoringDemo } from './sensor-monitoring-demo';
 export { flowProcessingDemo } from './flow-processing';
 export { summarizeDemo } from './summarize-demo';
 export { scanSimpleDemo } from './scan-simple-demo';

@@ -11,7 +11,7 @@ import { createInstances, CommandParser } from '@jsonjet/core';
 import { Header, ResizablePanels, CodeEditor, DataTabs, useUnreadCounts } from '@jsonjet/ui';
 
 // Import demos
-import { flowProcessingDemo, summarizeDemo, scanSimpleDemo, scanDemo, scanAdvancedDemo, selectDemo, runArrayIndexingDemo } from './demos';
+import { sensorMonitoringDemo, flowProcessingDemo, summarizeDemo, scanSimpleDemo, scanDemo, scanAdvancedDemo, selectDemo, runArrayIndexingDemo } from './demos';
 
 
 function App() {
@@ -28,7 +28,7 @@ function App() {
   const [consoleEntries, setConsoleEntries] = useState([]);
   const [activeFlows, setActiveFlows] = useState([]);
   const [activeTab, setActiveTab] = useState('data');
-  const [selectedDemo, setSelectedDemo] = useState('flow-processing');
+  const [selectedDemo, setSelectedDemo] = useState('sensor-monitoring');
   
 
   
@@ -54,6 +54,7 @@ function App() {
 
   // Demo options
   const demoOptions = [
+    { value: 'sensor-monitoring', label: 'Sensor Monitoring' },
     { value: 'flow-processing', label: 'Flow Processing' },
     { value: 'summarize-demo', label: 'Data Summarization' },
     { value: 'scan-simple-demo', label: 'Scan Simple (Cumulative)' },
@@ -66,6 +67,8 @@ function App() {
   // Demo content
   const getDemoContent = useCallback((demoType) => {
     switch (demoType) {
+      case 'sensor-monitoring':
+        return sensorMonitoringDemo;
       case 'summarize-demo':
         return summarizeDemo;
       case 'scan-simple-demo':
@@ -81,7 +84,7 @@ function App() {
       case 'flow-processing':
         return flowProcessingDemo;
       default:
-        return flowProcessingDemo;
+        return sensorMonitoringDemo;
     }
   }, []);
 
@@ -102,7 +105,7 @@ function App() {
       setStreamFilters(prev => ({
         ...prev,
         [streamName]: {
-          enabled: prev[streamName]?.enabled ?? !streamName.startsWith('_'),
+          enabled: prev[streamName]?.enabled ?? (streamName === '_log' ? true : !streamName.startsWith('_')),
           count: (prev[streamName]?.count ?? 0) + 1
         }
       }));
@@ -162,7 +165,7 @@ function App() {
         setStreamFilters(prev => ({
           ...prev,
           [streamName]: { 
-            enabled: !streamName.startsWith('_'), // Default off for system streams
+            enabled: streamName === '_log' ? true : !streamName.startsWith('_'), // _log enabled by default, other system streams off
             count: 0 
           }
         }));
@@ -291,7 +294,7 @@ function App() {
       streamManager.deleteAllStreams();
       
       // Clear all UI state
-      setStreamFilters({ '_log': { enabled: false, count: 0 } });
+      setStreamFilters({ '_log': { enabled: true, count: 0 } });
       setMessages([]);
       setConsoleEntries([]);
       setActiveFlows([]);
