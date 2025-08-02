@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
-import JsonView from '@microlink/react-json-view';
-
+import ReactJsonView from '@microlink/react-json-view';
 
 export const JsonDisplay = memo(function JsonDisplay({ data, compact = false }) {
   return (
@@ -9,7 +8,7 @@ export const JsonDisplay = memo(function JsonDisplay({ data, compact = false }) 
       fontFamily: '"Roboto Mono", Monaco, Consolas, monospace',
       padding: compact ? '4px 0 4px 8px' : '8px 0 8px 10px'
     }}>
-      <JsonView.default 
+      <ReactJsonView 
         src={data}
         collapsed={false}
         displayDataTypes={false}
