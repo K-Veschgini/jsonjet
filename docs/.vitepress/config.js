@@ -12,7 +12,7 @@ export default defineConfig({
   // Ignore dead links for now - can be fixed later
   ignoreDeadLinks: true,
   
-  appearance: true, // Enable dark mode toggle
+  appearance: false, // Disable dark mode toggle
   
   markdown: {
     theme: {
