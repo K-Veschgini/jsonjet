@@ -7,6 +7,20 @@ export default defineConfig({
   base: '/jsonjet/demo/',
   root: 'src',
   build: {
-    outDir: '../dist'
+    outDir: '../dist',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          monaco: ['@monaco-editor/react', 'monaco-editor']
+        }
+      }
+    }
+  },
+  define: {
+    // Provide fallbacks for missing browser APIs
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['@monaco-editor/react', 'monaco-editor']
   }
 })

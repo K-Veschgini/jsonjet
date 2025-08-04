@@ -9,6 +9,27 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <title>JSONJet Demo</title>
     <meta name="description" content="Interactive demo for JSONJet - a stream processing database with flow-based architecture" />
+    <script>
+      // Polyfill for requestIdleCallback to fix Monaco Editor compatibility
+      if (!window.requestIdleCallback) {
+        window.requestIdleCallback = function(callback, options) {
+          const start = Date.now();
+          return setTimeout(function() {
+            callback({
+              didTimeout: false,
+              timeRemaining: function() {
+                return Math.max(0, 50 - (Date.now() - start));
+              }
+            });
+          }, 1);
+        };
+      }
+      if (!window.cancelIdleCallback) {
+        window.cancelIdleCallback = function(id) {
+          clearTimeout(id);
+        };
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

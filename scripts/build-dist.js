@@ -60,23 +60,7 @@ async function buildDocs() {
 async function buildDemo() {
   log('Building demo with /jsonjet/demo/ base path...', 'yellow');
   
-  // Create vite config for demo with correct base path for GitHub Pages
-  const viteConfig = `
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  base: '/jsonjet/demo/',
-  root: 'src',
-  build: {
-    outDir: '../dist'
-  }
-})
-`;
-  
-  await fs.writeFile(path.join(rootDir, 'packages/demo/vite.config.js'), viteConfig);
-  
+  // The vite.config.js already has the correct configuration with Monaco Editor optimizations
   exec('bun run build', path.join(rootDir, 'packages/demo'));
   log('Demo built', 'green');
 }

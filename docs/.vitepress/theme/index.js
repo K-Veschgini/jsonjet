@@ -30,10 +30,8 @@ export default {
         setTimeout(renderMermaid, 100)
         
         // Handle homepage background video
-        console.log('Route changed to:', to, 'Base:', siteData.base)
         const isHomePage = to === '/' || to === siteData.base || to === '/jsonjet/'
         if (isHomePage) {
-          console.log('On homepage, adding video')
           // Force dark theme on homepage
           document.documentElement.classList.add('dark')
           
@@ -55,28 +53,19 @@ export default {
           
           setTimeout(() => {
             const existing = document.querySelector('.home-background-video')
-            if (existing) {
-              console.log('Video already exists')
-              return
-            }
+            if (existing) return
             
             const video = document.createElement('video')
             video.className = 'home-background-video'
             const basePath = siteData.base || '/jsonjet/'
             const videoSrc = basePath + 'background.mp4'
             video.src = videoSrc
-            console.log('Creating video with src:', videoSrc)
             video.autoplay = true
             video.loop = true
             video.muted = true
             video.playsInline = true
             
-            video.onloadstart = () => console.log('Video load started')
-            video.oncanplay = () => console.log('Video can play')
-            video.onerror = (e) => console.error('Video error:', e)
-            
             document.body.appendChild(video)
-            console.log('Video element added to DOM')
           }, 100)
         } else {
           // Restore theme toggle functionality on other pages
