@@ -7,7 +7,7 @@ export default defineConfig({
   description: 'Document-based stream processing engine with declarative query language by Prof. Dr. Kambis Veschgini',
   
   // GitHub Pages base path (same for local and production)
-  base: '/jsonjet/',
+  base: '/',
   
   // Multiple favicon formats for maximum browser compatibility
   head: [
