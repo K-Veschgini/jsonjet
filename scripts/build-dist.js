@@ -58,16 +58,16 @@ async function buildDocs() {
 }
 
 async function buildDemo() {
-  log('Building demo with /demo/ base path...', 'yellow');
+  log('Building demo with /jsonjet/demo/ base path...', 'yellow');
   
-  // Create vite config for demo with correct base path
+  // Create vite config for demo with correct base path for GitHub Pages
   const viteConfig = `
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/demo/',
+  base: '/jsonjet/demo/',
   root: 'src',
   build: {
     outDir: '../dist'

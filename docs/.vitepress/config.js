@@ -6,6 +6,9 @@ export default defineConfig({
   title: 'JSONJet Documentation',
   description: 'Stream processing engine with Kusto-like query language',
   
+  // GitHub Pages base path
+  base: '/jsonjet/',
+  
   // Ignore dead links for now - can be fixed later
   ignoreDeadLinks: true,
   
