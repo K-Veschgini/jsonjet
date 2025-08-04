@@ -6,8 +6,8 @@ export default defineConfig({
   title: 'JSONJet Documentation',
   description: 'Stream processing engine with Kusto-like query language',
   
-  // GitHub Pages base path (disabled for local dev)
-  base: process.env.NODE_ENV === 'production' ? '/jsonjet/' : '/',
+  // GitHub Pages base path (same for local and production)
+  base: '/jsonjet/',
   
   // Ignore dead links for now - can be fixed later
   ignoreDeadLinks: true,
