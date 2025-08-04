@@ -4,7 +4,7 @@ import mermaid from 'mermaid'
 
 export default defineConfig({
   title: 'JSONJet Documentation',
-  description: 'Stream processing engine with Kusto-like query language',
+  description: 'Stream processing research by Prof. Dr. Kambis Veschgini - A document-based stream processing engine with declarative query language',
   
   // GitHub Pages base path (same for local and production)
   base: '/jsonjet/',
@@ -62,6 +62,7 @@ export default defineConfig({
     },
     
     nav: [
+      { text: 'Veschgini Consulting', link: 'https://veschgini-consulting.com', target: '_blank' },
       { text: 'Home', link: '/' },
       { text: 'Downloads', link: '/downloads' },
       { text: 'Documentation', link: '/guide/' },
@@ -124,7 +125,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/your-org/jsdb' }
+              { icon: 'github', link: 'https://github.com/K-Veschgini/jsonjet' }
     ]
   }
 })
