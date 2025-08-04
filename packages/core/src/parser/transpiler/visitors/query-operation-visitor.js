@@ -20,8 +20,7 @@ export const QueryOperationVisitorMixin = {
             summarizeClause: () => this.visit(ctx.summarizeClause),
             insertIntoClause: () => this.visit(ctx.insertIntoClause),
             writeToFileClause: () => this.visit(ctx.writeToFileClause),
-            assertOrSaveExpectedClause: () => this.visit(ctx.assertOrSaveExpectedClause),
-            collectClause: () => this.visit(ctx.collectClause)
+            assertOrSaveExpectedClause: () => this.visit(ctx.assertOrSaveExpectedClause)
         };
 
         for (const [key, handler] of Object.entries(operationMap)) {
@@ -678,7 +677,7 @@ export const QueryOperationVisitorMixin = {
     },
 
     // =============================================================================
-    // INSERT_INTO AND COLLECT CLAUSES
+    // insert into, write to file, assert or save expected
     // =============================================================================
 
     insertIntoClause(ctx) {

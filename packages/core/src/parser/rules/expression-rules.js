@@ -6,7 +6,7 @@ import {
     StringLiteral, DurationLiteral, NumberLiteral, BooleanLiteral, NullLiteral, Identifier,
     QuestionMark, Colon,
     // Import all keywords for use as identifiers
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow,

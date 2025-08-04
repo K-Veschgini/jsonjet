@@ -3,7 +3,7 @@ import { Lexer } from 'chevrotain';
 // Import all token categories
 import { WhiteSpace, Comment, Identifier } from './core-tokens.js';
 import { 
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected,
     By, Over, Step, Iff, Emit,
     Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,

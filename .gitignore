@@ -48,6 +48,7 @@ test-results-summary.md
 test-*.js
 debug-*.js
 coverage/
+tmp/
 
 
 # Runtime data

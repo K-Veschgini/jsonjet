@@ -12,7 +12,7 @@ This directory contains the TextMate grammar definitions for JSONJet syntax high
 The JSONJet syntax highlighting supports:
 
 ### Keywords
-- **Control Keywords**: `create`, `or`, `replace`, `stream`, `flow`, `lookup`, `insert`, `into`, `delete`, `list`, `as`, `where`, `select`, `scan`, `step`, `emit`, `summarize`, `collect`, `by`, `over`, `iff`, `every`, `when`, `on`, `change`, `group`, `update`, `using`, `flush`, `info`, `subscribe`, `unsubscribe`, `ttl`, `print`, `assert_or_save_expected`, `write_to_file`, `insert_into`
+- **Control Keywords**: `create`, `or`, `replace`, `stream`, `flow`, `lookup`, `insert`, `into`, `delete`, `list`, `as`, `where`, `select`, `scan`, `step`, `emit`, `summarize`, `by`, `over`, `iff`, `every`, `when`, `on`, `change`, `group`, `update`, `using`, `flush`, `info`, `subscribe`, `unsubscribe`, `ttl`, `print`, `assert_or_save_expected`, `write_to_file`, `insert_into`
 - **Logical Keywords**: `and`, `or`, `not`, `if`, `exists`
 - **Boolean Constants**: `true`, `false`, `null`
 - **Window Functions**: `hopping_window`, `tumbling_window`, `sliding_window`, `count_window`, `hopping_window_by`, `tumbling_window_by`, `sliding_window_by`, `session_window`

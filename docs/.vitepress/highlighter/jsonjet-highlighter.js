@@ -16,7 +16,7 @@ function tokenizeJsonjet(code) {
     // Different types of keywords
     const declarationKeywords = ['create', 'insert', 'delete', 'flush', 'list', 'info', 'subscribe', 'unsubscribe', 'print']
     const flowKeywords = ['stream', 'flow', 'lookup', 'as', 'into', 'ttl']
-    const queryKeywords = ['where', 'select', 'scan', 'summarize', 'collect', 'by', 'over', 'step', 'emit']
+    const queryKeywords = ['where', 'select', 'scan', 'summarize', 'by', 'over', 'step', 'emit']
     const controlKeywords = ['or', 'replace', 'if', 'not', 'exists', 'every', 'when', 'on', 'change', 'group', 'update', 'using']
     const windowKeywords = ['hopping_window', 'tumbling_window', 'sliding_window', 'count_window', 'hopping_window_by', 'tumbling_window_by', 'sliding_window_by', 'session_window']
     const logicalKeywords = ['and', 'or', 'not', 'if']

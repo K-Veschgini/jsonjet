@@ -40,6 +40,69 @@ chrono = { version = "0.4", features = ["serde"] }
 
 :::
 
+## Running the Examples
+
+Each example can be saved to a file and run independently. All examples require the JSONJet server to be running first.
+
+::: code-group
+
+```bash [JavaScript]
+# Save the JavaScript code to sensor-demo.js
+# Install dependencies (optional - uses built-in WebSocket)
+npm install ws
+
+# Run the demo
+node sensor-demo.js
+```
+
+```bash [Python]
+# Save the Python code to sensor-demo.py
+# Install dependencies
+pip install websockets aiohttp
+
+# Run the demo
+python sensor-demo.py
+```
+
+```bash [Go]
+# Save the Go code to sensor-demo.go
+# Create go.mod file:
+# module sensor-demo
+# go 1.19
+# require github.com/gorilla/websocket v1.5.0
+
+# Install dependencies
+go mod tidy
+
+# Run the demo
+go run sensor-demo.go
+```
+
+```bash [Rust]
+# Save the Rust code to sensor-demo.rs
+# Create Cargo.toml with dependencies (see Dependencies section above)
+
+# Run the demo
+cargo run --bin sensor-demo
+```
+
+:::
+
+**Expected Behavior:**
+
+The demo sends 3 sensor readings with 1-second delays:
+1. `sensor_1: 65°C` (filtered out - below 70°C threshold)
+2. `sensor_2: 85°C` (generates warning alert)
+3. `sensor_3: 112°C` (generates danger alert)
+
+After sending all data, the flow processes and generates 2 alerts. The demo automatically exits after receiving these 2 alerts or after a 10-second timeout.
+
+**Expected Output:**
+```
+Alert: temperature too high - Sensor sensor_2: 85°C (warning)
+Alert: temperature too high - Sensor sensor_3: 112°C (danger)
+```
+
 ## Server Setup
 
 ### 1. Start the JSONJet Server
@@ -67,6 +130,11 @@ This example demonstrates a complete JSONJet application that:
 5. **Processes data in real-time** - Filters temperatures above 70°C and generates tiered alerts
 
 The flow filters sensor data and generates alerts when temperature exceeds 70°C, with different severity levels (warning vs danger), showing how JSONJet can process streaming data with conditional logic in real-time.
+
+**Demo Flow:**
+- Sends 3 temperature readings with 1-second intervals
+- Only readings above 70°C trigger alerts (2 out of 3)
+- Automatically exits after receiving the expected 2 alerts
 
 
 
@@ -103,7 +171,12 @@ await fetch('http://localhost:3333/api/execute', {
 });
 
 // Step 2: Connect to WebSocket for real-time operations
+let alertCount = 0;
 const ws = new WebSocket('ws://localhost:3333/ws');
+
+// Timeout after 10 seconds if no alerts received
+setTimeout(() => process.exit(0), 10000);
+
 ws.onopen = () => {
   // Subscribe to alerts stream to receive filtered data
   ws.send(JSON.stringify({ type: 'subscribe', streamName: 'alerts' }));
@@ -136,6 +209,7 @@ ws.onmessage = (e) => {
   const m = JSON.parse(e.data);
   if (m.type === 'data') {
     console.log(`Alert: ${m.data.message} - Sensor ${m.data.sensor_id}: ${m.data.temperature}°C (${m.data.level})`);
+    if (++alertCount >= 2) process.exit(0); // Exit after 2 alerts
   }
 };
 ```
@@ -194,11 +268,19 @@ async def main():
     await ws.send(json.dumps({"type": "execute", "query": "flush sensor_data"}))
     
     # Step 3: Handle incoming alert messages
-    async for msg in ws:
-        data = json.loads(msg)
-        if data["type"] == "data":
-            alert = data["data"]
-            print(f"Alert: {alert['message']} - Sensor {alert['sensor_id']}: {alert['temperature']}°C ({alert['level']})")
+    alert_count = 0
+    try:
+        async with asyncio.timeout(10):  # 10 second timeout
+            async for msg in ws:
+                data = json.loads(msg)
+                if data["type"] == "data":
+                    alert = data["data"]
+                    print(f"Alert: {alert['message']} - Sensor {alert['sensor_id']}: {alert['temperature']}°C ({alert['level']})")
+                    alert_count += 1
+                    if alert_count >= 2:  # Exit after 2 alerts
+                        break
+    except asyncio.TimeoutError:
+        pass
 
 asyncio.run(main())
 ```
@@ -273,19 +355,31 @@ func main() {
 		}
 	}()
 
-	// Step 3: Handle incoming alert messages
+	// Step 3: Handle incoming alert messages with timeout
+	alertCount := 0
+	timeout := time.After(10 * time.Second)
+	
 	for {
-		var msg map[string]interface{}
-		err := c.ReadJSON(&msg)
-		if err != nil {
-			log.Println("read error:", err)
-			break
-		}
+		select {
+		case <-timeout:
+			return
+		default:
+			c.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+			var msg map[string]interface{}
+			err := c.ReadJSON(&msg)
+			if err != nil {
+				continue
+			}
 
-		if msg["type"] == "data" {
-			if data, ok := msg["data"].(map[string]interface{}); ok {
-				fmt.Printf("Alert: %s - Sensor %s: %.0f°C (%s)\n",
-					data["message"], data["sensor_id"], data["temperature"], data["level"])
+			if msg["type"] == "data" {
+				if data, ok := msg["data"].(map[string]interface{}); ok {
+					fmt.Printf("Alert: %s - Sensor %s: %.0f°C (%s)\n",
+						data["message"], data["sensor_id"], data["temperature"], data["level"])
+					alertCount++
+					if alertCount >= 2 { // Exit after 2 alerts
+						return
+					}
+				}
 			}
 		}
 	}
@@ -347,7 +441,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "type": "subscribe",
         "streamName": "alerts"
     });
-    write.send(Message::Text(subscribe_msg.to_string())).await?;
+    write.send(Message::Text(subscribe_msg.to_string().into())).await?;
 
     // Send test sensor readings with different temperature levels
     let test_data = vec![
@@ -366,7 +460,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "target": "sensor_data",
             "data": reading
         });
-        write.send(Message::Text(insert_msg.to_string())).await?;
+        write.send(Message::Text(insert_msg.to_string().into())).await?;
     }
 
     // Process all pending data through the flow
@@ -375,30 +469,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "type": "execute",
         "query": "flush sensor_data"
     });
-    write.send(Message::Text(flush_msg.to_string())).await?;
+    write.send(Message::Text(flush_msg.to_string().into())).await?;
 
     // Step 3: Handle incoming alert messages
-    while let Some(msg) = read.next().await {
-        match msg? {
-            Message::Text(text) => {
-                if let Ok(data) = serde_json::from_str::<Value>(&text) {
-                    if data["type"] == "data" {
-                        if let Some(alert) = data["data"].as_object() {
-                            println!(
-                                "Alert: {} - Sensor {}: {}°C ({})",
-                                alert["message"].as_str().unwrap_or(""),
-                                alert["sensor_id"].as_str().unwrap_or(""),
-                                alert["temperature"].as_f64().unwrap_or(0.0) as i32,
-                                alert["level"].as_str().unwrap_or("")
-                            );
+    let mut alert_count = 0;
+    let timeout = tokio::time::timeout(Duration::from_secs(10), async {
+        while let Some(msg) = read.next().await {
+            match msg? {
+                Message::Text(text) => {
+                    if let Ok(data) = serde_json::from_str::<Value>(&text) {
+                        if data["type"] == "data" {
+                            if let Some(alert) = data["data"].as_object() {
+                                println!(
+                                    "Alert: {} - Sensor {}: {}°C ({})",
+                                    alert["message"].as_str().unwrap_or(""),
+                                    alert["sensor_id"].as_str().unwrap_or(""),
+                                    alert["temperature"].as_f64().unwrap_or(0.0) as i32,
+                                    alert["level"].as_str().unwrap_or("")
+                                );
+                                alert_count += 1;
+                                if alert_count >= 2 { // Exit after 2 alerts
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
+                Message::Close(_) => break,
+                _ => {}
             }
-            Message::Close(_) => break,
-            _ => {}
         }
-    }
+        Ok::<(), Box<dyn std::error::Error>>(())
+    });
+    
+    let _ = timeout.await;
 
     Ok(())
 }
@@ -437,5 +541,5 @@ async fn setup_infrastructure() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
-
+:::
  
