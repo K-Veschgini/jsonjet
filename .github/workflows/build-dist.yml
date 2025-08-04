@@ -31,7 +31,9 @@ jobs:
         
     - name: Install dependencies
       run: |
-        bun install
+        # Install all workspace dependencies
+        bun install --frozen-lockfile
+        # Clean and install docs dependencies separately
         cd docs && rm -rf node_modules package-lock.json && bun install
       
     - name: Run build:dist
