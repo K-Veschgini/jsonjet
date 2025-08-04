@@ -7,7 +7,6 @@
     <div class="release-header">
       <h3>Latest Release</h3>
       <span class="version-badge">{{ latest.tag_name }}</span>
-      <button @click="refreshReleases" class="refresh-btn" title="Refresh releases">🔄</button>
     </div>
     
     <div class="release-content">
@@ -15,27 +14,41 @@
       
       <div v-if="latest.assets && latest.assets.length > 0" class="download-section">
         <h4>Downloads</h4>
-        <div class="download-buttons">
-          <a 
-            v-for="asset in latest.assets" 
-            :key="asset.id"
-            :href="asset.browser_download_url"
-            class="download-btn"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span class="download-icon">⬇️</span>
-            {{ asset.name }}
-            <span class="download-size">({{ formatSize(asset.size) }})</span>
-          </a>
-        </div>
+        <table class="download-table">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Platform</th>
+              <th>Size</th>
+              <th>Download</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="asset in latest.assets" :key="asset.id">
+              <td class="filename">{{ asset.name }}</td>
+              <td class="platform">{{ getPlatform(asset.name) }}</td>
+              <td class="filesize">{{ formatSize(asset.size) }}</td>
+              <td class="download-action">
+                <a 
+                  :href="asset.browser_download_url"
+                  class="download-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Download"
+                >
+                  ⬇Download
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       
 
       
       <div class="release-links">
         <a :href="latest.html_url" target="_blank" rel="noopener noreferrer">
-          View Release Notes →
+          View on GitHub →
         </a>
         <span class="last-updated">Last updated: {{ formatDate(lastUpdated) }}</span>
       </div>
@@ -112,6 +125,24 @@ function formatSize(bytes) {
   return mb < 1 ? `${(bytes / 1024).toFixed(1)}KB` : `${mb.toFixed(1)}MB`
 }
 
+function getPlatform(filename) {
+  if (!filename) return 'Unknown'
+  
+  // Extract platform info from filename
+  const lower = filename.toLowerCase()
+  
+  if (lower.includes('windows') || lower.includes('win') || lower.includes('.exe')) return 'Windows'
+  if (lower.includes('macos') || lower.includes('darwin') || lower.includes('mac')) return 'macOS'
+  if (lower.includes('linux')) return 'Linux'
+  if (lower.includes('android')) return 'Android'
+  if (lower.includes('ios')) return 'iOS'
+  if (lower.includes('aarch64') || lower.includes('arm64')) return 'ARM64'
+  if (lower.includes('x86_64') || lower.includes('amd64')) return 'x64'
+  if (lower.includes('.tar.gz') || lower.includes('.zip')) return 'Archive'
+  
+  return 'Universal'
+}
+
 
 
 // Fetch releases when component mounts
@@ -161,34 +192,80 @@ onMounted(() => {
   color: var(--vp-c-text-1);
 }
 
-.download-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.download-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+.download-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
   border: 1px solid var(--vp-c-border);
   border-radius: 6px;
-  text-decoration: none;
-  color: var(--vp-c-text-1);
-  background: var(--vp-c-bg);
-  transition: all 0.2s;
+  overflow: hidden;
+  table-layout: fixed;
 }
 
-.download-btn:hover {
-  border-color: var(--vp-c-brand);
+.download-table th {
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--vp-c-border);
+}
+
+.download-table th:nth-child(1) { width: 45%; }  /* File */
+.download-table th:nth-child(2) { width: 20%; }  /* Platform */
+.download-table th:nth-child(3) { width: 15%; }  /* Size */
+.download-table th:nth-child(4) { width: 20%; }  /* Download */
+
+.download-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--vp-c-divider);
+  vertical-align: middle;
+}
+
+.download-table tr:last-child td {
+  border-bottom: none;
+}
+
+.download-table tr:hover {
   background: var(--vp-c-bg-soft);
 }
 
-.download-size {
+.filename {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: var(--vp-c-text-1);
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.platform {
   color: var(--vp-c-text-2);
-  font-size: 12px;
-  margin-left: auto;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.filesize {
+  color: var(--vp-c-text-2);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.download-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--vp-c-brand);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.download-link:hover {
+  background: var(--vp-c-brand-soft);
+  text-decoration: none;
 }
 
 
@@ -252,15 +329,27 @@ onMounted(() => {
   margin-left: 16px;
 }
 
-@media (min-width: 768px) {
-  .download-buttons {
-    flex-direction: row;
-    flex-wrap: wrap;
+@media (max-width: 768px) {
+  .download-table {
+    font-size: 14px;
   }
   
-  .download-btn {
-    flex: 1;
-    min-width: 200px;
+  .download-table th,
+  .download-table td {
+    padding: 8px 12px;
+  }
+  
+  .filename {
+    font-size: 12px;
+    max-width: 150px;
+  }
+  
+  .platform {
+    display: none;
+  }
+  
+  .download-table th:nth-child(2) {
+    display: none;
   }
 }
 </style>

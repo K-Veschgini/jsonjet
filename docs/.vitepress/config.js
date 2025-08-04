@@ -146,7 +146,7 @@ export default defineConfig({
         text: 'Contact',
         items: [
           { text: 'Prof. Dr. Kambis Veschgini', link: 'mailto:k.veschgini@oth-aw.de' },
-          { text: 'OTH Amberg-Weiden', link: 'https://www.oth-aw.de/' }
+          { text: 'OTH Amberg-Weiden', link: 'https://www.oth-aw.de/hochschule/ueber-uns/personen/veschgini-kambis/' }
         ]
       },
       {
