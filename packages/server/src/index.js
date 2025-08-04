@@ -5,10 +5,13 @@ import { createInstances } from '@jsonjet/core';
  * Provides HTTP API and WebSocket streaming for query execution and stream subscriptions
  */
 class JSONJetServer {
-  constructor(port = 3333, verbose = false) {
-    this.port = port;
-    this.verbose = verbose;
-    const versionString = VERSION || 'development';
+  constructor(options = {}) {
+    this.port = options.port || 3333;
+    this.host = options.host || 'localhost';
+    this.grpcPort = options.grpcPort || 50051;
+    this.socketioPort = options.socketioPort || 3334;
+    this.verbose = options.verbose || false;
+    const versionString = (typeof VERSION !== 'undefined') ? VERSION : 'development';
     this.version = versionString.startsWith('v') ? versionString.substring(1) : versionString;
     this.wsClients = new Map(); // clientId -> { ws, subscriptions: Map<subscriptionId, streamName> }
     this.nextClientId = 1;
@@ -34,6 +37,7 @@ class JSONJetServer {
   start() {
     const server = Bun.serve({
       port: this.port,
+      hostname: this.host,
       fetch: this.handleHTTP.bind(this),
       websocket: {
         message: this.handleWSMessage.bind(this),
@@ -43,8 +47,10 @@ class JSONJetServer {
     });
 
     this.server = server;
-    console.log(`🚀 JSONJet Server v${this.version} running on http://localhost:${this.port}`);
-    console.log(`📡 WebSocket endpoint: ws://localhost:${this.port}/ws`);
+    console.log(`{🚀} JSONJet Server v${this.version} running on http://${this.host}:${this.port}`);
+    console.log(`WebSocket endpoint: ws://${this.host}:${this.port}/ws`);
+    console.log(`Licensed under PolyForm Noncommercial License 1.0.0`);
+    console.log(`Contact: Prof. Dr. Kambis Veschgini <k.veschgini@oth-aw.de>`);
     return server;
   }
 
@@ -519,8 +525,8 @@ class JSONJetServer {
 
 // Start the server if this file is run directly
 if (import.meta.main) {
-  const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
-  const server = new JSONJetServer(3333, verbose);
+  const options = parseArgs();
+  const server = new JSONJetServer(options);
   server.start();
 }
 
