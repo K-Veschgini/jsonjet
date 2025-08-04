@@ -10,7 +10,7 @@ The `select` operator transforms and projects document fields.
 
 ## Description
 
-The `SELECT` operator transforms documents by projecting specific fields, computing new values, and restructuring the document shape. It's the primary operator for data transformation.
+This operator transforms documents by projecting specific fields, computing new values, and restructuring the document shape. It serves as the primary mechanism for data transformation within processing pipelines.
 
 ## Field Mappings
 
@@ -163,10 +163,10 @@ Excludes a field from the output.
 
 ## Performance Considerations
 
-- Field exclusion (`-field`) is efficient for large documents
+- Field exclusion (`-field`) works efficiently with large documents
 - Spread operations (`...*`) can be expensive with large objects
-- Complex expressions are evaluated for each document
-- Consider using multiple SELECT operators for complex transformations
+- Complex expressions evaluate for each document
+- Consider multiple SELECT operators for complex transformations
 
 ## Related Operators
 

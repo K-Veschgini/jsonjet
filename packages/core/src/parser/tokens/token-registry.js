@@ -38,7 +38,7 @@ export const allTokens = [
     
     // Query operation keywords
     Where, Select, Scan, Step, Summarize, By, Over, 
-    Iff, Emit, Every, When, On, Change, Group, Update, Using, Collect, As,
+    Iff, Emit, Every, When, On, Change, Group, Update, Using, As,
     
     // Statement keywords
     Create, Delete, Insert, Into, Flush, List, Info, Stream, Flow, Lookup,
@@ -86,7 +86,7 @@ export {
     WhiteSpace, Comment, Identifier,
     
     // Keywords
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, As,

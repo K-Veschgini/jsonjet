@@ -8,7 +8,7 @@ JSONJet provides two APIs:
 
 ## Install and Start JSONJet Server
 
-- Download the latest JSONJet release for your system from [GitHub releases](https://github.com/your-org/jsdb/releases)
+- Download the latest JSONJet release for your system from the [Downloads page](/downloads.html)
 
 ## Dependencies
 
@@ -438,13 +438,4 @@ async fn setup_infrastructure() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-:::
-
-
-
-## Next Steps
-
-- Explore the [JSONJet Reference](/api/) for detailed syntax
-- Check out [Statement Documentation](/api/statements/) for all available commands
-- Learn about [Operators](/api/operators/) for data processing
-- Build real-time applications with the WebSocket API 
+ 

@@ -1,6 +1,6 @@
 # subscribe Statement
 
-The `subscribe` statement subscribes to a stream for real-time data.
+The `subscribe` statement creates a subscription to a data stream.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ subscribe <stream_name>
 
 ## Description
 
-The `subscribe` statement creates a subscription to a stream, allowing you to receive real-time data from that stream. The subscription will print received data to the console.
+This statement establishes a subscription connection to a stream, routing all incoming data to the console. Each subscription receives a unique identifier for later management.
 
 ## Parameters
 
@@ -50,19 +50,7 @@ When data is received, it's printed in this format:
 📡 [events]: { "type": "login", "user": "alice", "time": 1640995200 }
 ```
 
-## Use Cases
 
-### Real-time Monitoring
-Monitor data streams in real-time.
-
-### Debugging
-Debug data flow and content.
-
-### Development
-Test data ingestion and processing.
-
-### Administration
-Monitor system activity and data flow.
 
 ## Related Statements
 

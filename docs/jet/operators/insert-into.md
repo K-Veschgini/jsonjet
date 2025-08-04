@@ -1,6 +1,6 @@
 # insert_into Operator
 
-The `insert_into` operator routes data to another stream.
+The `insert_into` operator routes pipeline data to a target stream.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ The `insert_into` operator routes data to another stream.
 
 ## Description
 
-The `INSERT_INTO` operator sends all documents from the current pipeline to a specified target stream. This is commonly used at the end of flows to route processed data to output streams.
+This operator forwards all documents from the current pipeline to a specified target stream. It's typically positioned at the end of flows to route processed data to output destinations.
 
 ## Parameters
 
@@ -65,24 +65,12 @@ create flow data_enrichment as
   | insert_into(enriched_data_stream)
 ```
 
-## Use Cases
 
-### Data Routing
-Route different types of data to appropriate streams based on processing logic.
-
-### Pipeline Branches
-Create multiple output streams from a single processing pipeline.
-
-### Data Archival
-Send processed data to archival or backup streams.
-
-### Real-time Dashboards
-Feed processed data to streams that power real-time dashboards.
 
 ## Performance Considerations
 
-- Data is sent to the target stream immediately
-- No buffering or batching is performed
+- Data routes to the target stream immediately
+- No buffering or batching occurs
 - Target stream must exist before insertion
 - Consider stream capacity and subscriber load
 

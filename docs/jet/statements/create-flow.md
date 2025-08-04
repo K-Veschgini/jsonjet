@@ -1,6 +1,6 @@
 # create flow Statement
 
-The `create flow` statement creates a data processing flow with optional TTL.
+The `create flow` statement defines a data processing pipeline with optional TTL.
 
 ## Syntax
 
@@ -14,7 +14,7 @@ create flow <flow_name> ttl(<duration>) as
 
 ## Description
 
-The `create flow` statement defines a real-time data processing pipeline that continuously processes documents from an input stream and writes to one or more output streams. Flows are the core processing mechanism in JSONJet.
+This statement creates a continuous data processing pipeline that transforms documents from input streams and routes results to output streams. Flows represent the core computational units in our JSONJet architecture.
 
 ## Parameters
 
@@ -25,7 +25,7 @@ The `create flow` statement defines a real-time data processing pipeline that co
 
 ## TTL (Time To Live)
 
-The optional `ttl` parameter sets a time limit for the flow. After the specified duration, the flow automatically stops and is removed.
+The optional `ttl` parameter establishes an automatic termination time. When the duration expires, the system stops and removes the flow.
 
 ## Examples
 
@@ -81,22 +81,7 @@ create flow event_router as
 - Flows with TTL automatically stop after the specified duration
 - Multiple flows can read from the same input stream
 
-## Use Cases
 
-### Real-time Processing
-Process data as it arrives for immediate insights.
-
-### Data Transformation
-Transform raw data into structured formats.
-
-### Event Correlation
-Correlate events across time and data sources.
-
-### Alert Generation
-Generate alerts based on data conditions.
-
-### Data Aggregation
-Aggregate data for analytics and reporting.
 
 ## Related Statements
 

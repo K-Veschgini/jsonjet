@@ -10,7 +10,7 @@ The `where` operator filters documents based on boolean expressions.
 
 ## Description
 
-The `WHERE` operator filters the input stream to only include documents where the specified expression evaluates to `true`. It's one of the most commonly used operators for data filtering.
+This operator filters the input stream, retaining only documents where the specified expression evaluates to `true`. It represents a fundamental filtering mechanism within the JSONJet processing architecture.
 
 ## Parameters
 
@@ -84,11 +84,11 @@ The `WHERE` operator filters the input stream to only include documents where th
 | where required_field is not undefined
 ```
 
-## Performance Notes
+## Performance Considerations
 
-- Use indexed fields when possible for better performance
+- Indexed fields improve filter performance
 - Complex expressions may impact processing speed
-- Consider using multiple WHERE clauses in sequence for complex logic
+- Consider multiple WHERE clauses for complex logic
 
 ## Related Operators
 

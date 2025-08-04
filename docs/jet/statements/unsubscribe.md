@@ -1,6 +1,6 @@
 # unsubscribe Statement
 
-The `unsubscribe` statement unsubscribes from a stream using subscription ID.
+The `unsubscribe` statement terminates an active stream subscription.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ unsubscribe <subscription_id>
 
 ## Description
 
-The `unsubscribe` statement stops a subscription to a stream using the subscription ID that was returned when the subscription was created.
+This statement ends a subscription using the ID returned during subscription creation. Once terminated, the subscription stops receiving data and the ID becomes invalid.
 
 ## Parameters
 
@@ -42,19 +42,7 @@ unsubscribe 3
 - Stream continues to exist and can have other subscribers
 - If subscription ID doesn't exist, an error is returned
 
-## Use Cases
 
-### Cleanup
-Stop subscriptions that are no longer needed.
-
-### Resource Management
-Free up system resources by stopping unused subscriptions.
-
-### Testing
-Stop test subscriptions after testing.
-
-### Administration
-Manage active subscriptions during system administration.
 
 ## Related Statements
 

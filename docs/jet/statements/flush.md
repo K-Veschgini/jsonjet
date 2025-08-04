@@ -1,6 +1,6 @@
 # flush Statement
 
-The `flush` statement clears all data from a stream.
+The `flush` statement clears buffered data from a stream.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ flush <stream_name>
 
 ## Description
 
-The `flush` statement removes all data from a specified stream. This operation clears the stream's internal buffers but keeps the stream itself intact.
+This statement removes all buffered data from a stream while preserving the stream structure. The operation clears internal buffers but maintains active flows and subscriptions.
 
 ## Parameters
 
@@ -42,22 +42,7 @@ flush backup_buffer
 - All subscriptions remain active
 - Operation is immediate and irreversible
 
-## Use Cases
 
-### Memory Management
-Free up memory by clearing old data from streams.
-
-### Testing
-Clear test data between test runs.
-
-### Maintenance
-Clear accumulated data during system maintenance.
-
-### Performance
-Clear buffers to improve performance.
-
-### Debugging
-Clear data to start fresh debugging sessions.
 
 ## Related Statements
 

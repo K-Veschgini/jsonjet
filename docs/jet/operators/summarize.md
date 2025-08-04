@@ -11,7 +11,7 @@ The `summarize` operator aggregates data with optional grouping, windowing, and 
 
 ## Description
 
-The `SUMMARIZE` operator performs data aggregation operations, grouping documents by specified fields and applying aggregation functions. It supports time-based and count-based windowing, as well as various emit strategies.
+This operator performs data aggregation operations, grouping documents by specified fields and applying aggregation functions. The implementation supports time-based and count-based windowing along with various emit strategies for controlling output timing.
 
 ## Parameters
 
@@ -209,8 +209,8 @@ emit <emit_strategy>
 
 - Grouping by many fields can impact performance
 - Time-based windows require timestamp ordering
-- Complex emit conditions are evaluated frequently
-- Consider using appropriate window sizes for your use case
+- Complex emit conditions evaluate frequently
+- Consider appropriate window sizes for your use case
 
 ## Related Operators
 

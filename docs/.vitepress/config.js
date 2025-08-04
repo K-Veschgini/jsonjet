@@ -83,6 +83,7 @@ export default defineConfig({
         items: [
           { text: 'Server CLI', link: '/server/server-cli' },
           { text: 'HTTP and WebSocket APIs', link: '/server/http-websocket' },
+          { text: 'Log Stream', link: '/server/log-stream' },
         ]
       },
       {
@@ -116,7 +117,6 @@ export default defineConfig({
               { text: 'insert_into', link: '/jet/operators/insert-into' },
               { text: 'write_to_file', link: '/jet/operators/write-to-file' },
               { text: 'assert_or_save_expected', link: '/jet/operators/assert-or-save-expected' },
-              { text: 'collect', link: '/jet/operators/collect' }
             ]
           }
         ]

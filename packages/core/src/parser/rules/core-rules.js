@@ -4,7 +4,7 @@ import {
     Stream, Flow, Lookup, Delete, Insert, Into, Flush, List, Info, Subscribe, Unsubscribe,
     Ttl, LeftParen, RightParen, As, Assign,
     // Import all keywords for use as identifiers
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow
@@ -185,7 +185,6 @@ export function defineCoreCrules() {
             { ALT: () => this.CONSUME(Select, { LABEL: "sourceName" }) },
             { ALT: () => this.CONSUME(Scan, { LABEL: "sourceName" }) },
             { ALT: () => this.CONSUME(Summarize, { LABEL: "sourceName" }) },
-            { ALT: () => this.CONSUME(Collect, { LABEL: "sourceName" }) },
             { ALT: () => this.CONSUME(Stream, { LABEL: "sourceName" }) },
             { ALT: () => this.CONSUME(Flow, { LABEL: "sourceName" }) }
             // Problematic keywords (delete, info, list, etc.) are converted to Identifier by lexer

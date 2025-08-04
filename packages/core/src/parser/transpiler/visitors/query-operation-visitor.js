@@ -695,9 +695,6 @@ export const QueryOperationVisitorMixin = {
     assertOrSaveExpectedClause(ctx) {
         const filePath = this.visit(ctx.filePath);
         return `.pipe(new Operators.AssertOrSaveExpected(${filePath}))`;
-    },
-
-    collectClause(ctx) {
-        return `.collect(result => console.log(result))`;
     }
+
 };

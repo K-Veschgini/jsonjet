@@ -132,7 +132,7 @@ class CompactPerformanceTest {
     this.insertResponses = 0;
     for (let i = 0; i < records.length; i += BATCH_SIZE) {
       this.ws.send(JSON.stringify({ 
-        type: 'batch_insert', 
+        type: 'insert', 
         target: 'data', 
         data: records.slice(i, i + BATCH_SIZE) 
       }));

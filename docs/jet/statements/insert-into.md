@@ -1,6 +1,8 @@
 # insert into Statement
 
-The `insert into` statement inserts data into a stream.
+> **Performance Note**: While the `insert into` statement exists and works correctly, it is highly recommended to use the dedicated insert APIs via [HTTP and WebSocket](../../server/http-websocket.md) for production data ingestion, as they are much faster and more efficient. The `insert into` statement is primarily useful for testing and experimentation in the UI.
+
+The `insert into` statement adds data to a stream.
 
 ## Syntax
 
@@ -10,7 +12,7 @@ insert into <stream_name> <json_data>
 
 ## Description
 
-The `insert into` statement adds data to a specified stream. The data is immediately routed to all active subscribers of the stream.
+This statement inserts data into a specified stream, immediately routing it to all active subscribers. The operation follows standard streaming semantics where unsubscribed data is discarded.
 
 ## Parameters
 
@@ -62,22 +64,7 @@ insert into status true
 - Data is not persisted - streams are not storage
 - Multiple documents can be inserted in a single statement
 
-## Use Cases
 
-### Data Ingestion
-Insert data from external sources into streams.
-
-### Event Publishing
-Publish events to event streams.
-
-### Real-time Updates
-Send real-time updates to processing pipelines.
-
-### Testing
-Insert test data for development and testing.
-
-### Monitoring
-Send monitoring and health check data.
 
 ## Related Statements
 

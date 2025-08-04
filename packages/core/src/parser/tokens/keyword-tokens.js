@@ -12,7 +12,6 @@ export const Summarize = createToken({ name: "Summarize", pattern: /summarize\b/
 export const InsertInto = createToken({ name: "InsertInto", pattern: /insert_into\b/i });
 export const WriteToFile = createToken({ name: "WriteToFile", pattern: /write_to_file\b/i });
 export const AssertOrSaveExpected = createToken({ name: "AssertOrSaveExpected", pattern: /assert_or_save_expected\b/i });
-export const Collect = createToken({ name: "Collect", pattern: /collect\b/i });
 
 // Grouping and windowing
 export const By = createToken({ name: "By", pattern: /by\b/i });

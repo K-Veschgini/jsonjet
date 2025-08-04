@@ -1,6 +1,6 @@
 # info Statement
 
-The `info` statement shows information about streams.
+The `info` statement retrieves detailed stream information.
 
 ## Syntax
 
@@ -11,7 +11,7 @@ info <stream_name>
 
 ## Description
 
-The `info` statement displays detailed information about streams. When used without a stream name, it shows information for all streams. When used with a stream name, it shows detailed information for that specific stream.
+This statement queries detailed stream metrics and metadata. Without parameters, it returns information for all streams; with a stream name, it provides detailed metrics for that specific stream.
 
 ## Parameters
 
@@ -73,19 +73,7 @@ Timestamp when the stream was created.
 ### Last Activity
 Timestamp of the last activity on the stream.
 
-## Use Cases
 
-### Monitoring
-Monitor stream health and activity.
-
-### Debugging
-Investigate stream behavior and performance.
-
-### Administration
-Manage stream resources and configurations.
-
-### Development
-Verify stream creation and configuration.
 
 ## Related Statements
 

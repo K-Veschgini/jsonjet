@@ -1,6 +1,6 @@
 # delete flow Statement
 
-The `delete flow` statement stops and removes a processing flow.
+The `delete flow` statement terminates and removes a processing flow.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ delete flow <flow_name>
 
 ## Description
 
-The `delete flow` statement stops a running flow and removes it from the system. This operation stops the flow immediately and is irreversible.
+This statement immediately stops a running flow and removes it from the system. The termination interrupts any in-flight processing and cannot be reversed.
 
 ## Parameters
 
@@ -42,22 +42,7 @@ delete flow expired_monitor
 - Output streams continue to exist but receive no more data
 - Operation is irreversible
 
-## Use Cases
 
-### Flow Management
-Stop flows that are no longer needed.
-
-### Testing
-Clean up test flows after testing.
-
-### Resource Management
-Free up system resources by stopping unused flows.
-
-### Maintenance
-Stop flows during system maintenance.
-
-### Error Recovery
-Stop malfunctioning flows.
 
 ## Related Statements
 

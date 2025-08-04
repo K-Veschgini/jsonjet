@@ -31,6 +31,72 @@ class JSONJetServer {
   }
 
   /**
+   * Send WebSocket response with optional requestId
+   */
+  sendWSResponse(ws, response) {
+    ws.send(JSON.stringify(response));
+  }
+
+  /**
+   * Validate insert request data
+   */
+  validateInsertRequest(data) {
+    if (!data.target) {
+      throw new Error('Target stream name is required');
+    }
+
+    if (!data.data) {
+      throw new Error('Data is required');
+    }
+
+    // Validate data format - must be object or array of objects
+    if (Array.isArray(data.data)) {
+      if (data.data.length === 0) {
+        throw new Error('Data array cannot be empty');
+      }
+      for (const item of data.data) {
+        if (!item || typeof item !== 'object') {
+          throw new Error('All items in data array must be objects');
+        }
+      }
+    } else if (!data.data || typeof data.data !== 'object') {
+      throw new Error('Data must be an object or array of objects');
+    }
+  }
+
+  /**
+   * Validate subscribe request data
+   */
+  validateSubscribeRequest(data) {
+    if (!data.streamName) {
+      throw new Error('Stream name(s) are required');
+    }
+
+    // Allow both single string and array of strings
+    if (Array.isArray(data.streamName)) {
+      if (data.streamName.length === 0) {
+        throw new Error('At least one stream name is required');
+      }
+      for (const name of data.streamName) {
+        if (!name || typeof name !== 'string') {
+          throw new Error('All stream names must be non-empty strings');
+        }
+      }
+    } else if (!data.streamName || typeof data.streamName !== 'string') {
+      throw new Error('Stream name must be a string or array of strings');
+    }
+  }
+
+  /**
+   * Validate execute request data
+   */
+  validateExecuteRequest(data) {
+    if (!data.query || typeof data.query !== 'string') {
+      throw new Error('Query is required and must be a string');
+    }
+  }
+
+  /**
    * Start the server with HTTP and WebSocket support
    */
   start() {
@@ -292,7 +358,7 @@ class JSONJetServer {
       const clientId = this.getClientId(ws);
       
       if (!clientId) {
-        ws.send(JSON.stringify({ type: 'error', message: 'Client not found' }));
+        this.sendWSResponse(ws, { type: 'error', message: 'Client not found' });
         return;
       }
 
@@ -306,184 +372,182 @@ class JSONJetServer {
         case 'insert':
           await this.handleWSInsert(ws, clientId, data);
           break;
-        case 'batch_insert':
-          await this.handleWSBatchInsert(ws, clientId, data);
+        case 'execute':
+          await this.handleWSExecute(ws, clientId, data);
           break;
         default:
-          ws.send(JSON.stringify({ 
+          this.sendWSResponse(ws, { 
             type: 'error', 
-            message: 'Unknown message type. Supported types: subscribe, unsubscribe, insert, batch_insert' 
-          }));
+            message: 'Unknown message type. Supported types: subscribe, unsubscribe, insert, execute',
+            requestId: data.requestId
+          });
       }
     } catch (error) {
       console.error('WebSocket message error:', error);
-      ws.send(JSON.stringify({ type: 'error', message: error.message }));
+      this.sendWSResponse(ws, { type: 'error', message: error.message });
     }
   }
 
   /**
-   * Handle WebSocket subscription to a stream
+   * Handle WebSocket subscription to one or more streams
    */
   async handleWSSubscribe(ws, clientId, data) {
-    const { streamName } = data;
-    
-    if (!streamName) {
-      ws.send(JSON.stringify({ type: 'error', message: 'Stream name is required' }));
-      return;
-    }
-
     try {
-      // Subscribe to the stream
-      const subscriptionId = this.streamManager.subscribeToStream(streamName, (message) => {
-        ws.send(JSON.stringify({
-          type: 'data',
-          streamName: message.streamName,
-          data: message.data,
-          subscriptionId
-        }));
+      this.validateSubscribeRequest(data);
+      
+      const streamNames = Array.isArray(data.streamName) ? data.streamName : [data.streamName];
+      const subscriptions = [];
+      const client = this.wsClients.get(clientId);
+
+      // Subscribe to each stream
+      for (const streamName of streamNames) {
+        const subscriptionId = this.streamManager.subscribeToStream(streamName, (message) => {
+          this.sendWSResponse(ws, {
+            type: 'data',
+            streamName: message.streamName,
+            data: message.data,
+            subscriptionId,
+            requestId: data.requestId
+          });
+        });
+
+        // Track subscription
+        client.subscriptions.set(subscriptionId, streamName);
+        subscriptions.push({ streamName, subscriptionId });
+        
+        this.log(`📡 Client ${clientId} subscribed to stream '${streamName}' (sub: ${subscriptionId})`);
+      }
+
+      this.sendWSResponse(ws, {
+        type: 'subscribed',
+        subscriptions,
+        message: `Subscribed to ${subscriptions.length} stream(s)`,
+        requestId: data.requestId
       });
 
-      // Track subscription
-      const client = this.wsClients.get(clientId);
-      client.subscriptions.set(subscriptionId, streamName);
-
-      ws.send(JSON.stringify({
-        type: 'subscribed',
-        streamName,
-        subscriptionId,
-        message: `Subscribed to stream '${streamName}'`
-      }));
-
-      this.log(`📡 Client ${clientId} subscribed to stream '${streamName}' (sub: ${subscriptionId})`);
     } catch (error) {
-      ws.send(JSON.stringify({ type: 'error', message: error.message }));
+      this.sendWSResponse(ws, { 
+        type: 'error', 
+        message: error.message,
+        requestId: data.requestId
+      });
     }
   }
 
   /**
-   * Handle WebSocket unsubscription
+   * Handle WebSocket unsubscription (specific subscription or all)
    */
   async handleWSUnsubscribe(ws, clientId, data) {
     const { subscriptionId } = data;
     
-    if (!subscriptionId) {
-      ws.send(JSON.stringify({ type: 'error', message: 'Subscription ID is required' }));
-      return;
-    }
-
     try {
-      // Unsubscribe from the stream
-      this.streamManager.unsubscribeFromStream(subscriptionId);
-
-      // Remove from client tracking
       const client = this.wsClients.get(clientId);
-      const streamName = client.subscriptions.get(subscriptionId);
-      client.subscriptions.delete(subscriptionId);
+      
+      if (subscriptionId) {
+        // Unsubscribe from specific subscription
+        this.streamManager.unsubscribeFromStream(subscriptionId);
+        const streamName = client.subscriptions.get(subscriptionId);
+        client.subscriptions.delete(subscriptionId);
 
-      ws.send(JSON.stringify({
-        type: 'unsubscribed',
-        subscriptionId,
-        streamName,
-        message: `Unsubscribed from subscription ${subscriptionId}`
-      }));
+        this.sendWSResponse(ws, {
+          type: 'unsubscribed',
+          subscriptionId,
+          streamName,
+          message: `Unsubscribed from subscription ${subscriptionId}`,
+          requestId: data.requestId
+        });
 
-      this.log(`📡 Client ${clientId} unsubscribed from subscription ${subscriptionId}`);
+        this.log(`📡 Client ${clientId} unsubscribed from subscription ${subscriptionId}`);
+      } else {
+        // Unsubscribe from all subscriptions for this client
+        const unsubscribed = [];
+        for (const [subId, streamName] of client.subscriptions) {
+          try {
+            this.streamManager.unsubscribeFromStream(subId);
+            unsubscribed.push({ subscriptionId: subId, streamName });
+          } catch (error) {
+            console.warn(`Failed to unsubscribe from ${subId}:`, error);
+          }
+        }
+        client.subscriptions.clear();
+
+        this.sendWSResponse(ws, {
+          type: 'unsubscribed',
+          unsubscribed,
+          message: `Unsubscribed from ${unsubscribed.length} subscription(s)`,
+          requestId: data.requestId
+        });
+
+        this.log(`📡 Client ${clientId} unsubscribed from all ${unsubscribed.length} subscriptions`);
+      }
     } catch (error) {
-      ws.send(JSON.stringify({ type: 'error', message: error.message }));
+      this.sendWSResponse(ws, { 
+        type: 'error', 
+        message: error.message,
+        requestId: data.requestId
+      });
     }
   }
 
   /**
-   * Handle WebSocket single record insert
+   * Handle WebSocket insert (unified single and batch)
    */
   async handleWSInsert(ws, clientId, data) {
-    const { target, data: recordData } = data;
-    
-    if (!target) {
-      ws.send(JSON.stringify({ 
-        type: 'insert_response', 
-        success: false, 
-        error: 'Target stream name is required' 
-      }));
-      return;
-    }
-
-    if (!recordData || typeof recordData !== 'object') {
-      ws.send(JSON.stringify({ 
-        type: 'insert_response', 
-        success: false, 
-        error: 'Record data is required and must be an object' 
-      }));
-      return;
-    }
-
     try {
-      // Bypass query engine for direct insert - much faster
+      this.validateInsertRequest(data);
+      
+      const { target, data: recordData } = data;
+      const isArray = Array.isArray(recordData);
+      const count = isArray ? recordData.length : 1;
+
+      // Use streamManager's built-in batch handling for optimal performance
       await this.streamManager.insertIntoStream(target, recordData);
 
-      ws.send(JSON.stringify({
+      this.sendWSResponse(ws, {
         type: 'insert_response',
         success: true,
-        count: 1,
+        count,
         target,
-        message: `Record inserted successfully into '${target}'`
-      }));
+        message: `${count} record(s) inserted successfully into '${target}'`,
+        requestId: data.requestId
+      });
 
-      this.log(`📝 Client ${clientId} inserted record into '${target}'`);
+      this.log(`📝 Client ${clientId} inserted ${count} record(s) into '${target}'`);
     } catch (error) {
-      ws.send(JSON.stringify({ 
+      this.sendWSResponse(ws, { 
         type: 'insert_response', 
         success: false, 
-        error: error.message 
-      }));
+        error: error.message,
+        requestId: data.requestId
+      });
     }
   }
 
   /**
-   * Handle WebSocket batch record insert
+   * Handle WebSocket execute command
    */
-  async handleWSBatchInsert(ws, clientId, data) {
-    const { target, data: recordsData } = data;
-    
-    if (!target) {
-      ws.send(JSON.stringify({ 
-        type: 'insert_response', 
-        success: false, 
-        error: 'Target stream name is required' 
-      }));
-      return;
-    }
-
-    if (!Array.isArray(recordsData) || recordsData.length === 0) {
-      ws.send(JSON.stringify({ 
-        type: 'insert_response', 
-        success: false, 
-        error: 'Records data is required and must be a non-empty array' 
-      }));
-      return;
-    }
-
+  async handleWSExecute(ws, clientId, data) {
     try {
-      // Bypass query engine for direct batch insert - much faster
-      for (const record of recordsData) {
-        await this.streamManager.insertIntoStream(target, record);
-      }
-
-      ws.send(JSON.stringify({
-        type: 'insert_response',
+      this.validateExecuteRequest(data);
+      
+      const result = await this.queryEngine.executeStatement(data.query);
+      
+      this.sendWSResponse(ws, {
+        type: 'execute_response',
         success: true,
-        count: recordsData.length,
-        target,
-        message: `${recordsData.length} records inserted successfully into '${target}'`
-      }));
+        result,
+        message: 'Query executed successfully',
+        requestId: data.requestId
+      });
 
-      this.log(`📝 Client ${clientId} inserted ${recordsData.length} records into '${target}'`);
+      this.log(`🔧 Client ${clientId} executed query: ${data.query}`);
     } catch (error) {
-      ws.send(JSON.stringify({ 
-        type: 'insert_response', 
-        success: false, 
-        error: error.message 
-      }));
+      this.sendWSResponse(ws, {
+        type: 'execute_response',
+        success: false,
+        error: error.message,
+        requestId: data.requestId
+      });
     }
   }
 

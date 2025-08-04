@@ -11,12 +11,17 @@ create or replace lookup <name> = <value>
 
 ## Description
 
-The `create lookup` statement defines a named lookup that stores key-value pairs for use in queries. Lookups provide a way to store configuration data, reference tables, and other static data that can be accessed during query processing.
+The `create lookup` statement defines a named lookup that stores configuration data, reference tables, and other static data that can be accessed during query processing. Lookups are designed for runtime configuration values and lookup tables, providing an efficient way to store and access reference data without requiring JOINs.
+
+Lookups are stored in the system registry and persist until explicitly deleted, making them ideal for:
+- Configuration parameters (timeouts, thresholds, feature flags)
+- Reference tables (status codes, error mappings, validation rules)
+- Static data that doesn't change frequently during query execution
 
 ## Parameters
 
 - `name`: Lookup identifier (must be a valid identifier)
-- `value`: JSON value (object, array, string, number, boolean)
+- `value`: JSON value (object, array, string, number, boolean, null)
 
 ## Modifiers
 
@@ -65,31 +70,22 @@ create lookup error_codes = {
 
 ## Lookup Usage
 
-Lookups can be referenced in queries using the `lookup()` function:
+Lookups can be referenced in queries by name. When a property name is not found in the input data, the system checks if a lookup with that name exists:
 
 ```jsonjet
-| where retry_count < lookup("max_retries")
-| select { status: status, config: lookup("config") }
+| where retry_count < max_retries
+| select { status: status, timeout_value: timeout }
 ```
 
-## Use Cases
+**Note**: If your data contains a property with the same name as a lookup, the data property takes precedence.
 
-### Configuration Storage
-Store application configuration values.
+## Validation
 
-### Reference Data
-Store lookup tables and reference data.
-
-### Feature Flags
-Store feature flags and settings.
-
-### Validation Rules
-Store validation rules and constraints.
-
-### Static Data
-Store any static data needed during processing.
+- Lookup names must be valid identifiers (start with letter/underscore, contain only letters, numbers, underscores)
+- Lookup names cannot conflict with existing function names
+- Values must be valid JSON (object, array, string, number, boolean, null)
 
 ## Related Statements
 
 - [delete lookup](./delete-lookup.md) - Remove a lookup
-- [list](./list.md) - List all lookups 
+- [list](./list.md) - List all lookups

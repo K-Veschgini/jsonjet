@@ -25,6 +25,7 @@ release/
 .vscode/
 .idea/
 .claude/
+.cursor/
 *.swp
 *.swo
 *~

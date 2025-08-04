@@ -1,6 +1,6 @@
 # assert_or_save_expected Operator
 
-The `assert_or_save_expected` operator asserts or saves expected results for testing.
+The `assert_or_save_expected` operator validates pipeline output against expected results.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ The `assert_or_save_expected` operator asserts or saves expected results for tes
 
 ## Description
 
-The `ASSERT_OR_SAVE_EXPECTED` operator is used for testing and validation purposes. It compares the current pipeline output with expected results stored in a file, or saves the current output as expected results.
+This operator serves as a testing mechanism that either compares current pipeline output with stored expected results or saves the current output for future validation. The behavior depends on whether the target file exists.
 
 ## Parameters
 
@@ -62,19 +62,7 @@ When the expected file exists, the operator compares the current output with the
 ### Save Mode
 When the expected file doesn't exist, the operator saves the current output as the expected results for future comparisons.
 
-## Use Cases
 
-### Regression Testing
-Ensure that data processing logic produces consistent results over time.
-
-### Data Validation
-Validate that data transformations produce expected outputs.
-
-### Pipeline Testing
-Test complete data processing pipelines with known inputs and expected outputs.
-
-### Documentation
-Generate example outputs for documentation purposes.
 
 ## File Format
 
@@ -85,7 +73,7 @@ The expected results file should contain the expected output in JSON format, typ
 - File I/O operations for comparison can be slow
 - Large expected result files may impact performance
 - Use in development and testing environments only
-- Consider using smaller test datasets for frequent testing
+- Consider smaller test datasets for frequent testing
 
 ## Related Operators
 

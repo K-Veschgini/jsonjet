@@ -28,16 +28,7 @@ export class Stream {
             this.head.push(doc);
         }
     }
-    
-    collect(callback) {
-        const collector = new (class extends Operator {
-            async process(doc) {
-                callback(doc);
-            }
-        })();
-        
-        return this.pipe(collector);
-    }
+
     
     async finish() {
         // Create promise for completion before starting flush

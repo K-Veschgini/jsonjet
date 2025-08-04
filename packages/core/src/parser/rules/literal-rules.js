@@ -4,7 +4,7 @@ import {
     Comma, Colon, Spread, Identifier, StringLiteral, Minus, Multiply,
     Iff, Emit, Assign,
     // Import all keywords for use as property keys
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected,
     By, Over, Step, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow,

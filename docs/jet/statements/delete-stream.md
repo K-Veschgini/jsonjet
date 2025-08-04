@@ -1,6 +1,6 @@
 # delete stream Statement
 
-The `delete stream` statement removes a stream and all its data.
+The `delete stream` statement removes a stream from the system.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ delete stream <stream_name>
 
 ## Description
 
-The `delete stream` statement removes a named stream from the system. This operation is irreversible and will stop all flows that are reading from the stream.
+This statement permanently removes a named stream and terminates all associated flows. The operation can't be undone, so consider the impact on dependent components before execution.
 
 ## Parameters
 
@@ -36,25 +36,11 @@ delete stream expired_events
 
 ## Behavior
 
-- Removes the stream and all associated metadata
-- Stops all flows that are reading from the stream
-- Removes all subscriptions to the stream
-- Any data currently in the stream is lost
-- Operation is irreversible
-
-## Use Cases
-
-### Cleanup
-Remove streams that are no longer needed.
-
-### Testing
-Clean up test streams after testing.
-
-### Resource Management
-Free up system resources by removing unused streams.
-
-### Maintenance
-Remove streams during system maintenance.
+- Removes stream and associated metadata
+- Terminates flows reading from the stream
+- Cancels all active subscriptions
+- Discards any buffered data
+- Cannot be reversed
 
 ## Related Statements
 

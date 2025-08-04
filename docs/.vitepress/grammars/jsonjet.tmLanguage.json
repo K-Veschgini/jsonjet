@@ -43,7 +43,7 @@
       "patterns": [
         {
           "name": "keyword.control.jsonjet",
-          "match": "\\b(create|or|replace|stream|flow|lookup|insert|into|delete|list|as|where|select|scan|step|emit|summarize|collect|by|over|iff|every|when|on|change|group|update|using|flush|info|subscribe|unsubscribe|ttl|print|assert_or_save_expected|write_to_file|insert_into)\\b"
+          "match": "\\b(create|or|replace|stream|flow|lookup|insert|into|delete|list|as|where|select|scan|step|emit|summarize|by|over|iff|every|when|on|change|group|update|using|flush|info|subscribe|unsubscribe|ttl|print|assert_or_save_expected|write_to_file|insert_into)\\b"
         },
         {
           "name": "keyword.operator.logical.jsonjet",

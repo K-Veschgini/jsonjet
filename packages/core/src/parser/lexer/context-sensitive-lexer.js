@@ -116,7 +116,7 @@ class StatementContextTracker {
 const CONTEXT_SENSITIVE_KEYWORDS = new Set([
     'create', 'delete', 'insert', 'flush', 'list', 'info', 
     'subscribe', 'unsubscribe', 'where', 'select', 'scan', 
-    'summarize', 'collect', 'by', 'step', 'iff', 'emit',
+    'summarize', 'by', 'step', 'iff', 'emit',
     'stream', 'flow', 'or', 'replace', 'if', 'not', 'exists',
             'into', 'ttl', 'as', 'every', 'when', 'on',
     'change', 'group', 'update', 'using', 'over',

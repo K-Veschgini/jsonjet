@@ -1,6 +1,6 @@
 # list Statement
 
-The `list` statement lists various system entities.
+The `list` statement displays information about system entities.
 
 ## Syntax
 
@@ -13,7 +13,7 @@ list subscriptions
 
 ## Description
 
-The `list` statement displays information about various system entities. It provides an overview of the current state of streams, flows, lookups, and subscriptions.
+This statement queries and displays information about system components. It provides a snapshot of the current state across streams, flows, lookups, and subscriptions.
 
 ## Parameters
 
@@ -76,19 +76,7 @@ Found 1 active subscription(s):
 1. ID 123: sensor_data
 ```
 
-## Use Cases
 
-### System Monitoring
-Monitor the current state of the system.
-
-### Debugging
-Identify active streams, flows, and subscriptions.
-
-### Administration
-Manage system resources and configurations.
-
-### Development
-Verify that streams and flows are created correctly.
 
 ## Related Statements
 

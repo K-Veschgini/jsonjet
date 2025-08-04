@@ -1,6 +1,6 @@
 # write_to_file Operator
 
-The `write_to_file` operator writes data to a file.
+The `write_to_file` operator persists pipeline data to disk.
 
 ## Syntax
 
@@ -10,7 +10,7 @@ The `write_to_file` operator writes data to a file.
 
 ## Description
 
-The `WRITE_TO_FILE` operator writes documents from the pipeline to a specified file. This is useful for data export, logging, and archival purposes.
+This operator writes documents from the pipeline to a specified file location. The operator supports various output formats and writing modes to accommodate different persistence requirements.
 
 ## Parameters
 
@@ -73,24 +73,12 @@ create flow log_processor as
 - `delimiter: ","` - Field delimiter
 - `headers: true` - Include column headers
 
-## Use Cases
 
-### Data Export
-Export processed data to files for external systems.
-
-### Logging
-Write filtered or transformed logs to files.
-
-### Data Archival
-Archive processed data to persistent storage.
-
-### Debugging
-Write intermediate pipeline results for debugging.
 
 ## Performance Considerations
 
 - File I/O can be slow for high-volume data
-- Consider using appropriate file formats for your use case
+- Consider appropriate file formats for your use case
 - Large files may impact system performance
 - Use append mode carefully to avoid file corruption
 

@@ -140,12 +140,6 @@ export function CodeEditor({
     
     if (!isBasicallyComplete) return false;
     
-    // Special check for flow statements - they should end with a pipeline operation
-    if (trimmed.startsWith('create flow')) {
-      // Flow statements should end with | insert_into(...) or similar pipeline operation
-      return /\|\s*(insert_into|write_to_file|assert_or_save_expected|collect)\s*\([^)]*\)\s*;?\s*$/.test(trimmed);
-    }
-    
     return true;
   };
 

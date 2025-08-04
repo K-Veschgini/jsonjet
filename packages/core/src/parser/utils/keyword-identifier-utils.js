@@ -12,7 +12,7 @@
 // This provides maximum flexibility while maintaining unambiguous parsing.
 
 import { 
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     HoppingWindow, TumblingWindow, SlidingWindow, CountWindow,
     HoppingWindowBy, TumblingWindowBy, SlidingWindowBy, SessionWindow, As,
@@ -29,7 +29,7 @@ import { StringLiteral } from '../tokens/literal-tokens.js';
 // Keywords that can be used as identifiers in most contexts
 export const IDENTIFIER_SAFE_KEYWORDS = [
     // Query operations
-    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected, Collect,
+    Where, Select, Scan, Summarize, InsertInto, WriteToFile, AssertOrSaveExpected,
     By, Over, Step, Iff, Emit, Every, When, On, Change, Group, Update, Using,
     
     // Window functions

@@ -881,9 +881,7 @@ export class QueryEngine {
         if (operationNode.children.assertOrSaveExpectedClause) {
             return this.assertOrSaveExpectedClauseToCode(operationNode.children.assertOrSaveExpectedClause[0]);
         }
-        if (operationNode.children.collectClause) {
-            return 'collect()';
-        }
+
 
         return 'unknown_operation';
     }

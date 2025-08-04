@@ -1,6 +1,6 @@
 # create stream Statement
 
-The `create stream` statement creates a new data stream.
+The `create stream` statement defines a new data stream for document routing.
 
 ## Syntax
 
@@ -12,7 +12,7 @@ create if not exists stream <stream_name>
 
 ## Description
 
-The `create stream` statement defines a new named data stream that can receive and route documents. Streams are the primary data routing mechanism in JSONJet and serve as pure data pipes.
+This statement creates a named data stream that routes documents between components. Streams function as data pipes within the JSONJet architecture - they don't persist data but ensure it reaches active subscribers.
 
 ## Parameters
 
@@ -52,25 +52,11 @@ create if not exists stream backup_stream
 
 ## Stream Behavior
 
-- Streams are pure data pipes that route documents to subscribers
-- If no subscribers are listening, data is lost (correct streaming behavior)
-- Streams are not persistent storage - they don't retain data
-- Multiple flows can read from the same stream
-- Streams can have multiple subscribers
-
-## Use Cases
-
-### Data Ingestion
-Create streams to receive data from external sources.
-
-### Pipeline Input
-Define input streams for data processing flows.
-
-### Event Routing
-Route events to different processing pipelines.
-
-### Real-time Data
-Handle real-time data streams for immediate processing.
+- Documents route immediately to active subscribers
+- Undelivered data is discarded (standard streaming semantics)  
+- No persistence - streams aren't storage mechanisms
+- Multiple flows can consume from the same stream
+- Supports multiple concurrent subscribers
 
 ## Related Statements
 
