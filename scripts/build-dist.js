@@ -58,7 +58,7 @@ async function buildDocs() {
 }
 
 async function buildDemo() {
-  log('Building demo with /jsonjet/demo/ base path...', 'yellow');
+  log('Building demo with /demo/ base path...', 'yellow');
   
   // The vite.config.js already has the correct configuration with Monaco Editor optimizations
   exec('bun run build', path.join(rootDir, 'packages/demo'));

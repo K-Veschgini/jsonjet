@@ -11,10 +11,10 @@ export default defineConfig({
   
   // Multiple favicon formats for maximum browser compatibility
   head: [
-    ['link', { rel: 'icon', href: '/jsonjet/favicon.ico', sizes: 'any' }],
-    ['link', { rel: 'icon', href: '/jsonjet/favicon.png', type: 'image/png' }],
-    ['link', { rel: 'icon', href: '/jsonjet/logo.svg', type: 'image/svg+xml' }],
-    ['link', { rel: 'apple-touch-icon', href: '/jsonjet/favicon.png' }]
+    ['link', { rel: 'icon', href: '/favicon.ico', sizes: 'any' }],
+    ['link', { rel: 'icon', href: '/favicon.png', type: 'image/png' }],
+    ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'apple-touch-icon', href: '/favicon.png' }]
   ],
   
   // Ignore dead links for now - can be fixed later
@@ -73,7 +73,7 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'Downloads', link: '/downloads' },
       { text: 'Documentation', link: '/guide/' },
-      { text: 'Demo', link: './demo/', target: '_blank' },
+      { text: 'Demo', link: '/demo/', target: '_blank', rel: 'external' },
       { text: 'Veschgini Consulting', link: 'https://veschgini-consulting.com', target: '_blank' },    
     ],
 

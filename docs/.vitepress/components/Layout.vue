@@ -9,7 +9,7 @@ const route = useRoute()
 
 // Check if current page is home page
 const isHomePage = computed(() => {
-  return route.path === '/' || route.path === '/jsonjet/' || route.path.endsWith('/jsonjet')
+  return route.path === '/'
 })
 </script>
 

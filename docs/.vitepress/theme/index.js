@@ -35,7 +35,7 @@ export default {
         setTimeout(renderMermaid, 100)
         
         // Handle homepage background video
-        const isHomePage = to === '/' || to === siteData.base || to === '/jsonjet/'
+        const isHomePage = to === '/' || to === siteData.base
         if (isHomePage) {
           // Force dark theme on homepage
           document.documentElement.classList.add('dark')
@@ -62,7 +62,7 @@ export default {
             
             const video = document.createElement('video')
             video.className = 'home-background-video'
-            const basePath = siteData.base || '/jsonjet/'
+            const basePath = siteData.base || '/'
             const videoSrc = basePath + 'background.mp4'
             video.src = videoSrc
             video.autoplay = true
