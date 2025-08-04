@@ -1,4 +1,5 @@
 import { createInstances } from '@jsonjet/core';
+import { parseArgs } from "util";
 
 /**
  * JSONJet Bun Server
@@ -8,8 +9,6 @@ class JSONJetServer {
   constructor(options = {}) {
     this.port = options.port || 3333;
     this.host = options.host || 'localhost';
-    this.grpcPort = options.grpcPort || 50051;
-    this.socketioPort = options.socketioPort || 3334;
     this.verbose = options.verbose || false;
     const versionString = (typeof VERSION !== 'undefined') ? VERSION : 'development';
     this.version = versionString.startsWith('v') ? versionString.substring(1) : versionString;
@@ -47,8 +46,11 @@ class JSONJetServer {
     });
 
     this.server = server;
-    console.log(`{🚀} JSONJet Server v${this.version} running on http://${this.host}:${this.port}`);
-    console.log(`WebSocket endpoint: ws://${this.host}:${this.port}/ws`);
+    console.log(`{🚀} JSONJet Server v${this.version}`);
+    console.log('{')
+    console.log(`    running on:         http://${this.host}:${this.port}`);
+    console.log(`    WebSocket endpoint: ws://${this.host}:${this.port}/ws`);
+    console.log('}')
     console.log(`Licensed under PolyForm Noncommercial License 1.0.0`);
     console.log(`Contact: Prof. Dr. Kambis Veschgini <k.veschgini@oth-aw.de>`);
     return server;
@@ -525,7 +527,71 @@ class JSONJetServer {
 
 // Start the server if this file is run directly
 if (import.meta.main) {
-  const options = parseArgs();
+  const { values: args } = parseArgs({
+    options: {
+      host: {
+        type: 'string',
+        short: 'h',
+        default: 'localhost'
+      },
+      port: {
+        type: 'string',
+        short: 'p',
+        default: '3333'
+      },
+      verbose: {
+        type: 'boolean',
+        short: 'v',
+        default: false
+      },
+      version: {
+        type: 'boolean',
+        default: false
+      },
+      help: {
+        type: 'boolean',
+        default: false
+      }
+    }
+  });
+
+  // Handle help flag
+  if (args.help) {
+    console.log(`
+JSONJet Server - Stream processing and query engine
+
+Usage: bun run src/index.js [options]
+
+Options:
+  -h, --host <host>     Host to bind to (default: localhost)
+  -p, --port <port>     Port to listen on (default: 3333)
+  -v, --verbose         Enable verbose logging (default: false)
+      --version         Show version information
+      --help            Show this help message
+
+Examples:
+  bun run src/index.js --host 0.0.0.0 --port 8080
+  bun run src/index.js --verbose
+  bun run src/index.js --help
+`);
+    process.exit(0);
+  }
+
+  // Handle version flag
+  if (args.version) {
+    const versionString = (typeof VERSION !== 'undefined') ? VERSION : 'development';
+    const version = versionString.startsWith('v') ? versionString.substring(1) : versionString;
+    console.log(`JSONJet Server v${version}`);
+    process.exit(0);
+  }
+
+  // Convert port to number and create options object
+  const options = {
+    host: args.host,
+    port: parseInt(args.port, 10),
+    verbose: args.verbose
+  };
+
   const server = new JSONJetServer(options);
   server.start();
 }
