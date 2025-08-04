@@ -2,10 +2,15 @@ import DefaultTheme from 'vitepress/theme'
 import './style.css'
 import './custom-jsonjet.css'
 import mermaid from 'mermaid'
+import CustomFooter from '../components/CustomFooter.vue'
+import Layout from '../components/Layout.vue'
 
 export default {
   ...DefaultTheme,
+  Layout: Layout,
   enhanceApp({ app, router, siteData }) {
+    // Register global components
+    app.component('CustomFooter', CustomFooter)
     // Initialize Mermaid
     if (typeof window !== 'undefined') {
       mermaid.initialize({ 

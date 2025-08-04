@@ -4,10 +4,18 @@ import mermaid from 'mermaid'
 
 export default defineConfig({
   title: 'JSONJet Documentation',
-  description: 'Stream processing research by Prof. Dr. Kambis Veschgini - A document-based stream processing engine with declarative query language',
+  description: 'Document-based stream processing engine with declarative query language by Prof. Dr. Kambis Veschgini',
   
   // GitHub Pages base path (same for local and production)
   base: '/jsonjet/',
+  
+  // Multiple favicon formats for maximum browser compatibility
+  head: [
+    ['link', { rel: 'icon', href: '/jsonjet/favicon.ico', sizes: 'any' }],
+    ['link', { rel: 'icon', href: '/jsonjet/favicon.png', type: 'image/png' }],
+    ['link', { rel: 'icon', href: '/jsonjet/logo.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'apple-touch-icon', href: '/jsonjet/favicon.png' }]
+  ],
   
   // Ignore dead links for now - can be fixed later
   ignoreDeadLinks: true,
@@ -62,11 +70,11 @@ export default defineConfig({
     },
     
     nav: [
-      { text: 'Veschgini Consulting', link: 'https://veschgini-consulting.com', target: '_blank' },
       { text: 'Home', link: '/' },
       { text: 'Downloads', link: '/downloads' },
       { text: 'Documentation', link: '/guide/' },
-      { text: 'Demo', link: './demo/', target: '_blank' }
+      { text: 'Demo', link: './demo/', target: '_blank' },
+      { text: 'Veschgini Consulting', link: 'https://veschgini-consulting.com', target: '_blank' },    
     ],
 
     sidebar: [
@@ -93,6 +101,7 @@ export default defineConfig({
           { text: 'Syntax', link: '/jet/syntax' },
           {
             text: 'Statements',
+            collapsed: true,
             items: [
               { text: 'create stream', link: '/jet/statements/create-stream' },
               { text: 'create flow', link: '/jet/statements/create-flow' },
@@ -110,6 +119,7 @@ export default defineConfig({
           },
           {
             text: 'Operators',
+            collapsed: true,
             items: [
               { text: 'where', link: '/jet/operators/where' },
               { text: 'select', link: '/jet/operators/select' },
@@ -120,6 +130,30 @@ export default defineConfig({
               { text: 'assert_or_save_expected', link: '/jet/operators/assert-or-save-expected' },
             ]
           }
+        ]
+      },
+      {
+        text: 'Links',
+        items: [
+          { text: 'Veschgini Consulting', link: 'https://veschgini-consulting.com' },
+          { text: 'Legal Notice', link: 'https://veschgini-consulting.com/impressum' },
+          { text: 'Cookie Policy', link: 'https://veschgini-consulting.com/cookie-richtlinie' },
+          { text: 'Privacy Policy', link: 'https://veschgini-consulting.com/datenschutzerklarung' },
+          { text: 'Terms & Conditions', link: 'https://veschgini-consulting.com/geschaftsbedingungen' }
+        ]
+      },
+      {
+        text: 'Contact',
+        items: [
+          { text: 'Prof. Dr. Kambis Veschgini', link: 'mailto:k.veschgini@oth-aw.de' },
+          { text: 'OTH Amberg-Weiden', link: 'https://www.oth-aw.de/' }
+        ]
+      },
+      {
+        text: 'Copyright',
+        items: [
+          { text: '© 2025 Prof. Dr. Kambis Veschgini', link: 'https://veschgini-consulting.com' },
+          { text: 'PolyForm Noncommercial License', link: 'https://polyformproject.org/licenses/noncommercial/1.0.0/' }
         ]
       }
     ],
