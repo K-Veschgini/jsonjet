@@ -1,3 +1,19 @@
+/* Force dark theme globally */
+html {
+  color-scheme: dark !important;
+}
+
+html:not(.dark) {
+  --vp-c-bg: var(--vp-c-bg-dark) !important;
+  --vp-c-bg-alt: var(--vp-c-bg-alt-dark) !important;
+  --vp-c-bg-soft: var(--vp-c-bg-soft-dark) !important;
+  --vp-c-text-1: var(--vp-c-text-1-dark) !important;
+  --vp-c-text-2: var(--vp-c-text-2-dark) !important;
+  --vp-c-text-3: var(--vp-c-text-3-dark) !important;
+  --vp-c-divider: var(--vp-c-divider-dark) !important;
+  --vp-c-border: var(--vp-c-border-dark) !important;
+}
+
 /* Custom brand color */
 :root {
   --vp-c-brand-1: #0D79F2;
@@ -11,14 +27,12 @@
   position: relative;
 }
 
-/* Force dark theme on home page only - hide entire appearance section */
-.VPHome .VPNavBarAppearance,
-.VPHome .VPSwitchAppearance,
-.VPHome .appearance,
-.VPHome .divider:has(+ .VPNavBarAppearance),
-.VPHome .VPNavBarAppearance + .divider,
-.VPHome .VPNavBarExtra > .divider:last-child,
-.VPHome .VPNavBarExtra > .divider:nth-last-child(2) {
+/* Hide theme toggle button globally */
+.VPNavBarAppearance,
+.VPSwitchAppearance,
+.appearance,
+.divider:has(+ .VPNavBarAppearance),
+.VPNavBarAppearance + .divider {
   display: none !important;
 }
 

@@ -12,13 +12,10 @@ export default defineConfig({
   // Ignore dead links for now - can be fixed later
   ignoreDeadLinks: true,
   
-  appearance: 'dark', // Force dark theme only
+  appearance: false, // Disable theme toggle completely
   
   markdown: {
-    theme: {
-      light: 'github-light',
-      dark: 'github-dark'
-    },
+    theme: 'github-dark', // Force dark theme for code blocks
     config: (md) => {
       // Override the fence renderer to handle jsonjet language and mermaid
       const defaultRender = md.renderer.rules.fence || function(tokens, idx, options, env, self) {
