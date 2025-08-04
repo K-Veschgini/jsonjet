@@ -65,14 +65,14 @@ const TARGETS = [
   {
     target: 'bun-darwin-x64',
     executableName: 'jsonjet',
-    archiveName: 'jsonjet-server-darwin-x64',
+    archiveName: 'jsonjet-server-macos-x64',
     description: 'macOS x64 (Intel)',
     extension: ''
   },
   {
     target: 'bun-darwin-arm64',
     executableName: 'jsonjet',
-    archiveName: 'jsonjet-server-darwin-arm64',
+    archiveName: 'jsonjet-server-macos-arm64',
     description: 'macOS ARM64 (Apple Silicon)',
     extension: ''
   }

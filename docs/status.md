@@ -2,41 +2,41 @@
 
 ## Current Development Stage
 
-JSONJet is in **Technical Preview**—core functionality is operational and ready for evaluation, while the architecture continues to evolve.
+JSONJet is currently in technical preview. The core functionality is operational and available for evaluation, though I continue to refine the underlying architecture based on research findings.
 
 ## Development Philosophy
 
-JSONJet follows a deliberate architectural strategy. Rather than rushing to implement every mathematical function and aggregation operator, I've focused on building solid foundational infrastructure first.
+I've adopted a systematic architectural approach with JSONJet's development. Rather than implementing every mathematical function and aggregation operator immediately, my research strategy has focused on establishing the foundational infrastructure first.
 
-The philosophy is straightforward: **architecture is the foundation everything else builds upon**. By implementing complex core functionalities first—query parser, transpiler, stream management, and real-time processing—new mathematical functions and aggregations integrate seamlessly.
+The principle is straightforward: architectural decisions drive everything that follows. By implementing the most complex components first—query parser, transpiler, stream management, and real-time processing—subsequent mathematical functions and aggregations integrate naturally within the existing framework.
 
-This means I've prioritized:
+This research approach has prioritized:
 
-- **Robust stream processing architecture** that can handle high-throughput, real-time data
-- **Flexible query language parser** that can evolve to support new operators
-- **Efficient memory management** optimized for edge computing scenarios  
-- **Solid transpilation and execution engine** that provides the foundation for all operations
+- Stream processing architecture capable of high-throughput, real-time data handling
+- Extensible query language parser designed to accommodate future operators
+- Memory management systems optimized for edge computing environments
+- Transpilation and execution engine providing comprehensive operational support
 
-With solid foundational systems, adding mathematical functions, statistical aggregations, and analytics operators becomes straightforward—each leveraging existing infrastructure without architectural changes.
+With these foundational systems established, incorporating additional mathematical functions, statistical aggregations, and analytics operators becomes a matter of leveraging existing infrastructure rather than requiring fundamental architectural modifications.
 
-## What's Working Now
+## Current Implementation Status
 
 - Core stream processing engine
 - Real-time flow creation and management
 - Query language parser and transpiler
-- Some core operators (where, select, scan, summarize, ...)
-- WebSocket and HTTP APIs
+- Essential operators including where, select, scan, and summarize
+- WebSocket and HTTP API interfaces
 
+## Research Roadmap (2025 Q3)
 
-## What's Coming Next (2025 Q3)
+- Server interface development
+- Cross-stream querying and join operations
+- Enhanced security layer implementation
 
-- UI for the server
-- Advanced security layer
+## Research Collaboration
 
-## Feedback Welcome
-
-Since JSONJet is in technical preview, your feedback is invaluable. If you're evaluating or building with JSONJet, please share your experience, use cases, and any issues you encounter. This input directly shapes development priorities.
+As JSONJet remains in technical preview, I welcome feedback from the research and development community. If you're evaluating the system or integrating it into your work, I'm particularly interested in your experiences, use cases, and any challenges you encounter. This input directly informs my research priorities and development decisions.
 
 **Contact:** Prof. Dr. Kambis Veschgini - k.veschgini@oth-aw.de
 
-This technical preview reflects a commitment to building things right rather than quickly, resulting in a more robust and performant platform.
+This methodical approach to development, while requiring more time initially, should yield a more robust and theoretically sound platform for long-term research and application.
