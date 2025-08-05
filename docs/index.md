@@ -14,7 +14,7 @@ hero:
       link: /downloads
     - theme: alt
       text: View Demo
-      link: /demo/
+      link: /demo
 
 features:
   - icon: 

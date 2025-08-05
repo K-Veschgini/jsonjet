@@ -73,7 +73,7 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'Downloads', link: '/downloads' },
       { text: 'Documentation', link: '/guide/' },
-      { text: 'Demo', link: '/demo/', target: '_blank', rel: 'external' },
+      { text: 'Demo', link: '/demo', target: '_blank', rel: 'external' },
       { text: 'Veschgini Consulting', link: 'https://veschgini-consulting.com', target: '_blank' },    
     ],
 
