@@ -2,7 +2,7 @@
 
 A document-based stream processing engine for real-time data analysis. This research explores flow-based architectures with a declarative query language inspired by Kusto.
 
-📖 [Documentation](./docs/) • [Live Demo](./packages/demo/)
+📖 [Documentation](https://jsonjet.veschgini-consulting.com) • [Live Demo](http://jsonjet.veschgini-consulting.com/demo/)
 
 
 ## Research Overview
