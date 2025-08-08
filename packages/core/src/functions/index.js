@@ -34,6 +34,10 @@ export { And } from './logical/and.js';
 export { Or } from './logical/or.js';
 export { Not } from './logical/not.js';
 
+// Sketch functions
+export { QuantileFunction } from './sketches/quantile.js';
+export { QuantileErrorFunction } from './sketches/quantile_error.js';
+
 // Import functions for registration
 import { ExpFunction, PiFunction } from './math/index.js';
 import { Add } from './arithmetic/add.js';
@@ -55,6 +59,8 @@ import { Max } from './comparison/max.js';
 import { And } from './logical/and.js';
 import { Or } from './logical/or.js';
 import { Not } from './logical/not.js';
+import { QuantileFunction } from './sketches/quantile.js';
+import { QuantileErrorFunction } from './sketches/quantile_error.js';
 
 /**
  * Register browser-safe functions to a registry instance
@@ -89,4 +95,8 @@ export function registerFunctions(registry) {
     registry.registerFunction(new And());
     registry.registerFunction(new Or());
     registry.registerFunction(new Not());
+
+    // Register sketch functions
+    registry.registerFunction(new QuantileFunction());
+    registry.registerFunction(new QuantileErrorFunction());
 }

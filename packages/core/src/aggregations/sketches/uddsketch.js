@@ -1,54 +1,17 @@
+import { SparseBucketStore } from './sparse-bucket-store.js';
+
 /**
  * UDDSketch - Minimal implementation for quantile estimation
- * 
- * A memory-efficient data structure for computing approximate
- * quantiles (percentiles, median) with bounded relative error.
- */
-
-/**
- * Sparse bucket store for efficient memory usage
- */
-class SparseBucketStore {
-    constructor() {
-        this.buckets = new Map(); // bucket_index -> count
-        this.count = 0;
-    }
-
-    add(index, count = 1) {
-        const current = this.buckets.get(index) || 0;
-        this.buckets.set(index, current + count);
-        this.count += count;
-    }
-
-    get(index) {
-        return this.buckets.get(index) || 0;
-    }
-
-    getIndices() {
-        return Array.from(this.buckets.keys()).sort((a, b) => a - b);
-    }
-
-    clear() {
-        this.buckets.clear();
-        this.count = 0;
-    }
-}
-
-/**
- * UDDSketch implementation for approximate quantile estimation
  */
 export class UDDSketch {
-    /**
-     * Create a new UDDSketch
-     * @param {number} alpha - Relative accuracy parameter (0 < alpha < 1, default: 0.01)
-     */
-    constructor(alpha = 0.01) {
-        if (alpha <= 0 || alpha >= 1) {
-            throw new Error('Alpha must be between 0 and 1');
+    constructor(maxBuckets = 1024) {
+        if (typeof maxBuckets !== 'number' || !Number.isFinite(maxBuckets) || maxBuckets <= 0) {
+            throw new Error('UDDSketch: maxBuckets must be a positive finite number');
         }
-
-        this.alpha = alpha;
-        this.gamma = (1 + alpha) / (1 - alpha);
+        this.maxBuckets = Math.floor(maxBuckets);
+        // Start with conservative alpha that will increase on collapses
+        this.alpha = 0.005;
+        this.gamma = (1 + this.alpha) / (1 - this.alpha);
         this.logGamma = Math.log(this.gamma);
         this.minValue = 1e-9;
 
@@ -60,117 +23,82 @@ export class UDDSketch {
         this.max = Number.NEGATIVE_INFINITY;
     }
 
-    /**
-     * Map a positive value to its bucket index
-     * @param {number} value - Positive value
-     * @returns {number} Bucket index
-     */
     _getBucketIndex(value) {
         return Math.ceil(Math.log(value / this.minValue) / this.logGamma);
     }
 
-    /**
-     * Get the representative value for a bucket index
-     * @param {number} index - Bucket index
-     * @returns {number} Representative value
-     */
     _getBucketValue(index) {
         return this.minValue * Math.pow(this.gamma, index - 0.5);
     }
 
-    /**
-     * Add a value to the sketch
-     * @param {number} value - Value to add
-     */
     add(value) {
         if (typeof value !== 'number' || isNaN(value) || !isFinite(value)) {
             throw new Error('Value must be a finite number');
         }
-
         this.count++;
         this.min = Math.min(this.min, value);
         this.max = Math.max(this.max, value);
-
         if (value === 0) {
             this.zeroCount++;
         } else if (value > 0) {
             const index = this._getBucketIndex(value);
             this.positiveBuckets.add(index);
+            this.#maybeUniformCollapse();
         } else {
             const index = this._getBucketIndex(-value);
             this.negativeBuckets.add(index);
+            this.#maybeUniformCollapse();
         }
     }
 
-    /**
-     * Calculate quantile (0 <= q <= 1)
-     * @param {number} q - Quantile to calculate (0 = min, 0.5 = median, 1 = max)
-     * @returns {number} Approximate quantile value
-     */
-    quantile(q) {
-        if (q < 0 || q > 1) {
-            throw new Error('Quantile must be between 0 and 1');
+    // Collapse helper: remap i -> ceil(i/2) and rebuild store using public API
+    #uniformReindexStore(store) {
+        const indices = store.getIndices();
+        if (indices.length === 0) return;
+        const remapped = new Map();
+        for (let i = 0; i < indices.length; i++) {
+            const idx = indices[i];
+            const count = store.get(idx);
+            const j = Math.ceil(idx / 2);
+            remapped.set(j, (remapped.get(j) || 0) + count);
         }
+        // Rebuild using public methods
+        store.clear();
+        for (const [j, c] of remapped.entries()) {
+            store.add(j, c);
+        }
+    }
 
-        if (this.count === 0) return NaN;
-        if (q === 0) return this.min;
-        if (q === 1) return this.max;
+    // Perform uniform collapse on both sides and update alpha/gamma per UDDSketch
+    #uniformCollapseBothSides() {
+        this.#uniformReindexStore(this.positiveBuckets);
+        this.#uniformReindexStore(this.negativeBuckets);
+        // alpha' = 2a/(1+a^2), gamma' = (1+alpha')/(1-alpha')
+        const a = this.alpha;
+        this.alpha = (2 * a) / (1 + a * a);
+        this.gamma = (1 + this.alpha) / (1 - this.alpha);
+        this.logGamma = Math.log(this.gamma);
+    }
 
-        const targetRank = q * (this.count - 1);
-        let currentRank = 0;
-
-        // Process negative buckets (in reverse order)
-        const negativeIndices = this.negativeBuckets.getIndices().reverse();
-        for (const index of negativeIndices) {
-            const bucketCount = this.negativeBuckets.get(index);
-            if (currentRank + bucketCount > targetRank) {
-                return -this._getBucketValue(index);
+    // Ensure both sides are within budget; collapse repeatedly if needed
+    #maybeUniformCollapse() {
+        const pos = this.positiveBuckets.getIndices().length;
+        const neg = this.negativeBuckets.getIndices().length;
+        if (pos > this.maxBuckets || neg > this.maxBuckets) {
+            this.#uniformCollapseBothSides();
+            // Rare case: still too many distinct indices; repeat
+            const pos2 = this.positiveBuckets.getIndices().length;
+            const neg2 = this.negativeBuckets.getIndices().length;
+            if (pos2 > this.maxBuckets || neg2 > this.maxBuckets) {
+                // Loop conservatively to avoid deep recursion
+                while (this.positiveBuckets.getIndices().length > this.maxBuckets ||
+                       this.negativeBuckets.getIndices().length > this.maxBuckets) {
+                    this.#uniformCollapseBothSides();
+                }
             }
-            currentRank += bucketCount;
         }
-
-        // Process zeros
-        if (currentRank + this.zeroCount > targetRank) {
-            return 0;
-        }
-        currentRank += this.zeroCount;
-
-        // Process positive buckets
-        const positiveIndices = this.positiveBuckets.getIndices();
-        for (const index of positiveIndices) {
-            const bucketCount = this.positiveBuckets.get(index);
-            if (currentRank + bucketCount > targetRank) {
-                return this._getBucketValue(index);
-            }
-            currentRank += bucketCount;
-        }
-
-        return this.max;
     }
 
-    /**
-     * Calculate percentile (0 <= p <= 100)
-     * @param {number} p - Percentile to calculate (0-100)
-     * @returns {number} Approximate percentile value
-     */
-    percentile(p) {
-        if (p < 0 || p > 100) {
-            throw new Error('Percentile must be between 0 and 100');
-        }
-        return this.quantile(p / 100);
-    }
-
-    /**
-     * Calculate median (50th percentile)
-     * @returns {number} Approximate median value
-     */
-    median() {
-        return this.quantile(0.5);
-    }
-
-    /**
-     * Reset the sketch to empty state
-     */
     reset() {
         this.positiveBuckets.clear();
         this.negativeBuckets.clear();
@@ -179,4 +107,98 @@ export class UDDSketch {
         this.min = Number.POSITIVE_INFINITY;
         this.max = Number.NEGATIVE_INFINITY;
     }
+
+    export() {
+        const negative = this.negativeBuckets
+            .getIndices()
+            .sort((a, b) => b - a)
+            .map(idx => [idx, this.negativeBuckets.get(idx)]);
+        const positive = this.positiveBuckets
+            .getIndices()
+            .sort((a, b) => a - b)
+            .map(idx => [idx, this.positiveBuckets.get(idx)]);
+
+        return {
+            kind: 'uddsketch:v1',
+            alpha: this.alpha,
+            gamma: this.gamma,
+            minValue: this.minValue,
+            count: this.count,
+            zeroCount: this.zeroCount,
+            min: this.min,
+            max: this.max,
+            buckets: {
+                negative,
+                positive
+            }
+        };
+    }
+
+    /**
+     * Compute quantile directly from an exported sketch JSON (no instance required)
+     */
+    static computeQuantileFromExport(exportedSketch, q) {
+        if (!exportedSketch || typeof exportedSketch !== 'object' || exportedSketch.kind !== 'uddsketch:v1') {
+            throw new Error('UDDSketch.computeQuantileFromExport: unsupported or invalid sketch; expected kind "uddsketch:v1"');
+        }
+        if (typeof q !== 'number' || !Number.isFinite(q) || q < 0 || q > 1) {
+            throw new Error('UDDSketch.computeQuantileFromExport: q must be a finite number in [0,1]');
+        }
+
+        const { count, zeroCount, min, max, minValue, gamma, buckets } = exportedSketch;
+        if (!Number.isInteger(count) || count < 0) {
+            throw new Error('UDDSketch.computeQuantileFromExport: invalid sketch.count');
+        }
+        if (count === 0) return NaN;
+        if (q === 0) return min;
+        if (q === 1) return max;
+
+        const targetRank = q * (count - 1);
+        let currentRank = 0;
+
+        const negative = (buckets && Array.isArray(buckets.negative)) ? buckets.negative : [];
+        for (let i = 0; i < negative.length; i++) {
+            const entry = negative[i];
+            if (!Array.isArray(entry) || entry.length !== 2) continue;
+            const [index, bucketCount] = entry;
+            if (!Number.isInteger(index) || !Number.isInteger(bucketCount) || bucketCount <= 0) continue;
+            if (currentRank + bucketCount > targetRank) {
+                return -minValue * Math.pow(gamma, index - 0.5);
+            }
+            currentRank += bucketCount;
+        }
+
+        if (currentRank + zeroCount > targetRank) {
+            return 0;
+        }
+        currentRank += zeroCount;
+
+        const positive = (buckets && Array.isArray(buckets.positive)) ? buckets.positive : [];
+        for (let i = 0; i < positive.length; i++) {
+            const entry = positive[i];
+            if (!Array.isArray(entry) || entry.length !== 2) continue;
+            const [index, bucketCount] = entry;
+            if (!Number.isInteger(index) || !Number.isInteger(bucketCount) || bucketCount <= 0) continue;
+            if (currentRank + bucketCount > targetRank) {
+                return minValue * Math.pow(gamma, index - 0.5);
+            }
+            currentRank += bucketCount;
+        }
+
+        return max;
+    }
+
+    /**
+     * Get relative error bound for a sketch. For UDDSketch, this is alpha.
+     * Note: if the sketch has undergone uniform collapses, the effective alpha
+     * will be larger than the initial alpha.
+     */
+    static getRelativeError(exportedSketch) {
+        if (!exportedSketch || typeof exportedSketch !== 'object' || exportedSketch.kind !== 'uddsketch:v1') {
+            throw new Error('UDDSketch.getRelativeError: unsupported or invalid sketch; expected kind "uddsketch:v1"');
+        }
+        return exportedSketch.alpha;
+    }
 }
+
+

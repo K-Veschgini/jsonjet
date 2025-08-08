@@ -10,10 +10,14 @@ export { AggregationObject } from './core/aggregation-object.js';
 // Re-export browser-safe aggregation functions
 export { Sum } from './functions/sum.js';
 export { Count } from './functions/count.js';
+export { UDDSketchAggregation } from './functions/uddsketch.js';
+export { TDigestAggregation } from './functions/tdigest.js';
 
 // Import aggregation functions for registration
 import { Sum } from './functions/sum.js';
 import { Count } from './functions/count.js';
+import { UDDSketchAggregation } from './functions/uddsketch.js';
+import { TDigestAggregation } from './functions/tdigest.js';
 
 /**
  * Register browser-safe aggregations to a registry instance
@@ -23,4 +27,6 @@ export function registerAggregations(registry) {
     // Register built-in aggregations
     registry.registerAggregation('sum', Sum);
     registry.registerAggregation('count', Count);
+    registry.registerAggregation('uddsketch', UDDSketchAggregation);
+    registry.registerAggregation('tdigest', TDigestAggregation);
 }
