@@ -199,6 +199,99 @@ export class UDDSketch {
         }
         return exportedSketch.alpha;
     }
+
+    /**
+     * Compute CDF(x) = P(X <= x) from exported sketch
+     */
+    static computeCdfFromExport(exportedSketch, x) {
+        if (!exportedSketch || typeof exportedSketch !== 'object' || exportedSketch.kind !== 'uddsketch:v1') {
+            throw new Error('UDDSketch.computeCdfFromExport: unsupported or invalid sketch; expected kind "uddsketch:v1"');
+        }
+        if (typeof x !== 'number' || !Number.isFinite(x)) {
+            throw new Error('UDDSketch.computeCdfFromExport: x must be a finite number');
+        }
+        const { count, zeroCount, min, max, minValue, gamma, buckets } = exportedSketch;
+        if (!Number.isInteger(count) || count < 0) {
+            throw new Error('UDDSketch.computeCdfFromExport: invalid sketch.count');
+        }
+        if (count === 0) return NaN;
+        if (x <= min) return 0;
+        if (x >= max) return 1;
+
+        const bucketValue = (index) => minValue * Math.pow(gamma, index - 0.5);
+        let cumulative = 0;
+
+        // Negative buckets (values ascending)
+        const negative = (buckets && Array.isArray(buckets.negative)) ? buckets.negative.slice().reverse() : [];
+        for (const [index, w] of negative) {
+            const value = -bucketValue(index);
+            if (value <= x) {
+                cumulative += w;
+            } else {
+                // still below x? continue until value <= x
+                // since sequence is ascending, once value > x we can break
+                break;
+            }
+        }
+
+        // Zeros
+        if (x >= 0) {
+            cumulative += zeroCount;
+        }
+
+        // Positive buckets (values ascending)
+        const positive = (buckets && Array.isArray(buckets.positive)) ? buckets.positive : [];
+        for (const [index, w] of positive) {
+            const value = bucketValue(index);
+            if (value <= x) {
+                cumulative += w;
+            } else {
+                break;
+            }
+        }
+
+        return cumulative / count;
+    }
+
+    /**
+     * Approximate rank index for value x based on CDF
+     */
+    static computeRankFromExport(exportedSketch, x) {
+        const { count } = exportedSketch || {};
+        if (!Number.isInteger(count) || count < 0) {
+            throw new Error('UDDSketch.computeRankFromExport: invalid sketch.count');
+        }
+        const cdf = UDDSketch.computeCdfFromExport(exportedSketch, x);
+        if (!Number.isFinite(cdf)) return NaN;
+        return cdf * count;
+    }
+
+    /**
+     * Estimate absolute CDF error at x: worst-case assumes all mass in x's bucket can lie either side
+     * = bucket_count(x) / total_count
+     */
+    static getCdfErrorFromExport(exportedSketch, x) {
+        if (!exportedSketch || typeof exportedSketch !== 'object' || exportedSketch.kind !== 'uddsketch:v1') {
+            throw new Error('UDDSketch.getCdfErrorFromExport: unsupported or invalid sketch; expected kind "uddsketch:v1"');
+        }
+        if (typeof x !== 'number' || !Number.isFinite(x)) {
+            throw new Error('UDDSketch.getCdfErrorFromExport: x must be a finite number');
+        }
+        const { count, minValue, gamma, buckets } = exportedSketch;
+        if (!Number.isInteger(count) || count <= 0) return NaN;
+        const idx = Math.ceil(Math.log(Math.abs(x) / minValue) / Math.log(gamma));
+        let bucketCount = 0;
+        if (x < 0) {
+            const neg = (buckets && Array.isArray(buckets.negative)) ? buckets.negative : [];
+            for (const [i, w] of neg) { if (i === idx) { bucketCount = w; break; } }
+        } else if (x > 0) {
+            const pos = (buckets && Array.isArray(buckets.positive)) ? buckets.positive : [];
+            for (const [i, w] of pos) { if (i === idx) { bucketCount = w; break; } }
+        } else {
+            bucketCount = exportedSketch.zeroCount || 0;
+        }
+        return bucketCount / count;
+    }
 }
 
 

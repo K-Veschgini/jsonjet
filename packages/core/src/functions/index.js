@@ -37,6 +37,11 @@ export { Not } from './logical/not.js';
 // Sketch functions
 export { QuantileFunction } from './sketches/quantile.js';
 export { QuantileErrorFunction } from './sketches/quantile_error.js';
+export { PercentileFunction } from './sketches/percentile.js';
+export { MedianFunction } from './sketches/median.js';
+export { CdfFunction } from './sketches/cdf.js';
+export { RankFunction } from './sketches/rank.js';
+export { CdfErrorFunction } from './sketches/cdf_error.js';
 
 // Import functions for registration
 import { ExpFunction, PiFunction } from './math/index.js';
@@ -61,6 +66,11 @@ import { Or } from './logical/or.js';
 import { Not } from './logical/not.js';
 import { QuantileFunction } from './sketches/quantile.js';
 import { QuantileErrorFunction } from './sketches/quantile_error.js';
+import { PercentileFunction } from './sketches/percentile.js';
+import { MedianFunction } from './sketches/median.js';
+import { CdfFunction } from './sketches/cdf.js';
+import { RankFunction } from './sketches/rank.js';
+import { CdfErrorFunction } from './sketches/cdf_error.js';
 
 /**
  * Register browser-safe functions to a registry instance
@@ -99,4 +109,9 @@ export function registerFunctions(registry) {
     // Register sketch functions
     registry.registerFunction(new QuantileFunction());
     registry.registerFunction(new QuantileErrorFunction());
+    registry.registerFunction(new PercentileFunction());
+    registry.registerFunction(new MedianFunction());
+    registry.registerFunction(new CdfFunction());
+    registry.registerFunction(new RankFunction());
+    registry.registerFunction(new CdfErrorFunction());
 }
