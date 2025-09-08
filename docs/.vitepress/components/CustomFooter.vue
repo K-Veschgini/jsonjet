@@ -7,8 +7,8 @@
           <li><a href="https://veschgini-consulting.com" target="_blank" rel="noopener">Veschgini Consulting</a></li>
           <li><a href="https://veschgini-consulting.com/impressum" target="_blank" rel="noopener">Legal Notice</a></li>
           <li><a href="https://veschgini-consulting.com/cookie-richtlinie" target="_blank" rel="noopener">Cookie Policy</a></li>
-          <li><a href="https://veschgini-consulting.com/datenschutzerklarung" target="_blank" rel="noopener">Privacy Policy</a></li>
-          <li><a href="https://veschgini-consulting.com/geschaftsbedingungen" target="_blank" rel="noopener">Terms & Conditions</a></li>
+          <li><a href="https://veschgini-consulting.com/datenschutzerklaerung-eu" target="_blank" rel="noopener">Privacy Policy</a></li>
+          <li><a href="https://veschgini-consulting.com/geschaeftsbedingungen" target="_blank" rel="noopener">Terms & Conditions</a></li>
         </ul>
       </div>
       
